@@ -1,0 +1,185 @@
+using GDVM.Environment;
+
+namespace GDVM.Godot;
+
+/// <summary>
+///     A type to represent Godot releases. Currently, there is only support for MAJOR.MINOR(.PATCH), but in previous
+///     editions Kof Godot there were "sub-patches", such as `2.0.4.1`. There's not much reason to handle these because in all
+///     likelihood people are using 3+, which is more closely following a more standardized versioning approach. Godot
+///     itself does not follow semver, but it tries to mostly be compatible, and so we don't want to strictly follow semver
+///     either.
+/// </summary>
+public sealed class Release : IComparable<Release>
+{
+    /// <summary>
+    /// </summary>
+    /// <param name="major">Major version</param>
+    /// <param name="minor">Minor version</param>
+    /// <param name="os"></param>
+    /// <param name="patch">Path version</param>
+    /// <param name="type">Release type ("stable", "rc1", etc)</param>
+    /// <param name="runtimeEnvironment">Standard or Mono</param>
+    /// <param name="platformString">The platform string, i.e., "linux_x86_64"</param>
+    public Release(
+        int major,
+        int minor,
+        string? platformString = null,
+        OS os = OS.Unknown,
+        int? patch = null,
+        ReleaseType? type = null,
+        RuntimeEnvironment runtimeEnvironment = RuntimeEnvironment.Standard)
+    {
+        Major = major;
+        Minor = minor;
+        PlatformString = platformString;
+        OS = os;
+        Patch = patch;
+        Type = type;
+        RuntimeEnvironment = runtimeEnvironment;
+
+        Version = $"{major}.{minor}" + (patch is null ? string.Empty : $".{patch}");
+        ReleaseName = $"{Version}-{type}";
+        ReleaseNameWithRuntime = $"{ReleaseName}-{runtimeEnvironment.Name()}";
+    }
+
+    public string FileName => Major == 1 ? $"Godot_v{Version}_{Type}_{PlatformString}" : $"Godot_v{Version}-{Type}_{PlatformString}";
+
+    public string ZipFileName => $"{FileName}.zip";
+
+    public string ExecName => OS switch
+    {
+        OS.MacOS => RuntimeEnvironment == RuntimeEnvironment.Mono ? "Godot_mono.app" : "Godot.app",
+        OS.Linux when RuntimeEnvironment == RuntimeEnvironment.Mono => FileName.Replace("linux_", "linux."),
+        OS.Windows when RuntimeEnvironment == RuntimeEnvironment.Mono => $"{FileName}.exe",
+        _ => FileName
+    };
+
+    /// <summary>Major version</summary>
+    public int Major { get; }
+
+    /// <summary>Minor version</summary>
+    public int Minor { get; }
+    public string? PlatformString { get; set; }
+    public OS OS { get; set; }
+
+    /// <summary>Path version</summary>
+    public int? Patch { get; }
+
+    /// <summary>Standard or Mono</summary>
+    public RuntimeEnvironment RuntimeEnvironment { get; }
+
+    /// <summary>Release type ("stable", "rc", etc)</summary>
+    public ReleaseType? Type { get; }
+
+    /// <summary>MAJOR.MINOR(.PATCH)</summary>
+    public string Version { get; }
+
+    /// <summary>The name of the release itself, i.e., `4.3-stable`</summary>
+    public string ReleaseName { get; }
+
+    /// <summary>The release name with a runtime suffix, i.e., `4.3-stable-mono`</summary>
+    public string ReleaseNameWithRuntime { get; }
+
+    public int CompareTo(Release? other)
+    {
+        if (ReferenceEquals(this, other))
+        {
+            return 0;
+        }
+
+        if (other is null)
+        {
+            return 1;
+        }
+
+        var majorComparison = Major.CompareTo(other.Major);
+        if (majorComparison != 0)
+        {
+            return majorComparison;
+        }
+
+        var minorComparison = Minor.CompareTo(other.Minor);
+        if (minorComparison != 0)
+        {
+            return minorComparison;
+        }
+
+        var patchComparison = Nullable.Compare(Patch, other.Patch);
+        if (patchComparison != 0)
+        {
+            return patchComparison;
+        }
+
+        var runtimeEnvironmentComparison = RuntimeEnvironment.CompareTo(other.RuntimeEnvironment);
+        if (runtimeEnvironmentComparison != 0)
+        {
+            return runtimeEnvironmentComparison;
+        }
+
+        var typeComparison = Nullable.Compare(Type, other.Type);
+        if (typeComparison != 0)
+        {
+            return typeComparison;
+        }
+
+        var versionComparison = string.Compare(Version, other.Version, StringComparison.Ordinal);
+        if (versionComparison != 0)
+        {
+            return versionComparison;
+        }
+
+        var releaseNameComparison = string.Compare(ReleaseName, other.ReleaseName, StringComparison.Ordinal);
+        if (releaseNameComparison != 0)
+        {
+            return releaseNameComparison;
+        }
+
+        return string.Compare(ReleaseNameWithRuntime, other.ReleaseNameWithRuntime, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    ///     The primary way to create a Release. Instead of using ctors, we want to try parsing the version string and figure it out contextually.
+    /// </summary>
+    /// <param name="versionString"></param>
+    internal static Release? TryParse(string versionString)
+    {
+        if (string.IsNullOrWhiteSpace(versionString))
+        {
+            return null;
+        }
+
+        var parts = versionString.Split(['-', '.'], StringSplitOptions.RemoveEmptyEntries);
+
+        if (parts.Length < 2)
+        {
+            return null;
+        }
+
+        if (!int.TryParse(parts[0], out var major) ||
+            !int.TryParse(parts[1], out var minor))
+        {
+            return null;
+        }
+
+        int? patch = parts.Length > 2 && int.TryParse(parts[2], out var p) ? p : null;
+
+        var releaseType = ReleaseType.TryParse(versionString);
+
+        if (releaseType is null)
+        {
+            return null;
+        }
+
+        var runtime = parts.Contains("mono", StringComparer.InvariantCultureIgnoreCase)
+            ? RuntimeEnvironment.Mono
+            : RuntimeEnvironment.Standard;
+
+        return new Release(major, minor, patch: patch, type: releaseType, runtimeEnvironment: runtime);
+    }
+
+    public static bool operator >=(Release left, Release right) =>
+        left.CompareTo(right) >= 0;
+
+    public static bool operator <=(Release left, Release right) =>
+        left.CompareTo(right) <= 0;
+}

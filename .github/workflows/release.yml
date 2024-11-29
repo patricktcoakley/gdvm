@@ -1,0 +1,66 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            rid: linux-x64
+          - os: windows-latest
+            rid: win-x64
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Build
+        run: dotnet publish -c Release -r ${{ matrix.rid }}
+
+      - name: Package
+        shell: pwsh
+        run: |
+          $ARTIFACT_NAME = "gdvm-${{ matrix.rid }}.zip"
+          $TARGET = "${{ matrix.os }}" -eq "windows-latest" ? "gdvm.exe" : "gdvm"
+          $SOURCE = Join-Path "GDVM" "bin" "Release" "net9.0" "${{ matrix.rid }}" "publish" "$TARGET"
+
+          # Create ZIP
+          Compress-Archive -Path $SOURCE -DestinationPath $ARTIFACT_NAME -Force
+          
+          # Generate SHA256
+          $hash = (Get-FileHash -Algorithm SHA256 $ARTIFACT_NAME).Hash.ToLower()
+          "$hash  $ARTIFACT_NAME" | Out-File -FilePath "$ARTIFACT_NAME.sha256"
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: gdvm-${{ matrix.rid }}
+          path: |
+            gdvm-${{ matrix.rid }}.zip
+            gdvm-${{ matrix.rid }}.zip.sha256
+            
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
+    steps:
+      - uses: actions/download-artifact@v4
+        
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            */gdvm-*.zip
+            */gdvm-*.sha256
+          generate_release_notes: true

@@ -33,7 +33,7 @@ brew install gdvm
 
 ### Scoop
 
-Using [scoope](https://scoop.sh), you simply need to add my [bucket](https://github.com/patricktcoakley/bucket) repo, like so:
+Using [scoop](https://scoop.sh), you simply need to add my [bucket](https://github.com/patricktcoakley/scoop-bucket) repo, like so:
 
 ```shell
 scoop bucket add patricktcoakley https://github.com/patricktcoakley/scoop-bucket

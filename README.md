@@ -6,14 +6,18 @@ A work-in-progress Godot version manager **(gdvm)**. [GVM](https://github.com/mo
 
 ## Features
 
-gdvm is a Godot version manager that lets users install multiple versions of Godot with ease. It uses a hybrid TUI/CLI design, 
-meaning that in places when you don't supply an argument, it falls back to a prompt to let you select what you're looking for. 
-Features include the ability to install, manage, and run Godot installations from the terminal using queries or user promots. 
-This is useful if you want to try out different versions or install the same version on different machines, and potentially 
-for things like remote installations, such as CI or server workloads, or even for WSL or containers. 
+gdvm is a friendly Godot version manager that lets users install multiple versions of Godot with ease. It uses a hybrid CLI/TUI design, 
+meaning that in places when you don't supply an argument it falls back to a prompt to let you select what you're looking for,
+as well as support for [passing it keywords](#usage) to help find the appropriate version based on your input, like `4 dev` or `latest`.
+It's released as a static binary that can work on Windows, macOS, and Linux by just putting it somewhere and calling it in the
+terminal, or more conveniently, by using a [package manager](#installation).
 
-At this point it is mostly feature-complete, so ongoing work will include re-writing stuff for testability and easier extension,
-bug fixes, etc, and I am mostly looking forward for feedback to see what can be improved on the UX side.
+While gdvm is primarily targeting users that just want an easy way to maintain Godot installations or make it is to try out different versions,
+another use case could be for things like remote installations, such as CI or server workloads, or even for WSL or containers. This could make running
+automated tests or headless work much easier than having to rely on your OS package manager or having to rely on simple scripts since the only requirement
+is to have the single binary, which clocks in around ~10MB.
+
+At this point it is mostly feature-complete, so ongoing work will mostly focus on what's on the [roadmap](#roadmap).
 
 ## Installation
 
@@ -56,6 +60,8 @@ as far back as ~3.3, but if you have an older Mac you should still be able to in
 may be added later.
 
 ### Commands
+
+![install](./assets/gdvm-install.jpg)
 
 - `gdvm list`  will list locally installed Godot versions.
 - `gdvm install [--query|-q <...strings>]` will prompt the user to install a version if no arguments are supplied, or will
@@ -105,7 +111,7 @@ on the functionality it is warning against.
 
 ## Roadmap
 - Re-work the rest of the file management code to make it more testable by having overrides, which would also allow for custom install paths.
-- Get some working e2e tests
+- Get some working e2e tests, including searching, installing, setting, launching, and removing a specific version.
 - Possibly consider adding multi-select and multi-query to installations so that you could bulk-install multiple versions.
 - Get passing args to `godot` working 100%; it seems like [ConsoleAppFramework](https://github.com/Cysharp/ConsoleAppFramework) 
   eats any args using `--` prefixes that are "magic"; for example, `--version` gets parsed and applied to the app itself and isn't passed to Godot.
@@ -122,4 +128,4 @@ on the functionality it is warning against.
   - I have written command-line tools in various languages, including Bash, Python, Powershell, Go, and Rust, 
     but I wanted to explore modern .NET tooling and infrastructure, including NativeAOT static binaries and CLI/TUI libraries. 
     There is always a possibility of re-writing it in Rust in the future, but I plan to stick with C# for now, and I am 
-    interested in seeing how competitive it can be in this space with all of the latest additions in .NET8+.
+    interested in seeing how competitive it can be in this space with all of the latest additions in .NET8+. 

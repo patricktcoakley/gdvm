@@ -48,11 +48,12 @@ scoop install patricktcoakley/gdvm
 
 ### Getting Started
 
-gdvm downloads and installs Godot into a `~/gdvm/` for macOS and Linux, and `C:\Users\USERNAME\gdvm\` for Windows; this might be customizable in the future.
+gdvm downloads and installs Godot into folders inside of `~/gdvm/` for macOS and Linux, and `C:\Users\USERNAME\gdvm\` for Windows; this might be customizable in the future.
 Each installation will be in a folder with the `VERSION-TYPE-RUNTIME`. So if you installed the 4.3 stable with .NET support, it would be in a folder marked 
-`4.3-stable-mono`. By default, when you install a version a [symlink](https://en.wikipedia.org/wiki/Symbolic_link) is created in a folder called `bin`, which 
-lets you launch that version directly from the terminal, or you can also just drag the symlink to your taskbar or dock (depending on your OS and desktop environment)
-for easy launching through icons; for macOS you would specifically use `.app`. 
+`4.3-stable-mono`. By default, when you install a version a [symlink](https://en.wikipedia.org/wiki/Symbolic_link) is created in a folder called `bin`. This is what the `gdvm godot` command is using by default,
+or you can run `gdvm godot -i` to pick any another installation to launch, or you can simply use `gdvm set` to pick the version you want to launch by default. 
+This command was added to not have to rely on having your `PATH` variable set to use symlinks. You can also just drag the symlink to your taskbar or dock (depending on your OS and desktop environment)
+for easy launching through icons; for macOS you would specifically use `.app`. However, if you'd like to be able to just run `godot` from the terminal directly, see [here](#PATH) for basic instructions
 
 Right now it supports installing whatever your computer supports by CPU and OS, so if you're running Windows on a standard x86-standard CPU you are able to install 
 and run versions of Godot all the way back to 1.x. macOS went through multiple architecture transitions since Godot 1 and so most modern Macs will only support releases
@@ -99,6 +100,14 @@ Without it, you can still install, remove, etc, but you won't have the added ben
 I originally planned to supply .zip files for macOS too, and while I was able to automate code signing and notarization using my Apple Developer account,
 it doesn't really make sense to go through the process when Homebrew exists since there are too many issues with Gatekeeper to justify it right now, 
 and there are many options to build from source already. 
+
+
+### PATH
+
+There currently isn't a built-in way to add the symlinks to your `PATH` right, but it's very straightforward to do if you aren't familiar. If you're on Windows, you can generally
+just follow [this](https://learn.microsoft.com/en-us/previous-versions/office/developer/sharepoint-2010/ee537574(v=office.14)). Otherwise, for macOS and Linux, if you're using your default
+shells, then you should be able to just open your `~/.profile` and add `export PATH="$PATH:$HOME/gdvm/bin"` and then `source ~/.profile`. In the future I maybe
+include some post-install scripts that detect your shell and add it automatically, but for since I've already included the `godot` command it's not going to be necessary for many people.
 
 ## Build
 

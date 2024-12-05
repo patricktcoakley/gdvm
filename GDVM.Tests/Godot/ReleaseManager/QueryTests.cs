@@ -24,7 +24,8 @@ public class QueryTests
     public void FindReleaseByQuery_Latest_ReturnsCorrectVersion(string[] query, string expected)
     {
         var releaseManager = new ReleaseManagerBuilder().Build();
-        var result = releaseManager.FindReleaseByQuery(query, TestReleases.ToArray());
+        var result = releaseManager.TryFindReleaseByQuery(query, TestReleases.ToArray());
+        Assert.NotNull(result);
         Assert.Equal(expected, result.ReleaseNameWithRuntime);
     }
 
@@ -35,8 +36,9 @@ public class QueryTests
     public void FindReleaseByQuery_Latest_ShouldReturnLatestStableWithStandard(params string[] query)
     {
         var releaseManager = new ReleaseManagerBuilder().Build();
-        var result = releaseManager.FindReleaseByQuery(query, TestReleases.ToArray());
+        var result = releaseManager.TryFindReleaseByQuery(query, TestReleases.ToArray());
 
+        Assert.NotNull(result);
         Assert.Equal("4.2-stable-standard", result.ReleaseNameWithRuntime);
     }
 
@@ -60,8 +62,9 @@ public class QueryTests
     public void FindReleaseByQuery_SpecificVersion_ShouldParseVersionCorrectly(string[] query, string expected)
     {
         var releaseManager = new ReleaseManagerBuilder().Build();
-        var result = releaseManager.FindReleaseByQuery(query, TestReleases.ToArray());
+        var result = releaseManager.TryFindReleaseByQuery(query, TestReleases.ToArray());
 
+        Assert.NotNull(result);
         Assert.Equal(expected, result.ReleaseNameWithRuntime);
     }
 
@@ -69,22 +72,37 @@ public class QueryTests
     [InlineData("5.1", "mono")]
     [InlineData("5.1", "standard")]
     [Theory]
-    public void FindReleaseByQuery_InvalidVersion_ShouldThrowException(params string[] query)
+    public void TryFindReleaseByQuery_InvalidVersion_ShouldReturnNull(params string[] query)
     {
         var releaseManager = new ReleaseManagerBuilder().Build();
 
-        Assert.Throws<ArgumentException>(() => releaseManager.FindReleaseByQuery(query, TestReleases.ToArray()));
+        if (query.Length == 0)
+        {
+            Assert.Throws<ArgumentException>(() => releaseManager.TryFindReleaseByQuery(query, TestReleases.ToArray()));
+        }
+        else
+        {
+            Assert.Null(releaseManager.TryFindReleaseByQuery(query, TestReleases.ToArray()));
+        }
     }
 
 
+    [InlineData]
     [InlineData("latest", "mono", "standard")]
     [InlineData("latest", "stable", "rc")]
     [Theory]
-    public void FindReleaseByQuery_InvalidLatestQuery_ShouldThrowException(params string[] query)
+    public void TryFindReleaseByQuery_InvalidLatestQuery_ShouldReturnNull(params string[] query)
     {
         var releaseManager = new ReleaseManagerBuilder().Build();
 
-        Assert.Throws<ArgumentException>(() => releaseManager.FindReleaseByQuery(query, TestReleases.ToArray()));
+        if (query.Length == 0)
+        {
+            Assert.Throws<ArgumentException>(() => releaseManager.TryFindReleaseByQuery(query, TestReleases.ToArray()));
+        }
+        else
+        {
+            Assert.Null(releaseManager.TryFindReleaseByQuery(query, TestReleases.ToArray()));
+        }
     }
 
     [Fact]

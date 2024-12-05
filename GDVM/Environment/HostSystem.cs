@@ -53,6 +53,7 @@ public class HostSystem(SystemInfo systemInfo, ILogger<HostSystem> logger) : IHo
 
             // TODO: Untested but possibly works with Linux builds?
             case OS.FreeBSD:
+            case OS.Unknown:
                 throw new InvalidEnumArgumentException("FreeBSD is unsupported at this time.");
         }
 
@@ -141,7 +142,7 @@ public class HostSystem(SystemInfo systemInfo, ILogger<HostSystem> logger) : IHo
             .ThenBy(x => x.EndsWith("standard"));
     }
 
-    public bool IsSymbolicLinkValid(string symlinkTargetPath)
+    private static bool IsSymbolicLinkValid(string symlinkTargetPath)
     {
         var symlinkFileInfo = new FileInfo(symlinkTargetPath);
 

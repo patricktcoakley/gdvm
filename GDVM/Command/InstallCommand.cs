@@ -33,13 +33,29 @@ public sealed class InstallCommand(IHostSystem hostSystem, IReleaseManager relea
             if (query.Length == 0)
             {
                 var version = await Prompts.Install.ShowVersionSelectionPrompt(releaseNames, cancellationToken);
-                godotRelease = releaseManager.TryCreateRelease(version) ?? throw new Exception($"Invalid Godot version {version}.");
+                godotRelease = releaseManager.TryCreateRelease(version) ?? throw new Exception($"Unable to get release with selection `{version}`.");
             }
             else
             {
-                godotRelease = releaseManager.FindReleaseByQuery(query, releaseNames);
-            }
+                await AnsiConsole.Status()
+                    .Spinner(Spinner.Known.Star)
+                    .SpinnerStyle(Style.Parse("green bold"))
+                    .StartAsync("Fetching releases...", async _ =>
+                    {
+                        godotRelease = releaseManager.TryFindReleaseByQuery(query, releaseNames);
+                        // retry if failed to find and force remote fetch
+                        if (godotRelease == null)
+                        {
+                            releaseNames = await FetchReleaseNames(cancellationToken, true);
+                            godotRelease = releaseManager.TryFindReleaseByQuery(query, releaseNames);
+                        }
+                    });
 
+                if (godotRelease is null)
+                {
+                    throw new Exception($"Unable to find Godot release with query {string.Join(", ", query)}");
+                }
+            }
 
             var installPathBase = godotRelease.ReleaseNameWithRuntime;
 
@@ -165,14 +181,14 @@ public sealed class InstallCommand(IHostSystem hostSystem, IReleaseManager relea
         }
     }
 
-    private async Task<string[]> FetchReleaseNames(CancellationToken cancellationToken)
+    private async Task<string[]> FetchReleaseNames(CancellationToken cancellationToken, bool remote = false)
     {
         string[] releaseNames;
         var usedCache = false;
 
         // TODO: consider making this tunable or having an override to force it to reach out and update
         var lastWriteTime = File.GetLastWriteTime(Paths.ReleasesPath);
-        if (File.Exists(Paths.ReleasesPath) && DateTime.Now.AddDays(-1) <= lastWriteTime)
+        if (!remote && File.Exists(Paths.ReleasesPath) && DateTime.Now.AddDays(-1) <= lastWriteTime)
         {
             logger.ZLogInformation($"Reading from {Paths.ReleasesPath}, last updated {lastWriteTime}");
             releaseNames = (await File.ReadAllLinesAsync(Paths.ReleasesPath, cancellationToken)).ToArray();

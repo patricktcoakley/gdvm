@@ -9,7 +9,7 @@ public interface IReleaseManager
     Task<string> GetSha512(Release release, CancellationToken cancellationToken);
     Task<HttpResponseMessage> GetZipFile(string filename, Release release, CancellationToken cancellationToken);
 
-    Release FindReleaseByQuery(string[] query, string[] releaseNames);
+    Release? TryFindReleaseByQuery(string[] query, string[] releaseNames);
     IEnumerable<string> FilterReleasesByQuery(string[] query, string[] releaseNames);
 
     Release? TryCreateRelease(string versionString);
@@ -39,25 +39,25 @@ public class ReleaseManager(IHostSystem hostSystem, PlatformStringProvider platf
     /// <param name="releaseNames"></param>
     /// <returns></returns>
     /// <exception cref="ArgumentException"></exception>
-    public Release FindReleaseByQuery(string[] query, string[] releaseNames)
+    public Release? TryFindReleaseByQuery(string[] query, string[] releaseNames)
     {
         return query switch
         {
             // We handle empty query at the call site
             [] => throw new ArgumentException("Empty query"),
             // Handle latest stable standard
-            ["latest"] => FilterLatest("stable", "standard", releaseNames),
+            ["latest"] => TryFilterLatest("stable", "standard", releaseNames),
             // Handle latest stable by with runtime
-            ["latest", var releaseType and ("mono" or "standard")] => FilterLatest("stable", releaseType, releaseNames),
+            ["latest", var releaseType and ("mono" or "standard")] => TryFilterLatest("stable", releaseType, releaseNames),
             // Handle latest standard with release type
             ["latest", var releaseType] when ReleaseType.Prefixes.Contains(releaseType, StringComparer.OrdinalIgnoreCase)
-                => FilterLatest(releaseType, "standard", releaseNames),
+                => TryFilterLatest(releaseType, "standard", releaseNames),
             // Handle latest with release type and runtime
             ["latest", var releaseType, var runtime] when ReleaseType.Prefixes.Contains(releaseType, StringComparer.OrdinalIgnoreCase) &&
                                                           runtime is "mono" or "standard"
-                => FilterLatest(releaseType, runtime, releaseNames),
+                => TryFilterLatest(releaseType, runtime, releaseNames),
             // Explicit version, i.e. `4.2-stable(-mono)`
-            _ => FilterRelease(query, releaseNames)
+            _ => TryFilterRelease(query, releaseNames)
         };
     }
 
@@ -101,7 +101,7 @@ public class ReleaseManager(IHostSystem hostSystem, PlatformStringProvider platf
     }
 
 
-    private Release FilterRelease(string[] query, string[] releaseNames)
+    private Release? TryFilterRelease(string[] query, string[] releaseNames)
     {
         var runtime = query
             .FirstOrDefault(x => x is "mono" or "standard")?.ToLowerInvariant() == "mono"
@@ -116,9 +116,13 @@ public class ReleaseManager(IHostSystem hostSystem, PlatformStringProvider platf
 
         // Get the possible version query by filtering out the release type and runtime
         var possibleVersion = query
-                                  .Except([runtime.Name(), releaseType], StringComparer.OrdinalIgnoreCase)
-                                  .FirstOrDefault()
-                              ?? throw new ArgumentException("No version number found in query");
+            .Except([runtime.Name(), releaseType], StringComparer.OrdinalIgnoreCase)
+            .FirstOrDefault();
+
+        if (possibleVersion is null)
+        {
+            return null;
+        }
 
         if (possibleVersion.Length > 1)
         {
@@ -127,23 +131,20 @@ public class ReleaseManager(IHostSystem hostSystem, PlatformStringProvider platf
 
         // Try to find the first release
         var matchingRelease = releaseNames
-                                  .Where(x => x.StartsWith(possibleVersion, StringComparison.OrdinalIgnoreCase))
-                                  .Where(x => x.Contains(releaseType, StringComparison.OrdinalIgnoreCase))
-                                  .OrderByDescending(x => x)
-                                  .FirstOrDefault()
-                              ?? throw new ArgumentException($"No{releaseType} release found for version {possibleVersion}");
+            .Where(x => x.StartsWith(possibleVersion, StringComparison.OrdinalIgnoreCase))
+            .Where(x => x.Contains(releaseType, StringComparison.OrdinalIgnoreCase))
+            .OrderByDescending(x => x)
+            .FirstOrDefault();
 
-        return TryCreateRelease($"{matchingRelease}-{runtime.Name()}")
-               ?? throw new ArgumentException($"Invalid version format: {matchingRelease}");
+        return TryCreateRelease($"{matchingRelease}-{runtime.Name()}");
     }
 
-    private Release FilterLatest(string type, string runtime, string[] releaseNames)
+    private Release? TryFilterLatest(string type, string runtime, string[] releaseNames)
     {
         var version = releaseNames
             .OrderByDescending(x => x.Contains(type, StringComparison.InvariantCultureIgnoreCase))
-            .FirstOrDefault() ?? throw new ArgumentException("No" + (string.IsNullOrEmpty(type) ? "" : $" {type}") + "release found for version {type}");
+            .FirstOrDefault();
 
-        return TryCreateRelease($"{version}-{runtime}") ??
-               throw new ArgumentException($"Failed to parse version: {version}");
+        return TryCreateRelease($"{version}-{runtime}");
     }
 }

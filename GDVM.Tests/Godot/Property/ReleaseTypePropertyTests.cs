@@ -31,7 +31,7 @@ public class ReleaseTypePropertyTests
         {
             var str = type.ToString();
             var parsed = ReleaseType.TryParse(str);
-            return parsed.HasValue && parsed.Value == type;
+            return parsed != null && parsed == type;
         });
 
     [Property]

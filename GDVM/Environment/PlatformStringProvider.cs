@@ -4,7 +4,7 @@ using RuntimeEnvironment = GDVM.Godot.RuntimeEnvironment;
 
 namespace GDVM.Environment;
 
-public class PlatformStringProvider(SystemInfo systemInfo)
+public sealed class PlatformStringProvider(SystemInfo systemInfo)
 {
     /// <summary>
     ///     A messy but simple way to implement platform matrixing. Godot versions, prior to 3.3, differ in how they labeled

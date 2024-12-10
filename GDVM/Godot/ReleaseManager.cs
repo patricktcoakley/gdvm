@@ -15,7 +15,7 @@ public interface IReleaseManager
     Release? TryCreateRelease(string versionString);
 }
 
-public class ReleaseManager(IHostSystem hostSystem, PlatformStringProvider platformStringProvider, IDownloadClient downloadClient) : IReleaseManager
+public sealed class ReleaseManager(IHostSystem hostSystem, PlatformStringProvider platformStringProvider, IDownloadClient downloadClient) : IReleaseManager
 {
     public async Task<IEnumerable<string>> ListReleases(CancellationToken cancellationToken) =>
         await downloadClient.ListReleases(cancellationToken);

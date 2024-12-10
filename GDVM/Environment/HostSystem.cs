@@ -16,7 +16,7 @@ public interface IHostSystem
     IEnumerable<string> ListInstallations();
 }
 
-public class HostSystem(SystemInfo systemInfo, ILogger<HostSystem> logger) : IHostSystem
+public sealed class HostSystem(SystemInfo systemInfo, ILogger<HostSystem> logger) : IHostSystem
 {
     public SystemInfo SystemInfo { get; } = systemInfo;
 

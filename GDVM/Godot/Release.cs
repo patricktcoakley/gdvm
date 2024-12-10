@@ -4,12 +4,12 @@ namespace GDVM.Godot;
 
 /// <summary>
 ///     A type to represent Godot releases. Currently, there is only support for MAJOR.MINOR(.PATCH), but in previous
-///     editions Kof Godot there were "sub-patches", such as `2.0.4.1`. There's not much reason to handle these because in all
+///     editions of Godot there were "sub-patches", such as `2.0.4.1`. There's not much reason to handle these because in all
 ///     likelihood people are using 3+, which is more closely following a more standardized versioning approach. Godot
 ///     itself does not follow semver, but it tries to mostly be compatible, and so we don't want to strictly follow semver
 ///     either.
 /// </summary>
-public sealed class Release : IComparable<Release>
+public sealed record Release : IComparable<Release>
 {
     /// <summary>
     /// </summary>
@@ -110,32 +110,21 @@ public sealed class Release : IComparable<Release>
             return patchComparison;
         }
 
+        var typeComparison = Comparer<ReleaseType?>.Default.Compare(Type, other.Type);
+        if (typeComparison != 0)
+        {
+            return typeComparison;
+        }
+
         var runtimeEnvironmentComparison = RuntimeEnvironment.CompareTo(other.RuntimeEnvironment);
         if (runtimeEnvironmentComparison != 0)
         {
             return runtimeEnvironmentComparison;
         }
 
-        var typeComparison = Nullable.Compare(Type, other.Type);
-        if (typeComparison != 0)
-        {
-            return typeComparison;
-        }
-
-        var versionComparison = string.Compare(Version, other.Version, StringComparison.Ordinal);
-        if (versionComparison != 0)
-        {
-            return versionComparison;
-        }
-
-        var releaseNameComparison = string.Compare(ReleaseName, other.ReleaseName, StringComparison.Ordinal);
-        if (releaseNameComparison != 0)
-        {
-            return releaseNameComparison;
-        }
-
         return string.Compare(ReleaseNameWithRuntime, other.ReleaseNameWithRuntime, StringComparison.Ordinal);
     }
+
 
     /// <summary>
     ///     The primary way to create a Release. Instead of using ctors, we want to try parsing the version string and figure it out contextually.
@@ -161,6 +150,7 @@ public sealed class Release : IComparable<Release>
             return null;
         }
 
+        // patch is optional in Godot releases
         int? patch = parts.Length > 2 && int.TryParse(parts[2], out var p) ? p : null;
 
         var releaseType = ReleaseType.TryParse(versionString);

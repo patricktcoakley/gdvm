@@ -1,6 +1,6 @@
 namespace GDVM.Godot;
 
-public readonly record struct ReleaseType : IComparable<ReleaseType>
+public sealed record ReleaseType : IComparable<ReleaseType>
 {
     // In order
     public static readonly string[] Prefixes = ["stable", "rc", "beta", "alpha", "dev"];
@@ -14,8 +14,18 @@ public readonly record struct ReleaseType : IComparable<ReleaseType>
     public string Value { get; }
     public int? Version { get; }
 
-    public int CompareTo(ReleaseType other)
+    public int CompareTo(ReleaseType? other)
     {
+        if (ReferenceEquals(this, other))
+        {
+            return 0;
+        }
+
+        if (other is null)
+        {
+            return 1;
+        }
+
         return (Value, other.Value) switch
         {
             ("stable", "stable") => 0,

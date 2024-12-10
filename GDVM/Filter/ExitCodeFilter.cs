@@ -4,7 +4,7 @@ using Spectre.Console;
 
 namespace GDVM.Filter;
 
-internal class ExitCodeFilter(ConsoleAppFilter next) : ConsoleAppFilter(next)
+internal sealed class ExitCodeFilter(ConsoleAppFilter next) : ConsoleAppFilter(next)
 {
     public override async Task InvokeAsync(ConsoleAppContext context, CancellationToken cancellationToken)
     {

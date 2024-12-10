@@ -16,8 +16,8 @@ public class ReleaseTypeTests
     {
         var result = ReleaseType.TryParse(input);
         Assert.NotNull(result);
-        Assert.Equal(expectedType, result.Value.Value);
-        Assert.Equal(expectedVersion, result.Value.Version);
+        Assert.Equal(expectedType, result.Value);
+        Assert.Equal(expectedVersion, result.Version);
     }
 
     [Theory]

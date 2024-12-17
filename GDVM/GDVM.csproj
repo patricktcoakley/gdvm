@@ -31,6 +31,7 @@
 
     <PropertyGroup>
         <MinVerTagPrefix>v</MinVerTagPrefix>
+        <MinVerVersionOverride>$(MinVerFallbackVersion)</MinVerVersionOverride>
     </PropertyGroup>
 
     <ItemGroup>
@@ -46,7 +47,7 @@
         <PackageReference Include="ZLogger" Version="2.5.9"/>
     </ItemGroup>
 
-    <Target Name="UpdateVersionProps" AfterTargets="Build">
+    <Target Name="UpdateVersionProps" AfterTargets="Build" Condition="'$(MinVerMajor).$(MinVerMinor).$(MinVerPatch)' != '0.0.0'">
         <PropertyGroup>
             <MinVerCalculatedVersion>$(MinVerMajor).$(MinVerMinor).$(MinVerPatch)</MinVerCalculatedVersion>
         </PropertyGroup>

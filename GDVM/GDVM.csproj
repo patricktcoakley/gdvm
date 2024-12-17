@@ -10,7 +10,6 @@
         <Authors>Patrick T Coakley</Authors>
         <PackageProjectUrl>https://github.com/patricktcoakley/gdvm</PackageProjectUrl>
         <PackageLicenseUrl>https://github.com/patricktcoakley/GDVM/blob/main/LICENSE</PackageLicenseUrl>
-        <Version>0.1.0</Version>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(Configuration)' == 'Release'">
@@ -29,8 +28,16 @@
         <PublishSingleFile>true</PublishSingleFile>
     </PropertyGroup>
 
+    <PropertyGroup>
+        <MinVerTagPrefix>v</MinVerTagPrefix>
+    </PropertyGroup>
+
     <ItemGroup>
         <PackageReference Include="ConsoleAppFramework" Version="5.3.1">
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+            <PrivateAssets>all</PrivateAssets>
+        </PackageReference>
+        <PackageReference Include="MinVer" Version="6.0.0">
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
             <PrivateAssets>all</PrivateAssets>
         </PackageReference>

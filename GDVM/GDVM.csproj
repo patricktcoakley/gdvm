@@ -1,4 +1,5 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
+    <Import Project="Version.props"/>
 
     <PropertyGroup>
         <OutputType>Exe</OutputType>
@@ -44,6 +45,13 @@
         <PackageReference Include="Spectre.Console" Version="0.49.1"/>
         <PackageReference Include="ZLogger" Version="2.5.9"/>
     </ItemGroup>
+
+    <Target Name="UpdateVersionProps" AfterTargets="Build">
+        <PropertyGroup>
+            <MinVerCalculatedVersion>$(MinVerMajor).$(MinVerMinor).$(MinVerPatch)</MinVerCalculatedVersion>
+        </PropertyGroup>
+        <XmlPoke XmlInputPath="Version.props" Query="//PropertyGroup/MinVerFallbackVersion" Value="$(MinVerCalculatedVersion)"/>
+    </Target>
 
     <ItemGroup>
         <InternalsVisibleTo Include="GDVM.Tests"/>

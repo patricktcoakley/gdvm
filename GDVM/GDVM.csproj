@@ -31,7 +31,7 @@
 
     <PropertyGroup>
         <MinVerTagPrefix>v</MinVerTagPrefix>
-        <MinVerVersionOverride>$(MinVerFallbackVersion)</MinVerVersionOverride>
+        <MinVerVersionOverride Condition="'$(MinVerMajor).$(MinVerMinor).$(MinVerPatch)' == '0.0.0'">$(MinVerFallbackVersion)</MinVerVersionOverride>
     </PropertyGroup>
 
     <ItemGroup>

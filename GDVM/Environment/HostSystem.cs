@@ -54,7 +54,7 @@ public sealed class HostSystem(SystemInfo systemInfo, ILogger<HostSystem> logger
             // TODO: Untested but possibly works with Linux builds?
             case OS.FreeBSD:
             case OS.Unknown:
-                throw new InvalidEnumArgumentException("FreeBSD is unsupported at this time.");
+                throw new InvalidEnumArgumentException($"{SystemInfo.CurrentOS} is unsupported at this time.");
         }
 
         if (SystemInfo.CurrentOS == OS.MacOS && !IsSymbolicLinkValid(Paths.MacAppSymlinkPath))

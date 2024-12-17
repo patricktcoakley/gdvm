@@ -72,10 +72,11 @@ public sealed record ReleaseType : IComparable<ReleaseType>
 
         // Find the first possible version number
         var possibleVersion = possiblePrefix[possiblePrefix.TakeWhile(char.IsLetter).Count()..];
+
         // Reassign up to possible version
         possiblePrefix = possiblePrefix[..^possibleVersion.Length].ToLower();
 
-        if (string.IsNullOrEmpty(possibleVersion) || !int.TryParse(possibleVersion, out var version))
+        if (string.IsNullOrEmpty(possibleVersion) || !int.TryParse(possibleVersion, out var version) || version < 1)
         {
             return null;
         }

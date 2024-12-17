@@ -15,25 +15,23 @@ public sealed record Release : IComparable<Release>
     /// </summary>
     /// <param name="major">Major version</param>
     /// <param name="minor">Minor version</param>
-    /// <param name="os"></param>
-    /// <param name="patch">Path version</param>
+    /// <param name="patch">Patch version</param>
     /// <param name="type">Release type ("stable", "rc1", etc)</param>
     /// <param name="runtimeEnvironment">Standard or Mono</param>
     /// <param name="platformString">The platform string, i.e., "linux_x86_64"</param>
-    public Release(
+    internal Release(
         int major,
         int minor,
         string? platformString = null,
-        OS os = OS.Unknown,
         int? patch = null,
         ReleaseType? type = null,
         RuntimeEnvironment runtimeEnvironment = RuntimeEnvironment.Standard)
     {
         Major = major;
         Minor = minor;
-        PlatformString = platformString;
-        OS = os;
         Patch = patch;
+
+        PlatformString = platformString;
         Type = type;
         RuntimeEnvironment = runtimeEnvironment;
 
@@ -42,6 +40,7 @@ public sealed record Release : IComparable<Release>
         ReleaseNameWithRuntime = $"{ReleaseName}-{runtimeEnvironment.Name()}";
     }
 
+    // Version 1.x releases had a different naming schema
     public string FileName => Major == 1 ? $"Godot_v{Version}_{Type}_{PlatformString}" : $"Godot_v{Version}-{Type}_{PlatformString}";
 
     public string ZipFileName => $"{FileName}.zip";
@@ -62,7 +61,7 @@ public sealed record Release : IComparable<Release>
     public string? PlatformString { get; set; }
     public OS OS { get; set; }
 
-    /// <summary>Path version</summary>
+    /// <summary>Patch version</summary>
     public int? Patch { get; }
 
     /// <summary>Standard or Mono</summary>
@@ -150,8 +149,14 @@ public sealed record Release : IComparable<Release>
             return null;
         }
 
+
         // patch is optional in Godot releases
         int? patch = parts.Length > 2 && int.TryParse(parts[2], out var p) ? p : null;
+
+        if (major <= 0 || minor < 0 || patch < 0)
+        {
+            return null;
+        }
 
         var releaseType = ReleaseType.TryParse(versionString);
 

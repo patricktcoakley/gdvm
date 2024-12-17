@@ -2,7 +2,7 @@ using System.Runtime.InteropServices;
 
 namespace GDVM.Environment;
 
-public sealed class SystemInfo(OS currentOs, Architecture currentArch)
+public sealed class SystemInfo(OS currentOS, Architecture currentArch)
 {
     public SystemInfo() : this(DetermineOS(), RuntimeInformation.ProcessArchitecture)
     {
@@ -16,7 +16,7 @@ public sealed class SystemInfo(OS currentOs, Architecture currentArch)
         }
     }
 
-    public OS CurrentOS { get; } = currentOs;
+    public OS CurrentOS { get; } = currentOS;
     public Architecture CurrentArch { get; } = currentArch;
 
     private static OS DetermineOS()

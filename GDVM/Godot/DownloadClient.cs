@@ -107,7 +107,7 @@ public class DownloadClient(ILogger<DownloadClient> logger) : IDownloadClient
     private static string TuxFamilyUrlPattern(string filename, Release godotRelease)
     {
         // stable is the root path on Tux Family
-        var baseUrl = godotRelease.Type == "stable"
+        var baseUrl = godotRelease.Type is null || godotRelease.Type == "stable"
             ? $"{_tuxFamilyUrl}/{godotRelease.Version}"
             : $"{_tuxFamilyUrl}/{godotRelease.Version}/{godotRelease.Type}";
 

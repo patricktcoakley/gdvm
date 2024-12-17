@@ -84,12 +84,6 @@ may be added later.
 
 ## Notes
 
-### Known Issues
-
-- `--version` on [ConsoleAppFramework](https://github.com/Cysharp/ConsoleAppFramework) seems to expect some kind of root command,
-  but `gdvm`, like many other version managers, is not meant to really have one. Passing in a command with `--version` displays the actual version. 
-  This is a bug and will likely be fixed in the future, but for now it's just something to be aware of.
-
 ### Windows
 
 In order to use the symlink feature for Windows, you first need to enable [Developer Mode](https://learn.microsoft.com/en-us/windows/apps/get-started/enable-your-device-for-development). 
@@ -122,9 +116,6 @@ on the functionality it is warning against.
 - Re-work the rest of the file management code to make it more testable by having overrides, which would also allow for custom install paths.
 - Get some working e2e tests, including searching, installing, setting, launching, and removing a specific version.
 - Possibly consider adding multi-select and multi-query to installations so that you could bulk-install multiple versions.
-- Get passing args to `godot` working 100%; it seems like [ConsoleAppFramework](https://github.com/Cysharp/ConsoleAppFramework) 
-  eats any args using `--` prefixes that are "magic"; for example, `--version` gets parsed and applied to the app itself and isn't passed to Godot.
-  - This doesn't affect running the symlink itself with args, just the `godot` command, so it's not a huge deal, but it would be nice to have it working.
 
 ## FAQ
 

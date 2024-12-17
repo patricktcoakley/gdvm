@@ -28,7 +28,7 @@ public class ReleaseTests
         Assert.Equal(expectedMajor, release.Major);
         Assert.Equal(expectedMinor, release.Minor);
         Assert.Equal(expectedPatch, release.Patch);
-        Assert.Equal(expectedReleaseType, release.Type);
+        Assert.Equal(expectedReleaseType, release.Type!);
         Assert.Equal(expectedRuntimeEnvironment, release.RuntimeEnvironment);
     }
 

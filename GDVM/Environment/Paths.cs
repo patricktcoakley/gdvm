@@ -1,5 +1,8 @@
 namespace GDVM.Environment;
 
+/// <summary>
+///     A collection of path-related static strings.
+/// </summary>
 public static class Paths
 {
     public static readonly string RootPath =

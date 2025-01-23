@@ -16,6 +16,9 @@ public interface IHostSystem
     IEnumerable<string> ListInstallations();
 }
 
+/// <summary>
+///     A way to organize host OS file operations.
+/// </summary>
 public sealed class HostSystem(SystemInfo systemInfo, ILogger<HostSystem> logger) : IHostSystem
 {
     public SystemInfo SystemInfo { get; } = systemInfo;

@@ -54,10 +54,12 @@ public class QueryTests
     [InlineData(new[] { "4.2", "mono" }, "4.2-stable-mono")]
     [InlineData(new[] { "4", "stable" }, "4.2-stable-standard")]
     [InlineData(new[] { "4", "rc", "mono" }, "4.1-rc2-mono")]
+    [InlineData(new[] { "rc", "mono" }, "4.1-rc2-mono")]
     [InlineData(new[] { "3.5", "mono" }, "3.5-stable-mono")]
     [InlineData(new[] { "4", "beta" }, "4.0-beta3-standard")]
     [InlineData(new[] { "3", "alpha4" }, "3.2-alpha4-standard")]
     [InlineData(new[] { "4.4", "mono", "dev5" }, "4.4-dev5-mono")]
+    [InlineData(new[] { "alpha4" }, "3.2-alpha4-standard")]
     [Theory]
     public void FindReleaseByQuery_SpecificVersion_ShouldParseVersionCorrectly(string[] query, string expected)
     {

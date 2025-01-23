@@ -14,11 +14,11 @@ public sealed class PlatformStringProvider(SystemInfo systemInfo)
     /// <exception cref="ArgumentException"></exception>
     public string GetPlatformString(Release release)
     {
-        return systemInfo.CurrentOS switch
+        return systemInfo switch
         {
-            OS.MacOS => GetMacOSPlatformString(release, systemInfo.CurrentArch),
-            OS.Linux => GetLinuxPlatformString(release, systemInfo.CurrentArch),
-            OS.Windows => GetWindowsPlatformString(release, systemInfo.CurrentArch),
+            { CurrentOS: OS.MacOS } => GetMacOSPlatformString(release, systemInfo.CurrentArch),
+            { CurrentOS: OS.Linux } => GetLinuxPlatformString(release, systemInfo.CurrentArch),
+            { CurrentOS: OS.Windows } => GetWindowsPlatformString(release, systemInfo.CurrentArch),
             _ => throw new ArgumentException($"{systemInfo.CurrentOS} is not supported.")
         };
     }

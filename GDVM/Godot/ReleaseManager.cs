@@ -112,29 +112,29 @@ public sealed class ReleaseManager(IHostSystem hostSystem, PlatformStringProvide
         var releaseType = query
                               .FirstOrDefault(x => ReleaseType.Prefixes
                                   .Any(prefix => x.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)))
-                          ?? "stable";
+                          ?? "";
 
         // Get the possible version query by filtering out the release type and runtime
         var possibleVersion = query
             .Except([runtime.Name(), releaseType], StringComparer.OrdinalIgnoreCase)
-            .FirstOrDefault();
+            .FirstOrDefault("");
 
-        if (possibleVersion is null)
+        if (possibleVersion.Length == 1 && releaseType.Length == 0)
         {
-            return null;
-        }
-
-        if (possibleVersion.Length > 1)
-        {
-            releaseType = "";
+            releaseType = "stable";
         }
 
         // Try to find the first release
         var matchingRelease = releaseNames
-            .Where(x => x.StartsWith(possibleVersion, StringComparison.OrdinalIgnoreCase))
-            .Where(x => x.Contains(releaseType, StringComparison.OrdinalIgnoreCase))
-            .OrderByDescending(x => x)
+            .OrderDescending()
+            .Where(x => x.StartsWith(possibleVersion))
+            .Where(x => x.Contains(releaseType))
             .FirstOrDefault();
+
+        if (matchingRelease == null)
+        {
+            return null;
+        }
 
         return TryCreateRelease($"{matchingRelease}-{runtime.Name()}");
     }

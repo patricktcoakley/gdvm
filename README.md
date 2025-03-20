@@ -27,6 +27,19 @@ so I've tried to make it easy by having both Scoop and Homebrew packages availab
 
 If there is interest in packaging for Linux distributions, please let me know and I can investigate it.
 
+## Configuration
+
+Once you've installed gdvm, there should be a `gdvm.ini` file located inside of the root `gdvm` directory. Currently, the only supported
+setting is to set a [GitHub token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens#creating-a-personal-access-token-classic) to disable
+rate limiting on queries and installations. In order to do so, you need to edit the `gdvm.ini` to look like the following:
+
+```ini
+[github]
+token = "<MY_SUPER_SECRET_TOKEN>"
+```
+
+which allows you to use `gdvm` without the [60 requests per hour restriction](https://docs.github.com/en/rest/using-the-rest-api/rate-limits-for-the-rest-api?apiVersion=2022-11-28#primary-rate-limit-for-unauthenticated-users).
+
 ### Homebrew
 
 Using [Homebrew](https://brew.sh), you simply need to add my [formulae](https://github.com/patricktcoakley/homebrew-forumlae) repo, like so:

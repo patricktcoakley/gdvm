@@ -8,6 +8,7 @@ public static class Paths
     public static readonly string RootPath =
         Path.GetFullPath("gdvm", System.Environment.GetFolderPath(System.Environment.SpecialFolder.UserProfile));
 
+    public static readonly string ConfigPath = Path.Combine(RootPath, "gdvm.ini");
     public static readonly string ReleasesPath = Path.Combine(RootPath, ".releases");
     public static readonly string BinPath = Path.Combine(RootPath, "bin");
     public static readonly string SymlinkPath = Path.Combine(BinPath, "godot");

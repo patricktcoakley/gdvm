@@ -1,5 +1,7 @@
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Spectre.Console;
+using System.Net.Http.Headers;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using ZLogger;
@@ -18,7 +20,7 @@ public interface IDownloadClient
 ///     Currently, it uses GitHub as the primary and TuxFamily as the backup, as TuxFamily is generally slower
 ///     but often has SHA512-SUMS.txt for releases GitHub doesn't.
 /// </summary>
-public class DownloadClient(ILogger<DownloadClient> logger) : IDownloadClient
+public class DownloadClient : IDownloadClient
 {
     private const string _githubReleaseContentsUrl = "https://api.github.com/repos/godotengine/godot-builds/contents/releases";
 
@@ -27,21 +29,37 @@ public class DownloadClient(ILogger<DownloadClient> logger) : IDownloadClient
     // Tux Family has a tendency to go down; its main purpose is to procure the checksums for old releases so we don't need the latest
     private const string _tuxFamilyUrl = "https://web.archive.org/web/20240927142429/https://downloads.tuxfamily.org/godotengine";
 
-    private static readonly HttpClient _httpClient = new()
+    private static readonly HttpClient _httpClient = new();
+
+
+    private readonly IConfiguration _configuration;
+    private readonly ILogger<DownloadClient> _logger;
+
+    /// <summary>
+    ///     A very simple client to grab the list of releases and download various files of a particular release.
+    ///     Currently, it uses GitHub as the primary and TuxFamily as the backup, as TuxFamily is generally slower
+    ///     but often has SHA512-SUMS.txt for releases GitHub doesn't.
+    /// </summary>
+    public DownloadClient(IConfiguration configuration, ILogger<DownloadClient> logger)
     {
-        DefaultRequestHeaders =
-        {
-            { "User-Agent", "gdvm" }
-        }
-    };
+        _configuration = configuration;
+        _logger = logger;
+    }
+
+    private string? _githubToken => _configuration["github:token"];
 
     // for now coupled to GitHub
     public async Task<IEnumerable<string>> ListReleases(CancellationToken cancellationToken)
     {
-        var resp = await _httpClient.GetAsync(_githubReleaseContentsUrl, cancellationToken);
+        using var request = new HttpRequestMessage(HttpMethod.Get, _githubReleaseContentsUrl);
+
+        SetGitHubAuthorizationHeader(request);
+
+        var resp = await _httpClient.SendAsync(request, cancellationToken);
+
         if (!resp.IsSuccessStatusCode)
         {
-            logger.ZLogError($"{_githubReleaseContentsUrl} returned {resp.StatusCode}.");
+            _logger.ZLogError($"{_githubReleaseContentsUrl} returned {resp.StatusCode}.");
             throw new HttpRequestException($"{_githubReleaseContentsUrl} returned {resp.StatusCode}.");
         }
 
@@ -61,19 +79,27 @@ public class DownloadClient(ILogger<DownloadClient> logger) : IDownloadClient
 
         foreach (var url in urls)
         {
-            var resp = await _httpClient.GetAsync(url, cancellationToken);
+            using var request = new HttpRequestMessage(HttpMethod.Get, url);
+
+            // TODO: Refactor this to a typed client
+            if (url.StartsWith(_githubReleasesUrl))
+            {
+                SetGitHubAuthorizationHeader(request);
+            }
+
+            var resp = await _httpClient.SendAsync(request, cancellationToken);
             if (resp.IsSuccessStatusCode)
             {
                 AnsiConsole.WriteLine($"Found SHA512 for {godotRelease.Version} at {url}.");
                 return await resp.Content.ReadAsStringAsync(cancellationToken);
             }
 
-            logger.ZLogError($"{url} returned {resp.StatusCode}.");
+            _logger.ZLogError($"{url} returned {resp.StatusCode}.");
             AnsiConsole.WriteLine($"{godotRelease.Version} at {url} was unavailable, trying another source.");
         }
 
 
-        logger.ZLogError($"SHA512-SUMS.txt was missing from all sources.");
+        _logger.ZLogError($"SHA512-SUMS.txt was missing from all sources.");
         throw new HttpRequestException("Wasn't able to download SHA512-SUMS.txt from any sources.");
     }
 
@@ -87,19 +113,38 @@ public class DownloadClient(ILogger<DownloadClient> logger) : IDownloadClient
 
         foreach (var url in urls)
         {
-            var resp = await _httpClient.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+            using var request = new HttpRequestMessage(HttpMethod.Get, url);
+
+            // TODO: Refactor this to a typed client
+            if (url.StartsWith(_githubReleasesUrl))
+            {
+                SetGitHubAuthorizationHeader(request);
+            }
+
+            var resp = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
             if (resp.IsSuccessStatusCode)
             {
                 AnsiConsole.WriteLine($"Found {godotRelease.ReleaseNameWithRuntime} at {url}.");
                 return resp;
             }
 
-            logger.ZLogError($"{url} returned {resp.StatusCode}.");
+            _logger.ZLogError($"{url} returned {resp.StatusCode}.");
             AnsiConsole.WriteLine($"{godotRelease.ReleaseNameWithRuntime} at {url} was unavailable, trying another source.");
         }
 
-        logger.ZLogError($"{filename} was missing from all sources..");
+        _logger.ZLogError($"{filename} was missing from all sources..");
         throw new HttpRequestException($"Wasn't able to download {filename} from any sources.");
+    }
+
+    // TODO: Refactor this to a typed client
+    // Lazy way to set the headers
+    private void SetGitHubAuthorizationHeader(HttpRequestMessage request)
+    {
+        request.Headers.UserAgent.Add(new ProductInfoHeaderValue("gdvm", null));
+        if (_githubToken != null)
+        {
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _githubToken);
+        }
     }
 
     private static string GitHubUrlPattern(string filename, Release godotRelease) => $"{_githubReleasesUrl}/{godotRelease.ReleaseName}/{filename}";

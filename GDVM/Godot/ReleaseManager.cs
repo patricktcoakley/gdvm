@@ -82,7 +82,7 @@ public sealed class ReleaseManager(IHostSystem hostSystem, PlatformStringProvide
         return releaseNames
             .Where(x => x.StartsWith(possibleVersion, StringComparison.OrdinalIgnoreCase))
             .Where(x => x.Contains(releaseType, StringComparison.OrdinalIgnoreCase))
-            .OrderByDescending(x => x)
+            .OrderByDescending(x => x) // TODO: fix ordering by version suffix
             .ToArray();
     }
 
@@ -128,8 +128,7 @@ public sealed class ReleaseManager(IHostSystem hostSystem, PlatformStringProvide
         var matchingRelease = releaseNames
             .OrderDescending()
             .Where(x => x.StartsWith(possibleVersion))
-            .Where(x => x.Contains(releaseType))
-            .FirstOrDefault();
+            .FirstOrDefault(x => x.Contains(releaseType));
 
         if (matchingRelease == null)
         {

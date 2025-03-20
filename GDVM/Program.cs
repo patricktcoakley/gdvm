@@ -3,6 +3,7 @@ using GDVM.Command;
 using GDVM.Environment;
 using GDVM.Filter;
 using GDVM.Godot;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Utf8StringInterpolation;
@@ -43,6 +44,26 @@ public class Program
         services.AddSingleton<IDownloadClient, DownloadClient>();
         services.AddSingleton<IReleaseManager, ReleaseManager>();
 
+
+        // ensure we have a writeable directory
+        if (!Directory.Exists(Paths.BinPath))
+        {
+            Directory.CreateDirectory(Paths.BinPath);
+        }
+
+        // ensure we have a config file
+        if (!File.Exists(Paths.ConfigPath))
+        {
+            File.Create(Paths.ConfigPath);
+        }
+
+        var configuration = new ConfigurationBuilder()
+            .SetBasePath(AppContext.BaseDirectory)
+            .AddIniFile(Paths.ConfigPath, false, true)
+            .Build();
+
+        services.AddSingleton<IConfiguration>(configuration);
+
         using var serviceProvider = services.BuildServiceProvider();
 
         ConsoleApp.ServiceProvider = serviceProvider;
@@ -59,12 +80,6 @@ public class Program
         app.Add<SearchCommand>();
 
         app.UseFilter<ExitCodeFilter>();
-
-        // ensure we have a writeable directory
-        if (!Directory.Exists(Paths.BinPath))
-        {
-            Directory.CreateDirectory(Paths.BinPath);
-        }
 
         app.Run(args);
 

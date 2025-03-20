@@ -66,6 +66,8 @@
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
             <PrivateAssets>all</PrivateAssets>
         </PackageReference>
+        <PackageReference Include="Microsoft.Extensions.Configuration" Version="9.0.3"/>
+        <PackageReference Include="Microsoft.Extensions.Configuration.Ini" Version="9.0.3"/>
         <PackageReference Include="MinVer" Version="6.0.0">
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
             <PrivateAssets>all</PrivateAssets>

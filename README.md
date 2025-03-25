@@ -29,7 +29,7 @@ so I've tried to make it easy by having both Scoop and Homebrew packages availab
 
 ### gdvmup
 
-There is also an **experimental** tool called `gdvmup` that can manage your installations on Windows using a Powershell script. I've only done preliminary testing and am open to feedback, but be aware things there may be issues. To try it out, you can do the following:
+There is also an **experimental** tool called `gdvmup` that can manage your installations on **Windows** using a Powershell script. I've only done preliminary testing and am open to feedback, but be aware things there may be issues. To try it out, you can do the following:
 
 ```powershell
     irm https://raw.githubusercontent.com/patricktcoakley/gdvm/main/installer.ps1 | iex
@@ -134,35 +134,29 @@ and there are many options to build from source already.
 
 ### PATH
 
+> **_NOTE:_** If you use [gdvmup](#gdvmup), [Scoop](#scoop), or [Homebrew](#homebrew), this is not an issue and only relates to using the binaries.
+
 There currently isn't a built-in way to add the symlinks to your `PATH` right, but it's very straightforward to do if you aren't familiar. If you're on Windows, you can generally
-just follow [this](https://learn.microsoft.com/en-us/previous-versions/office/developer/sharepoint-2010/ee537574(v=office.14)). Otherwise, for macOS and Linux, if you're using your default
-shells, then you should be able to just open your `~/.profile` and add `export PATH="$PATH:$HOME/gdvm/bin"` and then `source ~/.profile`. In the future I maybe
-include some post-install scripts that detect your shell and add it automatically, but for since I've already included the `godot` command it's not going to be necessary for many people.
+just follow [this](https://learn.microsoft.com/en-us/previous-versions/office/developer/sharepoint-2010/ee537574(v=office.14)). Otherwise, for macOS and Linux, if you're using zsh or bash you should be able to just open your `~/.profile` and add `export PATH="$PATH:$HOME/gdvm/bin"` and then `source ~/.profile`.
 
 ## Build
 
-In order to build this project, you just need the .NET 9 SDK. Running `dotnet run -- <command> [args]` will let you run
-commands immediately, but you can also run `dotnet build -c Release` to get a release build and just copy to a
-directory in your PATH.
+In order to build this project, you just need the .NET 9 SDK. Running `dotnet run -- <command> [args]` will let you run commands immediately, but you can also run `dotnet build -c Release` to get a release build and just copy to a directory in your PATH.
 
-You might see some warnings for trimming with AOT, but in my testing I have not encountered any issues since I don't rely
-on the functionality it is warning against.
+You might see some warnings for trimming with AOT, but in my testing I have not encountered any issues since I don't rely on the functionality it is warning against.
 
 ## Roadmap
 
 - Re-work the rest of the file management code to make it more testable by having overrides, which would also allow for custom install paths.
 - Get some working e2e tests, including searching, installing, setting, launching, and removing a specific version.
 - Possibly consider adding multi-select and multi-query to installations so that you could bulk-install multiple versions.
+- I currently have [gdvmup](#gdvmup) for Windows, and it would make sense to port that script to bash for macOS and Linux support, allowing users to more easily install gdvm without having to rely on a package manager, but at the cost of extra maintenance and overhead.
 
 ## FAQ
 
 - **Why another version manager?**
   - I mostly created this as an experiment to play with how a command-line tool experience could be improved, and my
     goal is to make it easy to use, even for people who don't have a lot of terminal experience. I plan to mostly use it
-    as a place to try out new ideas or add unique features. Also, I wanted to provide AOT-compiled static binaries on
-    package managers for ease-of-use and installation purposes.
+    as a place to try out new ideas or add unique features.
 - **Why C# and not a script, or Rust, Go, etc?**
-  - I have written command-line tools in various languages, including Bash, Python, Powershell, Go, and Rust,
-    but I wanted to explore modern .NET tooling and infrastructure, including NativeAOT static binaries and CLI/TUI libraries.
-    There is always a possibility of re-writing it in Rust in the future, but I plan to stick with C# for now, and I am
-    interested in seeing how competitive it can be in this space with all of the latest additions in .NET8+.
+  - I have written command-line tools in various languages, including Bash, Python, Powershell, Go, TypeScript, and Rust, but I wanted to explore modern .NET tooling and infrastructure, including NativeAOT static binaries and CLI/TUI libraries. I think modern .NET provides a pretty great platform to create developer tooling.

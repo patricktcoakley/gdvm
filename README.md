@@ -21,9 +21,13 @@ At this point it is mostly feature-complete, so ongoing work will mostly focus o
 
 ## Installation
 
+### Package Managers
+
 Currently there are a few ways to install gdvm. TAside from the package managers listed below, currently [zipped Windows and Linux binaries](https://github.com/patricktcoakley/gdvm/releases) are going to be uploaded after
 a release (see [macOS](#macos) for reasons why it is omitted). Most people will probably want to use a package manager,
 so I've tried to make it easy by having both Scoop and Homebrew packages available.
+
+### gdvmup
 
 There is also an **experimental** tool called `gdvmup` that can manage your installations on Windows using a Powershell script. I've only done preliminary testing and am open to feedback, but be aware things there may be issues. To try it out, you can do the following:
 
@@ -32,7 +36,17 @@ There is also an **experimental** tool called `gdvmup` that can manage your inst
 ```
 
 which will install the latest version and add gdvmup, gdvm, and the Godot alias directories to your PATH automatically. gdvmup
-can handle installation, upgrade, and deletion of the gdvm tool, but it's a WIP and may change or be integrated into the main tool in the future. If there is interest I will also consider a macOS/Linux version of this tool.
+can handle installation, upgrade, and deletion of the gdvm tool, but it's a WIP and may change or be integrated into the main application in the future.
+
+Usage:
+
+- `install` [`--quiet`] [`--version VERSION`] [`--force`] installs gdvmup and gdvm, with the optional arguments for quiet output, a specific version, or forcing an installation.
+- `uninstall` removes **everything**, including gdvm, gdvmup, and all Godot installations.
+- `upgrade` just reinstalls everything and will likely be removed in the future unless I can think of a use case.
+
+If there is interest I will also consider a macOS/Linux version of this tool.
+
+### Linux
 
 If there is interest in packaging for Linux distributions, please let me know and I can investigate it.
 

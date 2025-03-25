@@ -28,7 +28,7 @@ so I've tried to make it easy by having both Scoop and Homebrew packages availab
 There is also an **experimental** tool called `gdvmup` that can manage your installations on Windows using a Powershell script. I've only done preliminary testing and am open to feedback, but be aware things there may be issues. To try it out, you can do the following:
 
 ```powershell
-iwr -useb https://raw.githubusercontent.com/patricktcoakley/gdvm/main/gdvmup.ps1 -OutFile "$env:TEMP\gdvmup.ps1"; & "$env:TEMP\gdvmup.ps1" install
+    irm https://raw.githubusercontent.com/patricktcoakley/gdvm/main/installer.ps1 | iex
 ```
 
 which will install the latest version and add gdvmup, gdvm, and the Godot alias directories to your PATH automatically. gdvmup

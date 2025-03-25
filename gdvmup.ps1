@@ -1,28 +1,74 @@
-<# 
-    gdvmup: A handy script to manage gdvm intself, including updates and uninstallation. 
-    This Powershell script only supports Windows x64 at the moment since GDVM itself does
-    not currently support Windows on ARM, but in the future this might change. 
+<#
+.SYNOPSIS
+    GDVM Updater - Installation management tool for gdvm.
+
+.DESCRIPTION
+    Manages the installation and removal of gdvm.
+
+.LINK
+    https://github.com/patricktcoakley/gdvm
+
+.PARAMETER Command
+    The operation to perform: install, uninstall, or upgrade gdvm.
+
+.PARAMETER Version
+    The specific version to install (defaults to latest).
+
+.PARAMETER Quiet
+    Suppress all non-error output.
+
+.PARAMETER Force
+    Force a clean installation, removing existing gdvm files.
+
+.EXAMPLE
+    .\gdvmup.ps1 install
+    # Installs the latest version of gdvm
+
+.EXAMPLE
+    .\gdvmup.ps1 install --version 0.1.6
+    # Installs version 0.1.6 of gdvm
+
+.EXAMPLE
+    .\gdvmup.ps1 uninstall
+    # Completely removes gdvm from the system, including all Godot installations
+
+.NOTES
+    Platform: Currently only supports Windows x86_64.
 #>
 
-$ErrorActionPreference = "Stop" # Fail fast
+#region Script Configuration
+# Error handling behavior
+$ErrorActionPreference = "Stop" # Immediately halt on errors
+
+# Repository and versioning
 $script:repo = "patricktcoakley/gdvm"
-$script:installPath = "$env:LOCALAPPDATA\gdvm"
-$script:gdvmPath = "$env:USERPROFILE\gdvm"
-$script:zipPath = "$env:TEMP\gdvm.zip"
-$script:updaterScript = "$env:TEMP\gdvmup_updater.ps1"
-$script:checksumPath = "$env:TEMP\gdvm.sha256"
-$script:cacheDir = "$script:installPath\cache"
-$script:apiCacheFile = "$script:cacheDir\releases.json"
-$script:cacheExpiry = 3600  # 1 hour
-$script:maxRetries = 3
-$script:command = ""
 $script:version = "latest"
-$script:quiet = $false
-$script:force = $false
 
-# Set TLS 1.2 by default for security
+# Downloads
+$script:maxRetries = 3
+
+# Installation paths
+$script:installPath = "$env:LOCALAPPDATA\gdvm"       # Main installation directory
+$script:gdvmPath = "$env:USERPROFILE\gdvm"           # Godot versions directory
+
+# Temporary file paths
+$script:zipPath = "$env:TEMP\gdvm.zip"               # Downloaded archive
+$script:checksumPath = "$env:TEMP\gdvm.sha256"       # Downloaded checksum
+$script:updaterScript = "$env:TEMP\gdvmup_updater.ps1" # Self-updater script
+
+# Cache management
+$script:cacheDir = "$script:installPath\cache"       # Cache directory
+$script:apiCacheFile = "$script:cacheDir\releases.json" # GitHub API response cache
+$script:cacheExpiry = 3600                           # Cache lifetime in seconds (1 hour)
+
+# Command line parameters
+$script:command = ""                                 # Operation to perform
+$script:quiet = $false                               # Suppress non-error output
+$script:force = $false                               # Force clean installation
+
+# Security configuration
 [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12
-
+#endregion
 function Initialize-Environment {
     # Check PowerShell version
     if ($PSVersionTable.PSVersion.Major -lt 5) {
@@ -145,7 +191,8 @@ function Install-Script {
     # Get path to Self
     $scriptPath = $MyInvocation.MyCommand.Path
     if (-not $scriptPath) {
-        # Fallback if MyInvocation.MyCommand.Path is null
+
+        # Fallback if path null
         $scriptPath = $PSCommandPath
         if (-not $scriptPath) {
             throw "Error: Could not determine script path for installation."
@@ -154,13 +201,13 @@ function Install-Script {
     
     # Verify script file exists
     if (-not (Test-Path -Path $scriptPath)) {
-        throw "Error: Script file not found at path: $scriptPath"
+        throw "Error: Script file not found at path: $scriptPath."
     }
     
     # Target path
     $targetPath = "$script:installPath\gdvmup.ps1"
     
-    # Create a batch file first
+    # Create a batch to wrap gdvmup.ps1
     $batchPath = "$script:installPath\gdvmup.cmd"
     $batchContent = @"
 @echo off
@@ -208,13 +255,14 @@ function Get-LatestRelease {
         }
     }
     
+    # Have basic retry logic for failed attempts
     $attempt = 0
     while ($attempt -lt $script:maxRetries) {
         try {
             $url = "https://api.github.com/repos/$script:repo/releases/latest"
             $response = Invoke-RestMethod -Uri $url -UseBasicParsing
             
-            # Cache the response to help mitigate API limiting
+            # Cache the response to help mitigate API rate limiting
             $response | ConvertTo-Json -Depth 10 | Set-Content -Path $script:apiCacheFile
             
             return $response.tag_name
@@ -280,10 +328,8 @@ function Update-UserPath {
         
         # Check for paths to remove
         if ($pathsToRemove.Count -gt 0) {
-            # Find which paths are actually being removed
             $pathsBeingRemoved = $currentDirs | Where-Object { $_ -in $pathsToRemove }
             
-            # Log each path being removed
             foreach ($removedPath in $pathsBeingRemoved) {
                 Write-LogMessage "Removing $removedPath from PATH."
             }
@@ -298,7 +344,7 @@ function Update-UserPath {
         # Add new paths if needed
         foreach ($path in $pathsToAdd) {
             if ($path -and $path -notin $currentDirs) {
-                Write-LogMessage "Adding $path to PATH"
+                Write-LogMessage "Adding $path to PATH."
                 $currentDirs += $path
                 $needsUpdate = $true
             }
@@ -312,7 +358,7 @@ function Update-UserPath {
             # Update PATH in the current session
             $env:Path = $newPath
 
-            # Fixed P/Invoke implementation
+            # Use P/Invoke instead of manually updating the PATH env in PS
             if (-not ('WinAPI.User32' -as [Type])) {
                 $signature = @'
 [DllImport("user32.dll", SetLastError=true, CharSet=CharSet.Auto)]
@@ -329,12 +375,12 @@ public static extern IntPtr SendMessageTimeout(
                 Add-Type -MemberDefinition $signature -Name 'User32' -Namespace 'WinAPI' -PassThru | Out-Null
             }
 
-            # Correctly handle the UIntPtr type
             [UIntPtr]$result = [UIntPtr]::Zero
             $hwndBroadcast = [IntPtr]::new(0xffff)  # HWND_BROADCAST
             $WM_SETTINGCHANGE = 0x1A
             $SMTO_ABORTIFHUNG = 0x0002
             
+            # Broadcast change
             $ret = [WinAPI.User32]::SendMessageTimeout(
                 $hwndBroadcast,
                 $WM_SETTINGCHANGE,
@@ -627,7 +673,7 @@ if ($MyInvocation.InvocationName -ne '.') {
     $isWebExecution = [string]::IsNullOrEmpty($scriptPath)
     
     if ($isWebExecution) {
-        # default to installation
+        # Default to installation
         Start-GdvmProcess @("install")
     }
     else {

@@ -1,3 +1,4 @@
+using ConsoleAppFramework;
 using GDVM.Environment;
 using GDVM.Error;
 using GDVM.Godot;
@@ -13,7 +14,7 @@ public sealed class SetCommand(IHostSystem hostSystem, IReleaseManager releaseMa
     ///     Sets the selected version of Godot.
     /// </summary>
     /// <exception cref="FileNotFoundException"></exception>
-    public void Set()
+    public void Set([Argument] params string[] query)
     {
         try
         {
@@ -25,9 +26,15 @@ public sealed class SetCommand(IHostSystem hostSystem, IReleaseManager releaseMa
                 return;
             }
 
-            var versionToSet = AnsiConsole.Prompt(Prompts.Set.CreateSetVersionPrompt(installed));
+            var versionToSet = query.Length == 0
+                // Drop to prompt when query is empty
+                ? AnsiConsole.Prompt(Prompts.Set.CreateSetVersionPrompt(installed))
+                // Try to find the first release that matches the query or throw
+                : releaseManager.FilterReleasesByQuery(query, installed).FirstOrDefault()
+                  ?? throw new Exception($"Unable to find Godot release with query `{string.Join(", ", query)}`");
 
-            if (releaseManager.TryCreateRelease(versionToSet) is not { } godotRelease)
+            var godotRelease = releaseManager.TryCreateRelease(versionToSet);
+            if (godotRelease == null)
             {
                 throw new Exception("Invalid Godot version.");
             }
@@ -37,8 +44,8 @@ public sealed class SetCommand(IHostSystem hostSystem, IReleaseManager releaseMa
             symlinkTargetPath = Path.Combine(symlinkTargetPath, godotRelease.ExecName);
             hostSystem.CreateOrOverwriteSymbolicLink(symlinkTargetPath);
 
-            logger.ZLogInformation($"Successfully set version to {versionToSet}.");
-            AnsiConsole.MarkupLine($"[green]Successfully set version to {versionToSet}. [/]");
+            logger.ZLogInformation($"Successfully set version to {godotRelease.ReleaseNameWithRuntime}.");
+            AnsiConsole.MarkupLine($"[green]Successfully set version to {godotRelease.ReleaseNameWithRuntime}. [/]");
         }
 
         catch (InvalidSymlinkException e)

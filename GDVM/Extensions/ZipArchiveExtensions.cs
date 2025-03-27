@@ -43,7 +43,7 @@ public static class ZipArchiveExtensions
     {
         ArgumentNullException.ThrowIfNull(extractPath);
 
-        // Handle macOS .app and Standard releases on other platforms
+        // Handle macOS .app and Standard releases on other platforms since they are already flattened while Windows is not
         var isAlreadyFlattened = archive.Entries.Any(entry =>
             entry.FullName.Split('/').Length == 1
             || entry.FullName.EndsWith(".app/"));

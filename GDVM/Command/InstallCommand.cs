@@ -53,7 +53,7 @@ public sealed class InstallCommand(IHostSystem hostSystem, IReleaseManager relea
 
                 if (godotRelease is null)
                 {
-                    throw new Exception($"Unable to find Godot release with query {string.Join(", ", query)}");
+                    throw new Exception($"Unable to find Godot release with query `{string.Join(", ", query)}`");
                 }
             }
 

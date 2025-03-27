@@ -31,7 +31,6 @@ public class DownloadClient : IDownloadClient
 
     private static readonly HttpClient _httpClient = new();
 
-
     private readonly IConfiguration _configuration;
     private readonly ILogger<DownloadClient> _logger;
 

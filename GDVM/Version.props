@@ -1,5 +1,5 @@
 <Project>
   <PropertyGroup>
-    <MinVerFallbackVersion>0.1.6</MinVerFallbackVersion>
+    <MinVerFallbackVersion>0.1.7</MinVerFallbackVersion>
   </PropertyGroup>
 </Project>

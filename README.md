@@ -103,13 +103,15 @@ may be added later.
 
 - `gdvm list`  will list locally installed Godot versions.
 - `gdvm install [--query|-q <...strings>]` will prompt the user to install a version if no arguments are supplied, or will
-  try to find the closest matching version based on the query, defaulting to "stable" if no other release type is supplied.
+  try to find the closest matching version based on the query, defaulting to "stable" if no other release type is supplied. 
+  It will also set the last installed version as the default.
   - Queries:
     - `latest` or `latest standard` will install the latest stable, and `latest mono` will install the latest .NET stable.
     - `4 mono` will grab the latest stable 4.x .NET release, `3.3 rc` will grab the latest rc of 3.3 standard, `1` would take the last stable version `1`, and so on.
 - `gdvm godot [--interactive|-i, args <string>]` run the set Godot version, or with the `--interactive` or `-i` flag, will prompt the user to launch an installed version.
   - Optionally, pass some arguments in, such as `--headless`.
-- `gdvm set` prompts the user to set an installed version of Godot.
+- `gdvm set [--query <...strings>]` prompts the user to set an installed version of Godot if no arguments are supplied, or will
+  try to find the closest matching version based on the query, including release type (`stable`) and version (`4`, `4.4`), or an exact match (`4.4.1-stable-mono`).
 - `gdvm which` displays the location that the current Godot symlink points to.
 - `gdvm remove [<string>]` prompts the user to select multiple installations to delete, or optionally takes a query to filter down to specific versions
   - For example, if you wanted to list all of the `4.y.z` versions to remove, you could jut do `gdvm remove 4` to list all of the 4 major releases.

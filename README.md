@@ -21,47 +21,10 @@ At this point it is mostly feature-complete, so ongoing work will mostly focus o
 
 ## Installation
 
-### Package Managers
-
-Currently there are a few ways to install gdvm. TAside from the package managers listed below, currently [zipped Windows and Linux binaries](https://github.com/patricktcoakley/gdvm/releases) are going to be uploaded after
+Currently, there are a few ways to install gdvm. Aside from the package managers listed below, [zipped Windows and Linux binaries](https://github.com/patricktcoakley/gdvm/releases) are going to be uploaded after
 a release (see [macOS](#macos) for reasons why it is omitted). Most people will probably want to use a package manager,
-so I've tried to make it easy by having both Scoop and Homebrew packages available.
-
-### gdvmup
-
-There is also an **experimental** tool called `gdvmup` that can manage your installations on **Windows** using a Powershell script. I've only done preliminary testing and am open to feedback, but be aware things there may be issues. To try it out, you can do the following:
-
-```powershell
-    irm https://raw.githubusercontent.com/patricktcoakley/gdvm/main/installer.ps1 | iex
-```
-
-which will install the latest version and add gdvmup, gdvm, and the Godot alias directories to your PATH automatically. gdvmup
-can handle installation, upgrade, and deletion of the gdvm tool, but it's a WIP and may change or be integrated into the main application in the future.
-
-Usage:
-
-- `install` [`--quiet`] [`--version VERSION`] [`--force`] installs gdvmup and gdvm, with the optional arguments for quiet output, a specific version, or forcing an installation.
-- `uninstall` removes **everything**, including gdvm, gdvmup, and all Godot installations.
-- `upgrade` just reinstalls everything and will likely be removed in the future unless I can think of a use case.
-
-If there is interest I will also consider a macOS/Linux version of this tool.
-
-### Linux
-
-If there is interest in packaging for Linux distributions, please let me know and I can investigate it.
-
-## Configuration
-
-Once you've installed gdvm, there should be a `gdvm.ini` file located inside of the root `gdvm` directory. Currently, the only supported
-setting is to set a [GitHub token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens#creating-a-personal-access-token-classic) to disable
-rate limiting on queries and installations. In order to do so, you need to edit the `gdvm.ini` to look like the following:
-
-```ini
-[github]
-token = "<MY_SUPER_SECRET_TOKEN>"
-```
-
-which allows you to use `gdvm` without the [60 requests per hour restriction](https://docs.github.com/en/rest/using-the-rest-api/rate-limits-for-the-rest-api?apiVersion=2022-11-28#primary-rate-limit-for-unauthenticated-users).
+so I've tried to make it easy by having both Scoop and Homebrew packages available. There is also [gdvmup](#gdvmup) for Windows users who don't want to use Scoop. This tool
+ is meant to handle all installation and management of the gdvm tool itself, much like a package manager would.
 
 ### Homebrew
 
@@ -80,6 +43,45 @@ Using [scoop](https://scoop.sh), you simply need to add my [bucket](https://gith
 scoop bucket add patricktcoakley https://github.com/patricktcoakley/scoop-bucket
 scoop install patricktcoakley/gdvm
 ```
+
+
+### gdvmup
+
+There is also an **experimental** tool called `gdvmup` that can manage your installations on **Windows** using a Powershell script. I've only done preliminary testing and am open to feedback, but be aware things there may be issues. To try it out, you can do the following:
+
+```powershell
+irm https://raw.githubusercontent.com/patricktcoakley/gdvm/main/installer.ps1 | iex
+```
+
+which will install the latest version and add gdvmup, gdvm, and the Godot alias directories to your PATH automatically. gdvmup
+can handle installation, upgrade, and deletion of the gdvm tool, but it's a WIP and may change or be integrated into the main application in the future.
+
+Usage:
+
+- `install` [`--quiet`] [`--version VERSION`] [`--force`] installs gdvmup and gdvm, with the optional arguments for quiet output, a specific version, or forcing an installation.
+- `uninstall` removes **everything**, including gdvm, gdvmup, and all Godot installations.
+- `upgrade` just reinstalls everything and will likely be removed in the future unless I can think of a use case.
+
+If there is interest I will also consider a macOS/Linux version of this tool.
+
+
+### Linux
+
+If there is interest in packaging for Linux distributions, please create an issue and I can investigate it.
+
+## Configuration
+
+Once you've installed gdvm, there should be a `gdvm.ini` file located inside of the root `gdvm` directory. Currently, the only supported
+setting is to set a [GitHub token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens#creating-a-personal-access-token-classic) to disable
+rate limiting on queries and installations. In order to do so, you need to edit the `gdvm.ini` to look like the following:
+
+```ini
+[github]
+token = "<MY_SUPER_SECRET_TOKEN>"
+```
+
+which allows you to use `gdvm` without the [60 requests per hour restriction](https://docs.github.com/en/rest/using-the-rest-api/rate-limits-for-the-rest-api?apiVersion=2022-11-28#primary-rate-limit-for-unauthenticated-users). There may be other use cases in the future, 
+but otherwise all functionality exists inside the CLI itself.
 
 ## Usage
 
@@ -136,9 +138,9 @@ and there are many options to build from source already.
 
 ### PATH
 
-> **_NOTE:_** If you use [gdvmup](#gdvmup), [Scoop](#scoop), or [Homebrew](#homebrew), this is not an issue and only relates to using the binaries.
+> **_NOTE:_** If you use [gdvmup](#gdvmup), [Scoop](#scoop), or [Homebrew](#homebrew), this is not an issue and only relates to using the zipped binaries.
 
-There currently isn't a built-in way to add the symlinks to your `PATH` right, but it's very straightforward to do if you aren't familiar. If you're on Windows, you can generally
+There currently isn't a built-in way to add the binaries to your `PATH` right, but it's very straightforward to do if you aren't familiar. If you're on Windows, you can generally
 just follow [this](https://learn.microsoft.com/en-us/previous-versions/office/developer/sharepoint-2010/ee537574(v=office.14)). Otherwise, for macOS and Linux, if you're using zsh or bash you should be able to just open your `~/.profile` and add `export PATH="$PATH:$HOME/gdvm/bin"` and then `source ~/.profile`.
 
 ## Build

@@ -1,4 +1,5 @@
 using FsCheck;
+using FsCheck.Fluent;
 using FsCheck.Xunit;
 using GDVM.Godot;
 
@@ -63,9 +64,9 @@ public class ReleasePropertyTests
     [Property]
     public FsCheck.Property Release_OrderingIsTransitive()
     {
-        var releaseListGen = Gen.ListOf(10, ReleaseGen.Generator)
-            .Select(xs => xs.ToList())
+        var releaseListGen = ReleaseGen.Generator.ListOf(10)
             .ToArbitrary();
+
 
         return Prop.ForAll(
             releaseListGen,

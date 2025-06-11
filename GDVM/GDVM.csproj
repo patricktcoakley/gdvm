@@ -66,18 +66,21 @@
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
             <PrivateAssets>all</PrivateAssets>
         </PackageReference>
-        <PackageReference Include="Microsoft.Extensions.Configuration" Version="9.0.3"/>
-        <PackageReference Include="Microsoft.Extensions.Configuration.Ini" Version="9.0.3"/>
+        <PackageReference Include="Microsoft.Extensions.Configuration" Version="9.0.6" />
+        <PackageReference Include="Microsoft.Extensions.Configuration.Ini" Version="9.0.6" />
         <PackageReference Include="MinVer" Version="6.0.0">
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
             <PrivateAssets>all</PrivateAssets>
         </PackageReference>
-        <PackageReference Include="Spectre.Console" Version="0.49.1"/>
+        <PackageReference Include="Spectre.Console" Version="0.50.0" />
         <PackageReference Include="ZLogger" Version="2.5.10"/>
     </ItemGroup>
 
     <ItemGroup>
         <InternalsVisibleTo Include="GDVM.Tests"/>
+    </ItemGroup>
+    <ItemGroup>
+      <PackageReference Include="Microsoft.Extensions.Http" Version="9.0.0" />
     </ItemGroup>
 
 </Project>

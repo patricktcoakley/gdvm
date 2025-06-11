@@ -6,6 +6,7 @@ using GDVM.Godot;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using System.Net.Http.Headers;
 using Utf8StringInterpolation;
 using ZLogger;
 using static ConsoleAppFramework.ConsoleApp;
@@ -43,7 +44,14 @@ public class Program
         services.AddSingleton<IHostSystem, HostSystem>();
         services.AddSingleton<IDownloadClient, DownloadClient>();
         services.AddSingleton<IReleaseManager, ReleaseManager>();
-
+        
+        services.AddSingleton<HttpClient>(provider =>
+        {
+            var version = typeof(Program).Assembly.GetName().Version?.ToString() ?? "unknown";
+            var client = new HttpClient();
+            client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("gdvm", version));
+            return client;
+        });
 
         // ensure we have a writeable directory
         if (!Directory.Exists(Paths.BinPath))
@@ -54,7 +62,7 @@ public class Program
         // ensure we have a config file
         if (!File.Exists(Paths.ConfigPath))
         {
-            File.Create(Paths.ConfigPath);
+            File.WriteAllText(Paths.ConfigPath, "# GDVM Configuration File\n");
         }
 
         var configuration = new ConfigurationBuilder()

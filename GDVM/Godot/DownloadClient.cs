@@ -29,7 +29,7 @@ public class DownloadClient : IDownloadClient
     // Tux Family has a tendency to go down; its main purpose is to procure the checksums for old releases so we don't need the latest
     private const string _tuxFamilyUrl = "https://web.archive.org/web/20240927142429/https://downloads.tuxfamily.org/godotengine";
 
-    private static readonly HttpClient _httpClient = new();
+    private readonly HttpClient _httpClient;
 
     private readonly IConfiguration _configuration;
     private readonly ILogger<DownloadClient> _logger;
@@ -39,9 +39,10 @@ public class DownloadClient : IDownloadClient
     ///     Currently, it uses GitHub as the primary and TuxFamily as the backup, as TuxFamily is generally slower
     ///     but often has SHA512-SUMS.txt for releases GitHub doesn't.
     /// </summary>
-    public DownloadClient(IConfiguration configuration, ILogger<DownloadClient> logger)
+    public DownloadClient(IConfiguration configuration, HttpClient httpClient,        ILogger<DownloadClient> logger)
     {
         _configuration = configuration;
+        _httpClient = httpClient;
         _logger = logger;
     }
 
@@ -166,7 +167,10 @@ public class GitHubReleaseAsset
 {
     public required string Name { get; set; }
     // trim `godot-` and `.json` to extract just the version and release type
-    public string ReleaseName => Name[6..^5];
+    private const string PREFIX = "godot-";
+    private const string SUFFIX = ".json";
+    public string ReleaseName => Name[PREFIX.Length..^SUFFIX.Length];
+
 }
 
 [JsonSourceGenerationOptions(WriteIndented = true, PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower)]

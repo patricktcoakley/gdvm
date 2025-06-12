@@ -39,7 +39,7 @@ public class DownloadClient : IDownloadClient
     ///     Currently, it uses GitHub as the primary and TuxFamily as the backup, as TuxFamily is generally slower
     ///     but often has SHA512-SUMS.txt for releases GitHub doesn't.
     /// </summary>
-    public DownloadClient(IConfiguration configuration, HttpClient httpClient,        ILogger<DownloadClient> logger)
+    public DownloadClient(IConfiguration configuration, HttpClient httpClient, ILogger<DownloadClient> logger)
     {
         _configuration = configuration;
         _httpClient = httpClient;

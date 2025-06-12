@@ -44,7 +44,7 @@ public class Program
         services.AddSingleton<IHostSystem, HostSystem>();
         services.AddSingleton<IDownloadClient, DownloadClient>();
         services.AddSingleton<IReleaseManager, ReleaseManager>();
-        
+
         services.AddSingleton<HttpClient>(provider =>
         {
             var version = typeof(Program).Assembly.GetName().Version?.ToString() ?? "unknown";

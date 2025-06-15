@@ -45,7 +45,7 @@ public class Program
         services.AddSingleton<IDownloadClient, DownloadClient>();
         services.AddSingleton<IReleaseManager, ReleaseManager>();
 
-        services.AddSingleton<HttpClient>(provider =>
+        services.AddSingleton(provider =>
         {
             var version = typeof(Program).Assembly.GetName().Version?.ToString() ?? "unknown";
             var client = new HttpClient();
@@ -71,6 +71,8 @@ public class Program
             .Build();
 
         services.AddSingleton<IConfiguration>(configuration);
+
+        Configuration.ValidateConfiguration(configuration);
 
         using var serviceProvider = services.BuildServiceProvider();
 

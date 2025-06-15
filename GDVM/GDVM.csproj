@@ -1,5 +1,4 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-    <Import Project="Version.props"/>
 
     <PropertyGroup>
         <OutputType>Exe</OutputType>
@@ -11,6 +10,7 @@
         <Authors>Patrick T Coakley</Authors>
         <PackageProjectUrl>https://github.com/patricktcoakley/gdvm</PackageProjectUrl>
         <PackageLicenseUrl>https://github.com/patricktcoakley/GDVM/blob/main/LICENSE</PackageLicenseUrl>
+        <Version>0.1.9</Version>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(Configuration)' == 'Release'">
@@ -29,38 +29,6 @@
         <PublishSingleFile>true</PublishSingleFile>
     </PropertyGroup>
 
-    <PropertyGroup>
-        <MinVerTagPrefix>v</MinVerTagPrefix>
-        <MinVerVerbosity>diagnostic</MinVerVerbosity>
-        <IsGitRepository>true</IsGitRepository>
-    </PropertyGroup>
-
-    <Target Name="UseFallbackVersionIfNotGit" BeforeTargets="BeforeBuild">
-        <Exec Command="git rev-parse --is-inside-work-tree" IgnoreExitCode="true">
-            <Output TaskParameter="ExitCode" PropertyName="GitExitCode"/>
-        </Exec>
-        <PropertyGroup>
-            <IsGitRepository Condition="'$(GitExitCode)' != '0'">false</IsGitRepository>
-            <MinVerVersionOverride Condition="'$(IsGitRepository)' == 'false'">$(MinVerFallbackVersion)</MinVerVersionOverride>
-        </PropertyGroup>
-        <Message Condition="'$(IsGitRepository)' == 'false'" Text="IsGitRepository=$(IsGitRepository), using $(MinVerVersionOverride)" Importance="high"/>
-        <PropertyGroup>
-
-        </PropertyGroup>
-    </Target>
-
-    <Target Name="UpdateVersionProps" AfterTargets="Build"
-            Condition="'$(IsGitRepository)' == 'true'">
-        <PropertyGroup>
-            <MinVerCalculatedVersion>$(MinVerMajor).$(MinVerMinor).$(MinVerPatch)</MinVerCalculatedVersion>
-        </PropertyGroup>
-        <Message Text="Updating MinVerFallbackVersion to $(MinVerCalculatedVersion)"
-                 Importance="high"/>
-        <XmlPoke XmlInputPath="Version.props"
-                 Query="//PropertyGroup/MinVerFallbackVersion"
-                 Value="$(MinVerCalculatedVersion)"/>
-    </Target>
-
     <ItemGroup>
         <PackageReference Include="ConsoleAppFramework" Version="5.4.1">
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -68,16 +36,12 @@
         </PackageReference>
         <PackageReference Include="Microsoft.Extensions.Configuration" Version="9.0.6" />
         <PackageReference Include="Microsoft.Extensions.Configuration.Ini" Version="9.0.6" />
-        <PackageReference Include="MinVer" Version="6.0.0">
-            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-            <PrivateAssets>all</PrivateAssets>
-        </PackageReference>
         <PackageReference Include="Spectre.Console" Version="0.50.0" />
-        <PackageReference Include="ZLogger" Version="2.5.10"/>
+        <PackageReference Include="ZLogger" Version="2.5.10" />
     </ItemGroup>
 
     <ItemGroup>
-        <InternalsVisibleTo Include="GDVM.Tests"/>
+        <InternalsVisibleTo Include="GDVM.Tests" />
     </ItemGroup>
 
 </Project>

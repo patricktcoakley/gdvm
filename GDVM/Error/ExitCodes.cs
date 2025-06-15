@@ -6,5 +6,6 @@ internal static class ExitCodes
     internal const int GeneralError = 1;
     internal const int ArgumentError = 2;
     internal const int SymlinkError = 3;
+    internal const int ConfigurationError = 78;
     internal const int Cancelled = 130;
 }

@@ -1,4 +1,60 @@
 {
-  "projectFile": "GDVM/GDVM.csproj",
-  "tagPrefix": "v"
+    "projectFile": "GDVM/GDVM.csproj",
+    "tagPrefix": "v",
+    "ignoreInsignificantCommits": true,
+    "changelog": {
+        "header": "# GDVM Changelog",
+        "sections": [
+            {
+                "type": "feat",
+                "section": "✨ Features",
+                "hidden": false
+            },
+            {
+                "type": "fix",
+                "section": "🐛 Bug Fixes",
+                "hidden": false
+            },
+            {
+                "type": "perf",
+                "section": "⚡ Performance Improvements",
+                "hidden": false
+            },
+            {
+                "type": "docs",
+                "section": "📚 Documentation",
+                "hidden": false
+            },
+            {
+                "type": "refactor",
+                "section": "♻️ Code Refactoring",
+                "hidden": false
+            },
+            {
+                "type": "test",
+                "section": "✅ Tests",
+                "hidden": true
+            },
+            {
+                "type": "chore",
+                "section": "Chores",
+                "hidden": true
+            },
+            {
+                "type": "ci",
+                "section": "CI/CD",
+                "hidden": true
+            },
+            {
+                "type": "build",
+                "section": "Build System",
+                "hidden": true
+            }
+        ],
+        "linkTemplates": {
+            "issueLink": "https://github.com/patricktcoakley/gdvm/issues/{issue}",
+            "commitLink": "https://github.com/patricktcoakley/gdvm/commit/{commitSha}",
+            "versionTagLink": "https://github.com/patricktcoakley/gdvm/releases/tag/v{version}"
+        }
+    }
 }

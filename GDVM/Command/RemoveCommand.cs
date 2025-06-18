@@ -8,10 +8,17 @@ using ZLogger;
 
 namespace GDVM.Command;
 
-public sealed class RemoveCommand(IHostSystem hostSystem, IReleaseManager releaseManager, ILogger<RemoveCommand> logger)
+public sealed class RemoveCommand(
+    IHostSystem hostSystem,
+    IReleaseManager releaseManager,
+    IPathService pathService,
+    Messages messages,
+    IAnsiConsole console,
+    ILogger<RemoveCommand> logger)
 {
     /// <summary>
-    ///     Prompts the user to remove multiple installations, or takes an exact version string for a version of Godot.
+    ///     Removes Godot installations. Automatically removes when exactly one version matches the query,
+    ///     or prompts the user to select from multiple matches.
     /// </summary>
     /// <param name="cancellationToken"></param>
     /// <param name="query"></param>
@@ -26,9 +33,8 @@ public sealed class RemoveCommand(IHostSystem hostSystem, IReleaseManager releas
 
             if (installed.Length == 0)
             {
-                // Always remove symlinks in case they were corrupted or there is a mismatch between installations
                 hostSystem.RemoveSymbolicLinks();
-                AnsiConsole.MarkupLine("[orange1] No installations available to remove. [/]");
+                console.MarkupLine("[orange1] No installations available to remove. [/]");
                 return;
             }
 
@@ -37,17 +43,35 @@ public sealed class RemoveCommand(IHostSystem hostSystem, IReleaseManager releas
             {
                 var queryJoin = string.Join(' ', query);
                 logger.ZLogInformation($"Query didn't find any installations: {queryJoin}.");
-                AnsiConsole.MarkupLine($"[orange1]Couldn't find any versions with query `{queryJoin}`. Please try again. [/]");
+                console.MarkupLine($"[orange1]Couldn't find any versions with query `{queryJoin}`. Please try again. [/]");
                 return;
             }
 
-            var versionsToDelete = await Prompts.Remove.ShowVersionRemovalPrompt(filteredInstallations, cancellationToken);
-
-            foreach (var selectionPath in versionsToDelete.Select(selection => Path.Combine(Paths.RootPath, selection)))
+            IEnumerable<string> versionsToDelete;
+            if (filteredInstallations.Length == 1)
             {
-                Directory.Delete(selectionPath, true);
-                logger.ZLogInformation($"Removed {selectionPath}.");
-                AnsiConsole.MarkupLine($"Successfully removed {selectionPath} :wastebasket: ");
+                var versionToRemove = filteredInstallations[0];
+                logger.ZLogInformation($"Automatically removing single matched version: {versionToRemove}.");
+                console.MarkupLine($"[yellow]Found exactly one version matching your query: {versionToRemove}[/]");
+                versionsToDelete = [versionToRemove];
+            }
+            else
+            {
+                versionsToDelete = await Prompts.Remove.ShowVersionRemovalPrompt(filteredInstallations, console, cancellationToken);
+            }
+
+            foreach (var selectionPath in versionsToDelete.Select(selection => Path.Combine(pathService.RootPath, selection)))
+            {
+                if (Directory.Exists(selectionPath))
+                {
+                    Directory.Delete(selectionPath, true);
+                    logger.ZLogInformation($"Removed {selectionPath}.");
+                    console.MarkupLine($"Successfully removed {selectionPath} :wastebasket: ");
+                }
+                else
+                {
+                    logger.ZLogWarning($"Directory {selectionPath} does not exist, skipping removal.");
+                }
             }
 
             if (!hostSystem.ListInstallations().Any())
@@ -58,15 +82,15 @@ public sealed class RemoveCommand(IHostSystem hostSystem, IReleaseManager releas
         catch (TaskCanceledException)
         {
             logger.ZLogError($"User cancelled removal.");
-            AnsiConsole.MarkupLine(Messages.UserCancelled("removal"));
+            console.MarkupLine(Messages.UserCancelled("removal"));
 
             throw;
         }
         catch (Exception e)
         {
             logger.ZLogError($"Error removing installations: {e.Message}");
-            AnsiConsole.MarkupLine(
-                Messages.SomethingWentWrong("when trying to remove installations")
+            console.MarkupLine(
+                messages.SomethingWentWrong("when trying to remove installations")
             );
 
             throw;

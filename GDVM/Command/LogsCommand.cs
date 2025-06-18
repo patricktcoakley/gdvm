@@ -8,10 +8,10 @@ using ZLogger;
 
 namespace GDVM.Command;
 
-public sealed class LogsCommand(ILogger<LogsCommand> logger)
+public sealed class LogsCommand(IPathService pathService, Messages messages, IAnsiConsole console, ILogger<LogsCommand> logger)
 {
-    private static readonly string[] LogLevels = ["DEFAULT", "DEBUG", "INFORMATION", "WARNING", "ERROR", "CRITICAL"];
     private const string DateTimeFormat = "yyyy-MM-dd HH:mm:ss.fff";
+    private static readonly string[] LogLevels = ["DEFAULT", "DEBUG", "INFORMATION", "WARNING", "ERROR", "CRITICAL"];
 
 
     /// <summary>
@@ -25,9 +25,9 @@ public sealed class LogsCommand(ILogger<LogsCommand> logger)
         try
         {
             cancellationToken.ThrowIfCancellationRequested();
-            if (!Path.Exists(Paths.LogPath))
+            if (!Path.Exists(pathService.LogPath))
             {
-                throw new FileNotFoundException($"Path to logs {Paths.LogPath} doesn't exist.");
+                throw new FileNotFoundException($"Path to logs {pathService.LogPath} doesn't exist.");
             }
 
             if (!string.IsNullOrEmpty(level) && !LogLevels.Any(x => x.StartsWith(level, StringComparison.OrdinalIgnoreCase)))
@@ -38,7 +38,7 @@ public sealed class LogsCommand(ILogger<LogsCommand> logger)
 
 
             await using var stream = new FileStream(
-                Paths.LogPath,
+                pathService.LogPath,
                 FileMode.Open,
                 FileAccess.Read,
                 FileShare.ReadWrite);
@@ -75,22 +75,22 @@ public sealed class LogsCommand(ILogger<LogsCommand> logger)
                     logEntry.LogLevel.Contains(level, StringComparison.OrdinalIgnoreCase) &&
                     logEntry.Message.Contains(message, StringComparison.OrdinalIgnoreCase))
                 {
-                    AnsiConsole.WriteLine(logEntry.ToString());
+                    console.WriteLine(logEntry.ToString());
                 }
             }
         }
         catch (TaskCanceledException)
         {
             logger.ZLogError($"User cancelled reading the logs.");
-            AnsiConsole.MarkupLine(Messages.UserCancelled("reading logs"));
+            console.MarkupLine(Messages.UserCancelled("reading logs"));
 
             throw;
         }
         catch (Exception e)
         {
             logger.ZLogError($"Error reading the logs: {e.Message}");
-            AnsiConsole.MarkupLine(
-                Messages.SomethingWentWrong("when trying to read the logs")
+            console.MarkupLine(
+                messages.SomethingWentWrong("when trying to read the logs")
             );
 
             throw;

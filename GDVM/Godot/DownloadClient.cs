@@ -1,8 +1,5 @@
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Spectre.Console;
-using System.Net.Http.Headers;
-using System.Text.Json;
 using System.Text.Json.Serialization;
 using ZLogger;
 
@@ -16,147 +13,86 @@ public interface IDownloadClient
 }
 
 /// <summary>
-///     A very simple client to grab the list of releases and download various files of a particular release.
-///     Currently, it uses GitHub as the primary and TuxFamily as the backup, as TuxFamily is generally slower
-///     but often has SHA512-SUMS.txt for releases GitHub doesn't.
+///     A download client that coordinates between GitHub and TuxFamily sources.
+///     Uses GitHub as primary and TuxFamily as backup for improved reliability.
 /// </summary>
-public class DownloadClient : IDownloadClient
+public class DownloadClient(IGitHubClient gitHubClient, ITuxFamilyClient tuxFamilyClient, IAnsiConsole console, ILogger<DownloadClient> logger) : IDownloadClient
 {
-    private const string _githubReleaseContentsUrl = "https://api.github.com/repos/godotengine/godot-builds/contents/releases";
-
-    private const string _githubReleasesUrl = "https://github.com/godotengine/godot-builds/releases/download";
-
-    // Tux Family has a tendency to go down; its main purpose is to procure the checksums for old releases so we don't need the latest
-    private const string _tuxFamilyUrl = "https://web.archive.org/web/20240927142429/https://downloads.tuxfamily.org/godotengine";
-
-    private readonly HttpClient _httpClient;
-
-    private readonly IConfiguration _configuration;
-    private readonly ILogger<DownloadClient> _logger;
-
-    /// <summary>
-    ///     A very simple client to grab the list of releases and download various files of a particular release.
-    ///     Currently, it uses GitHub as the primary and TuxFamily as the backup, as TuxFamily is generally slower
-    ///     but often has SHA512-SUMS.txt for releases GitHub doesn't.
-    /// </summary>
-    public DownloadClient(IConfiguration configuration, HttpClient httpClient, ILogger<DownloadClient> logger)
-    {
-        _configuration = configuration;
-        _httpClient = httpClient;
-        _logger = logger;
-    }
-
-    private string? _githubToken => _configuration["github:token"];
-
-    // for now coupled to GitHub
     public async Task<IEnumerable<string>> ListReleases(CancellationToken cancellationToken)
     {
-        using var request = new HttpRequestMessage(HttpMethod.Get, _githubReleaseContentsUrl);
-
-        SetGitHubAuthorizationHeader(request);
-
-        var resp = await _httpClient.SendAsync(request, cancellationToken);
-
-        if (!resp.IsSuccessStatusCode)
+        try
         {
-            _logger.ZLogError($"{_githubReleaseContentsUrl} returned {resp.StatusCode}.");
-            throw new HttpRequestException($"{_githubReleaseContentsUrl} returned {resp.StatusCode}.");
+            return await gitHubClient.ListReleasesAsync(cancellationToken);
         }
-
-        var jsonString = await resp.Content.ReadAsStringAsync(cancellationToken);
-        var releases = JsonSerializer.Deserialize(jsonString, GithubReleaseAssetContext.Default.ListGitHubReleaseAsset) ?? [];
-        releases.Reverse();
-        return releases.Select<GitHubReleaseAsset, string>(r => r.ReleaseName);
+        catch (Exception ex)
+        {
+            logger.ZLogError($"Failed to list releases from GitHub: {ex.Message}");
+            throw;
+        }
     }
 
     public async Task<string> GetSha512(Release godotRelease, CancellationToken cancellationToken)
     {
-        string[] urls =
-        [
-            GitHubUrlPattern("SHA512-SUMS.txt", godotRelease),
-            TuxFamilyUrlPattern("SHA512-SUMS.txt", godotRelease)
-        ];
-
-        foreach (var url in urls)
+        // Try GitHub first
+        try
         {
-            using var request = new HttpRequestMessage(HttpMethod.Get, url);
-
-            // TODO: Refactor this to a typed client
-            if (url.StartsWith(_githubReleasesUrl))
-            {
-                SetGitHubAuthorizationHeader(request);
-            }
-
-            var resp = await _httpClient.SendAsync(request, cancellationToken);
-            if (resp.IsSuccessStatusCode)
-            {
-                AnsiConsole.WriteLine($"Found SHA512 for {godotRelease.Version} at {url}.");
-                return await resp.Content.ReadAsStringAsync(cancellationToken);
-            }
-
-            _logger.ZLogError($"{url} returned {resp.StatusCode}.");
-            AnsiConsole.WriteLine($"{godotRelease.Version} at {url} was unavailable, trying another source.");
+            var sha512 = await gitHubClient.GetSha512Async(godotRelease, cancellationToken);
+            console.WriteLine($"Found SHA512 for {godotRelease.Version} at GitHub.");
+            return sha512;
+        }
+        catch (Exception ex)
+        {
+            logger.ZLogError($"GitHub SHA512 failed for {godotRelease.Version}: {ex.Message}");
+            console.WriteLine($"{godotRelease.Version} SHA512 was unavailable from GitHub, trying TuxFamily.");
         }
 
+        // Fallback to TuxFamily
+        try
+        {
+            var sha512 = await tuxFamilyClient.GetSha512Async(godotRelease, cancellationToken);
+            console.WriteLine($"Found SHA512 for {godotRelease.Version} at TuxFamily.");
+            return sha512;
+        }
+        catch (Exception ex)
+        {
+            logger.ZLogError($"TuxFamily SHA512 failed for {godotRelease.Version}: {ex.Message}");
+            console.WriteLine($"{godotRelease.Version} SHA512 was unavailable from TuxFamily.");
+        }
 
-        _logger.ZLogError($"SHA512-SUMS.txt was missing from all sources.");
+        logger.ZLogError($"SHA512-SUMS.txt was missing from all sources for {godotRelease.Version}.");
         throw new HttpRequestException("Wasn't able to download SHA512-SUMS.txt from any sources.");
     }
 
     public async Task<HttpResponseMessage> GetZipFile(string filename, Release godotRelease, CancellationToken cancellationToken)
     {
-        string[] urls =
-        [
-            GitHubUrlPattern(filename, godotRelease),
-            TuxFamilyUrlPattern(filename, godotRelease)
-        ];
-
-        foreach (var url in urls)
+        // Try GitHub first
+        try
         {
-            using var request = new HttpRequestMessage(HttpMethod.Get, url);
-
-            // TODO: Refactor this to a typed client
-            if (url.StartsWith(_githubReleasesUrl))
-            {
-                SetGitHubAuthorizationHeader(request);
-            }
-
-            var resp = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
-            if (resp.IsSuccessStatusCode)
-            {
-                AnsiConsole.WriteLine($"Found {godotRelease.ReleaseNameWithRuntime} at {url}.");
-                return resp;
-            }
-
-            _logger.ZLogError($"{url} returned {resp.StatusCode}.");
-            AnsiConsole.WriteLine($"{godotRelease.ReleaseNameWithRuntime} at {url} was unavailable, trying another source.");
+            var response = await gitHubClient.GetZipFileAsync(filename, godotRelease, cancellationToken);
+            console.WriteLine($"Found {godotRelease.ReleaseNameWithRuntime} at GitHub.");
+            return response;
+        }
+        catch (Exception ex)
+        {
+            logger.ZLogError($"GitHub zip file failed for {godotRelease.ReleaseNameWithRuntime}: {ex.Message}");
+            console.WriteLine($"{godotRelease.ReleaseNameWithRuntime} was unavailable from GitHub, trying TuxFamily.");
         }
 
-        _logger.ZLogError($"{filename} was missing from all sources..");
+        // Fallback to TuxFamily
+        try
+        {
+            var response = await tuxFamilyClient.GetZipFileAsync(filename, godotRelease, cancellationToken);
+            console.WriteLine($"Found {godotRelease.ReleaseNameWithRuntime} at TuxFamily.");
+            return response;
+        }
+        catch (Exception ex)
+        {
+            logger.ZLogError($"TuxFamily zip file failed for {godotRelease.ReleaseNameWithRuntime}: {ex.Message}");
+            console.WriteLine($"{godotRelease.ReleaseNameWithRuntime} was unavailable from TuxFamily.");
+        }
+
+        logger.ZLogError($"{filename} was missing from all sources for {godotRelease.ReleaseNameWithRuntime}.");
         throw new HttpRequestException($"Wasn't able to download {filename} from any sources.");
-    }
-
-    // TODO: Refactor this to a typed client
-    // Lazy way to set the headers
-    private void SetGitHubAuthorizationHeader(HttpRequestMessage request)
-    {
-        request.Headers.UserAgent.Add(new ProductInfoHeaderValue("gdvm", null));
-        if (_githubToken != null)
-        {
-            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _githubToken);
-        }
-    }
-
-    private static string GitHubUrlPattern(string filename, Release godotRelease) => $"{_githubReleasesUrl}/{godotRelease.ReleaseName}/{filename}";
-
-    private static string TuxFamilyUrlPattern(string filename, Release godotRelease)
-    {
-        // stable is the root path on Tux Family
-        var baseUrl = godotRelease.Type is null || godotRelease.Type == "stable"
-            ? $"{_tuxFamilyUrl}/{godotRelease.Version}"
-            : $"{_tuxFamilyUrl}/{godotRelease.Version}/{godotRelease.Type}";
-
-        return godotRelease.RuntimeEnvironment == RuntimeEnvironment.Mono ? $"{baseUrl}/mono/{filename}" : $"{baseUrl}/{filename}";
     }
 }
 
@@ -165,12 +101,11 @@ public class DownloadClient : IDownloadClient
 /// </summary>
 public class GitHubReleaseAsset
 {
-    public required string Name { get; set; }
     // trim `godot-` and `.json` to extract just the version and release type
-    private const string PREFIX = "godot-";
-    private const string SUFFIX = ".json";
-    public string ReleaseName => Name[PREFIX.Length..^SUFFIX.Length];
-
+    private const string Prefix = "godot-";
+    private const string Suffix = ".json";
+    public required string Name { get; set; }
+    public string ReleaseName => Name[Prefix.Length..^Suffix.Length];
 }
 
 [JsonSourceGenerationOptions(WriteIndented = true, PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower)]

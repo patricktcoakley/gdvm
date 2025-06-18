@@ -83,3 +83,8 @@ obj
 bin
 .DS_Store
 *.user
+
+# Test coverage files
+TestResults/
+coverage.cobertura.xml
+*.coverage

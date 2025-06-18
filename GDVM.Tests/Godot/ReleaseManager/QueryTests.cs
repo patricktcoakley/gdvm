@@ -130,7 +130,6 @@ public class QueryTests
             })
             .Build();
 
-        await Assert.ThrowsAsync<OperationCanceledException>(
-            () => releaseManager.SearchRemoteReleases(["stable"], cts.Token));
+        await Assert.ThrowsAsync<OperationCanceledException>(() => releaseManager.SearchRemoteReleases(["stable"], cts.Token));
     }
 }

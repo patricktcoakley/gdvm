@@ -5,10 +5,10 @@ namespace GDVM.Prompts;
 public static class Remove
 {
     public static async Task<IEnumerable<string>> ShowVersionRemovalPrompt(
-        string[] installed, CancellationToken cancellationToken)
+        string[] installed, IAnsiConsole console, CancellationToken cancellationToken)
     {
         var versionPrompt = CreateRemoveVersionPrompt(installed);
-        var versions = await versionPrompt.ShowAsync(AnsiConsole.Console, cancellationToken);
+        var versions = await versionPrompt.ShowAsync(console, cancellationToken);
         return versions;
     }
 

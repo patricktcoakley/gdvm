@@ -6,7 +6,7 @@ using ZLogger;
 
 namespace GDVM.Command;
 
-public sealed class ListCommand(IHostSystem hostSystem, ILogger<ListCommand> logger)
+public sealed class ListCommand(IHostSystem hostSystem, IPathService pathService, Messages messages, IAnsiConsole console, ILogger<ListCommand> logger)
 {
     /// <summary>
     ///     Lists the local Godot installations.
@@ -16,7 +16,7 @@ public sealed class ListCommand(IHostSystem hostSystem, ILogger<ListCommand> log
         try
         {
             var installed = hostSystem.ListInstallations();
-            var symlinkFullPath = new FileInfo(Paths.SymlinkPath).LinkTarget ?? "NOT_SET";
+            var symlinkFullPath = new FileInfo(pathService.SymlinkPath).LinkTarget ?? "NOT_SET";
 
             var versions = installed.Select(x => symlinkFullPath.Contains(x) ? $":eight_pointed_star:  {x}" : $"   {x}");
 
@@ -27,13 +27,13 @@ public sealed class ListCommand(IHostSystem hostSystem, ILogger<ListCommand> log
                 Border = BoxBorder.Rounded
             };
 
-            AnsiConsole.Write(panel);
+            console.Write(panel);
         }
         catch (Exception e)
         {
             logger.ZLogError($"Error listing installations: {e.Message}");
-            AnsiConsole.MarkupLine(
-                Messages.SomethingWentWrong("when trying to list installations")
+            console.MarkupLine(
+                messages.SomethingWentWrong("when trying to list installations")
             );
 
             throw;

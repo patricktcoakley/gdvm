@@ -11,6 +11,7 @@ public interface IReleaseManager
 
     Release? TryFindReleaseByQuery(string[] query, string[] releaseNames);
     IEnumerable<string> FilterReleasesByQuery(string[] query, string[] releaseNames);
+    string? FindCompatibleVersion(string projectVersion, bool isDotNet, IEnumerable<string> installedVersions);
 
     Release? TryCreateRelease(string versionString);
 }
@@ -79,11 +80,13 @@ public sealed class ReleaseManager(IHostSystem hostSystem, PlatformStringProvide
             .Where(x => !x.Equals(releaseType, StringComparison.OrdinalIgnoreCase))
             .FirstOrDefault(string.Empty);
 
-        return releaseNames
-            .Where(x => x.StartsWith(possibleVersion, StringComparison.OrdinalIgnoreCase))
-            .Where(x => x.Contains(releaseType, StringComparison.OrdinalIgnoreCase))
-            .OrderByDescending(x => x) // TODO: fix ordering by version suffix
-            .ToArray();
+        return
+        [
+            .. releaseNames
+                .Where(x => x.StartsWith(possibleVersion, StringComparison.OrdinalIgnoreCase))
+                .Where(x => x.Contains(releaseType, StringComparison.OrdinalIgnoreCase))
+                .OrderByDescending(x => x)
+        ];
     }
 
     public Release? TryCreateRelease(string versionString)
@@ -98,6 +101,73 @@ public sealed class ReleaseManager(IHostSystem hostSystem, PlatformStringProvide
         release.OS = hostSystem.SystemInfo.CurrentOS;
         release.PlatformString = platformString;
         return release;
+    }
+
+    public string? FindCompatibleVersion(string projectVersion, bool isDotNet, IEnumerable<string> installedVersions)
+    {
+        var versions = installedVersions.ToList();
+
+        if (versions.Count == 0)
+        {
+            return null;
+        }
+
+        var preferredRuntime = isDotNet ? "mono" : "standard";
+
+        // First, try exact match
+        var exactMatch = versions.FirstOrDefault(v => v == projectVersion);
+        if (exactMatch != null)
+        {
+            return exactMatch;
+        }
+
+        // Parse all compatible releases and find the best match
+        var compatibleReleases = new List<Release>();
+
+        foreach (var version in versions)
+        {
+            var release = TryCreateRelease(version);
+            if (release == null)
+            {
+                continue;
+            }
+
+            // Check if this release matches our criteria
+            var versionString = $"{release.Major}.{release.Minor}";
+            bool isVersionMatch;
+
+            if (projectVersion.Contains('.'))
+            {
+                // Project version is like "4.3" - match exact major.minor
+                isVersionMatch = versionString == projectVersion;
+            }
+            else
+            {
+                // Project version is like "4" - match major only
+                isVersionMatch = release.Major.ToString() == projectVersion;
+            }
+
+            if (isVersionMatch &&
+                release.RuntimeEnvironment.ToString().Equals(preferredRuntime, StringComparison.CurrentCultureIgnoreCase))
+            {
+                compatibleReleases.Add(release);
+            }
+        }
+
+        if (compatibleReleases.Count == 0)
+        {
+            return null;
+        }
+
+        // Use OrderByDescending with the built-in Release.CompareTo for preference ordering
+        // Now that ReleaseType.CompareTo prefers higher RC numbers, this gives us:
+        // 1. Higher version numbers first (4.3 > 4.2)
+        // 2. More stable releases first (stable > rc2 > rc1 > dev)
+        var bestRelease = compatibleReleases
+            .OrderByDescending(r => r)
+            .First();
+
+        return bestRelease.ReleaseNameWithRuntime;
     }
 
 

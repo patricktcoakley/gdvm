@@ -1,14 +1,14 @@
-using GDVM.Command;
+using GDVM.Services;
 
-namespace GDVM.Test.Commands;
+namespace GDVM.Test.Services;
 
-public class InstallCommandTests
+public class InstallationServiceTests
 {
     [Theory]
     [MemberData(nameof(ParseTestData))]
     public void TryParseSha512SumsContent_ReturnsExpectedSha512SumsContent(string fileName, string hash)
     {
-        var parsed = InstallCommand.TryParseSha512SumsContent(fileName, TryParseSha512SumsContentTestInput());
+        var parsed = InstallationService.TryParseSha512SumsContent(fileName, TryParseSha512SumsContentTestInput());
 
         Assert.NotNull(parsed);
         Assert.Equal(parsed, hash);

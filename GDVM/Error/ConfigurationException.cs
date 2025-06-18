@@ -1,5 +1,3 @@
 namespace GDVM.Error;
 
-public class ConfigurationException(string message) : Exception(message)
-{
-}
+public class ConfigurationException(string message) : Exception(message);

@@ -8,8 +8,8 @@ namespace GDVM.Test.Godot.ReleaseManager;
 
 public class ReleaseManagerBuilder
 {
-    private Action<Mock<IDownloadClient>>? _downloadClientConfig;
     private readonly Mock<IDownloadClient> _mockDownloadClient;
+    private Action<Mock<IDownloadClient>>? _downloadClientConfig;
     private IEnumerable<string> _releases;
     private SystemInfo _systemInfo;
 
@@ -51,7 +51,7 @@ public class ReleaseManagerBuilder
         _downloadClientConfig?.Invoke(_mockDownloadClient);
 
         return new GDVM.Godot.ReleaseManager(
-            new HostSystem(_systemInfo, new Mock<ILogger<HostSystem>>().Object),
+            new HostSystem(_systemInfo, new Mock<IPathService>().Object, new Mock<ILogger<HostSystem>>().Object),
             new PlatformStringProvider(_systemInfo),
             _mockDownloadClient.Object);
     }

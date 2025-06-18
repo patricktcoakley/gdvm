@@ -6,13 +6,13 @@ namespace GDVM.Prompts;
 public static class Install
 {
     public static async Task<string> ShowVersionSelectionPrompt(
-        string[] releaseNames, CancellationToken cancellationToken)
+        string[] releaseNames, IAnsiConsole console, CancellationToken cancellationToken)
     {
         var versionPrompt = CreateVersionSelectionPrompt(releaseNames);
-        var version = await versionPrompt.ShowAsync(AnsiConsole.Console, cancellationToken);
+        var version = await versionPrompt.ShowAsync(console, cancellationToken);
 
         var runtimePrompt = CreateRuntimePrompt();
-        var godotPlatform = await runtimePrompt.ShowAsync(AnsiConsole.Console, cancellationToken) == "Mono"
+        var godotPlatform = await runtimePrompt.ShowAsync(console, cancellationToken) == "Mono"
             ? RuntimeEnvironment.Mono
             : RuntimeEnvironment.Standard;
 

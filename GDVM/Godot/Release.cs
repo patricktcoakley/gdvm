@@ -65,7 +65,7 @@ public sealed record Release : IComparable<Release>
     public int? Patch { get; }
 
     /// <summary>Standard or Mono</summary>
-    public RuntimeEnvironment RuntimeEnvironment { get; init; }
+    public RuntimeEnvironment RuntimeEnvironment { get; }
 
     /// <summary>Release type ("stable", "rc", etc)</summary>
     public ReleaseType? Type { get; }

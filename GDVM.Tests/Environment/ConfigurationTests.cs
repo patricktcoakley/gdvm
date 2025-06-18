@@ -1,15 +1,16 @@
-using Microsoft.Extensions.Configuration;
+using GDVM.Environment;
 using GDVM.Error;
+using Microsoft.Extensions.Configuration;
 using System.Security.Cryptography;
 
-namespace GDVM.Tests.Configuration;
+namespace GDVM.Test.Environment;
 
 public class ConfigurationTests
 {
     private static string GenerateTestToken(string prefix = "ghp")
     {
-        // Generate 36 random hex characters (18 bytes = 36 hex chars)
-        var hexString = RandomNumberGenerator.GetHexString(36, lowercase: true);
+        var remainingLength = 40 - prefix.Length - 1; // -1 for the underscore
+        var hexString = RandomNumberGenerator.GetHexString(remainingLength, true);
         return $"{prefix}_{hexString}";
     }
 
@@ -31,7 +32,7 @@ public class ConfigurationTests
             })
             .Build();
 
-        var exception = Record.Exception(() => Environment.Configuration.ValidateConfiguration(config));
+        var exception = Record.Exception(() => Configuration.ValidateConfiguration(config));
         Assert.Null(exception);
     }
 
@@ -42,7 +43,7 @@ public class ConfigurationTests
             .AddInMemoryCollection(new Dictionary<string, string?>())
             .Build();
 
-        var exception = Record.Exception(() => Environment.Configuration.ValidateConfiguration(config));
+        var exception = Record.Exception(() => Configuration.ValidateConfiguration(config));
         Assert.Null(exception);
     }
 
@@ -56,7 +57,7 @@ public class ConfigurationTests
             })
             .Build();
 
-        var exception = Record.Exception(() => Environment.Configuration.ValidateConfiguration(config));
+        var exception = Record.Exception(() => Configuration.ValidateConfiguration(config));
         Assert.Null(exception);
     }
 
@@ -74,7 +75,7 @@ public class ConfigurationTests
             })
             .Build();
 
-        var ex = Assert.Throws<ConfigurationException>(() => Environment.Configuration.ValidateConfiguration(config));
+        var ex = Assert.Throws<ConfigurationException>(() => Configuration.ValidateConfiguration(config));
         Assert.Equal("GitHub token should start with 'ghp_', 'gho_', 'ghu_', 'ghs_', or 'ghr_' prefix", ex.Message);
     }
 
@@ -90,7 +91,7 @@ public class ConfigurationTests
             })
             .Build();
 
-        var ex = Assert.Throws<ConfigurationException>(() => Environment.Configuration.ValidateConfiguration(config));
+        var ex = Assert.Throws<ConfigurationException>(() => Configuration.ValidateConfiguration(config));
         Assert.Equal("GitHub token should be exactly 40 characters long", ex.Message);
     }
 
@@ -109,7 +110,7 @@ public class ConfigurationTests
             })
             .Build();
 
-        var ex = Assert.Throws<ConfigurationException>(() => Environment.Configuration.ValidateConfiguration(config));
+        var ex = Assert.Throws<ConfigurationException>(() => Configuration.ValidateConfiguration(config));
         Assert.Equal("GitHub token contains invalid characters", ex.Message);
     }
 
@@ -128,7 +129,7 @@ public class ConfigurationTests
             })
             .Build();
 
-        var exception = Record.Exception(() => Environment.Configuration.ValidateConfiguration(config));
+        var exception = Record.Exception(() => Configuration.ValidateConfiguration(config));
         Assert.Null(exception);
     }
 }

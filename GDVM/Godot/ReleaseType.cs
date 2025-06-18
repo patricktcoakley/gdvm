@@ -29,20 +29,20 @@ public sealed record ReleaseType : IComparable<ReleaseType>
         return (Value, other.Value) switch
         {
             ("stable", "stable") => 0,
-            ("stable", _) => -1,
-            (_, "stable") => 1,
-            ("rc", "rc") => Nullable.Compare(Version, other.Version),
-            ("rc", _) => -1,
-            (_, "rc") => 1,
-            ("beta", "beta") => Nullable.Compare(Version, other.Version),
-            ("beta", _) => -1,
-            (_, "beta") => 1,
-            ("alpha", "alpha") => Nullable.Compare(Version, other.Version),
-            ("alpha", _) => -1,
-            (_, "alpha") => 1,
-            ("dev", "dev") => Nullable.Compare(Version, other.Version),
-            ("dev", _) => -1,
-            (_, "dev") => 1,
+            ("stable", _) => 1, // Stable is "greater" for preference ordering
+            (_, "stable") => -1, // Other types are "less" than stable
+            ("rc", "rc") => Nullable.Compare(Version, other.Version), // Higher RC numbers are greater
+            ("rc", _) => 1, // RC is greater than beta/alpha/dev
+            (_, "rc") => -1, // beta/alpha/dev are less than RC
+            ("beta", "beta") => Nullable.Compare(Version, other.Version), // Higher beta numbers are greater
+            ("beta", _) => 1, // Beta is greater than alpha/dev
+            (_, "beta") => -1, // alpha/dev are less than beta
+            ("alpha", "alpha") => Nullable.Compare(Version, other.Version), // Higher alpha numbers are greater
+            ("alpha", _) => 1, // Alpha is greater than dev
+            (_, "alpha") => -1, // dev is less than alpha
+            ("dev", "dev") => Nullable.Compare(Version, other.Version), // Higher dev numbers are greater
+            ("dev", _) => -1, // dev is less than everything else
+            (_, "dev") => 1, // everything else is greater than dev
             _ => throw new InvalidOperationException("Unknown release type")
         };
     }

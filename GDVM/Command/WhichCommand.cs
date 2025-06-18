@@ -6,7 +6,7 @@ using ZLogger;
 
 namespace GDVM.Command;
 
-public sealed class WhichCommand(IHostSystem hostSystem, ILogger<WhichCommand> logger)
+public sealed class WhichCommand(IHostSystem hostSystem, Messages messages, IAnsiConsole console, ILogger<WhichCommand> logger)
 {
     /// <summary>
     ///     Displays the currently selected version of Godot (if any).
@@ -20,8 +20,8 @@ public sealed class WhichCommand(IHostSystem hostSystem, ILogger<WhichCommand> l
         catch (Exception e)
         {
             logger.ZLogError($"Error reading symlink: {e.Message}");
-            AnsiConsole.MarkupLine(
-                Messages.SomethingWentWrong("when trying to read which Godot version is set")
+            console.MarkupLine(
+                messages.SomethingWentWrong("when trying to read which Godot version is set")
             );
 
             throw;

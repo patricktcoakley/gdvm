@@ -1,6 +1,4 @@
-# Change Log
-
-All notable changes to this project will be documented in this file. See [versionize](https://github.com/versionize/versionize) for commit guidelines.
+# Changelog
 
 <a name="1.0.0"></a>
 ## [1.0.0](https://github.com/patricktcoakley/gdvm/releases/tag/v1.0.0) (2025-06-17)
@@ -8,15 +6,11 @@ All notable changes to this project will be documented in this file. See [versio
 ### ✨ Features
 
 * **gdvm:** Add remaining features, refactor existing code, and update README to reflect first stable version: ([b03d245](https://github.com/patricktcoakley/gdvm/commit/b03d245001b8c15da0eb88837b9072e61f5f93b7))
-
-### Breaking Changes
-
-* **gdvm:** Add remaining features, refactor existing code, and update README to reflect first stable version: ([b03d245](https://github.com/patricktcoakley/gdvm/commit/b03d245001b8c15da0eb88837b9072e61f5f93b7))
-
-<a name="0.2.0"></a>
-## [0.2.0](https://www.github.com//patricktcoakley/gdvm/releases/tag/v0.2.0) (2025-06-15)
-
-### Features
-
-* Add GitHub token validation and switch to Versionize. ([d33d3dc](https://www.github.com//patricktcoakley/gdvm/commit/d33d3dc98ba0a6f94c9ba6d5255d6d6fa395eb61))
-
+    - Add project-aware features to the application, including version management and automatic project launching.
+    - Add automatic project file detection and launching.
+    - Add local version management with the 'local' command.
+    - Implement a version resolution service for contextually detecting which version should be used for various scenarios.
+    - Update README to reflect new changes.
+    - Improve testability by expanding dependency injection, including the TUI portions of the application.
+    - Extract existing functionality into services for better separation of concerns.
+    - Add comprehensive test coverage for all new features.

@@ -1,5 +1,12 @@
 # Changelog
 
+<a name="1.1.0"></a>
+## [1.1.0](https://github.com/patricktcoakley/gdvm/releases/tag/v1.1.0) (2025-07-08)
+
+### ✨ Features
+
+* **local:** Make auto-install default behavior; refactoring to imporve testability. ([604b75a](https://github.com/patricktcoakley/gdvm/commit/604b75a697ab078f5320ecd079dd68ca85f37ccc))
+
 <a name="1.0.0"></a>
 ## [1.0.0](https://github.com/patricktcoakley/gdvm/releases/tag/v1.0.0) (2025-06-17)
 

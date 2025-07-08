@@ -97,7 +97,7 @@ gdvm --help
 but here is a detailed summary of the available commands:
 
 - `gdvm list`  will list locally installed Godot versions.
-- `gdvm install [--query|-q <...strings>]` will prompt the user to install a version if no arguments are supplied, or will
+- `gdvm install [<...strings>]` will prompt the user to install a version if no arguments are supplied, or will
   try to find the closest matching version based on the query, defaulting to "stable" if no other release type is supplied.
   It will also set the last installed version as the default.
   - Queries:
@@ -110,7 +110,9 @@ but here is a detailed summary of the available commands:
   - The command will read existing `.gdvm-version` files or detect project versions from `project.godot`, but does not create or modify version files. Use `gdvm local` to manage `.gdvm-version` files.
 - `gdvm set [--interactive|-i] [<...strings>]` prompts the user to set an installed version of Godot if no arguments are supplied, or will
   try to find the closest matching version based on the query, including release type (`stable`) and version (`4`, `4.4`), or an exact match (`4.4.1-stable-mono`). Use `-i|--interactive` to select from already installed versions.
-- `gdvm local [--interactive|-i] [<...strings>]` sets the Godot version for the current project by creating or updating a `.gdvm-version` file in the current directory. If no arguments are supplied, it will detect the project version from `project.godot` or use an existing `.gdvm-version` file and then update the file accordingly. If arguments are provided, it will find the best matching version based on the query (including runtime preferences like `mono` or `standard`) and write it to the `.gdvm-version` file. Use `-i|--interactive` to select from already installed versions. The command intelligently detects compatible installed versions based on major, minor, and patch versioning (e.g., "4.4.1-stable-standard" is compatible with "4.4") and only installs if no compatible version exists.
+- `gdvm local [--interactive|-i] [<...strings>]` sets the Godot version for the current project by creating or updating a `.gdvm-version` file in the current directory. By default it will automatically detect the project version from `project.godot` or `.gdvm-version` file and installs the most recent compatible version if not already installed; if one already exists, it uses that version.
+  - If a list of arguments are provided, it will find the best matching version based on the query (including runtime preferences like `mono` or `standard`) and install it if necessary.
+  - Use `-i|--interactive` to force interactive selection from already installed versions instead of auto-installing.
 - `gdvm which` displays the location that the current Godot symlink points to.
 - `gdvm remove [<...strings>]` prompts the user to select multiple installations to delete, or optionally takes a query to filter down to specific versions to delete. If there is only one match, it will delete it directly. If there are multiple matches, it will prompt the user to select which ones to delete.
   - For example, if you wanted to list all of the `4.y.z` versions to remove, you could just do `gdvm remove 4` to list all of the 4 major releases. However, if remove a specific version, like `4.4.1-stable-mono`, it will just delete that version directly. Deleting the currently set version will unset it and you will need to set a new one.

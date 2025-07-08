@@ -2,7 +2,43 @@ using System.Text.RegularExpressions;
 
 namespace GDVM.Godot;
 
-public partial class ProjectManager
+/// <summary>
+/// Interface for managing Godot project information and version files
+/// </summary>
+public interface IProjectManager
+{
+    /// <summary>
+    /// Finds project information including version and runtime environment.
+    /// </summary>
+    /// <param name="directory">The directory to search in. If null, uses current working directory.</param>
+    /// <returns>ProjectInfo if found, null otherwise.</returns>
+    ProjectManager.ProjectInfo? FindProjectInfo(string? directory = null);
+
+    /// <summary>
+    /// Finds the project version using the following priority:
+    /// 1. `.gdvm-version` file (user override) or
+    /// 2. `project.godot` file (automatic detection) and creates a `.gdvm-version` file based on the contents.
+    /// </summary>
+    /// <param name="directory">The directory to search in. If null, uses current working directory.</param>
+    /// <returns>The version string if found, null otherwise.</returns>
+    string? FindProjectVersion(string? directory = null);
+
+    /// <summary>
+    /// Finds the path to the project.godot file in the specified directory.
+    /// </summary>
+    /// <param name="directory">The directory to search in. If null, uses current working directory.</param>
+    /// <returns>The full path to project.godot if found, null otherwise.</returns>
+    string? FindProjectFilePath(string? directory = null);
+
+    /// <summary>
+    /// Creates or updates a `.gdvm-version` file in the specified directory.
+    /// </summary>
+    /// <param name="version">The version to write to the file</param>
+    /// <param name="directory">The directory to create the file in (null for current directory)</param>
+    void CreateVersionFile(string version, string? directory = null);
+}
+
+public partial class ProjectManager : IProjectManager
 {
     private const string VersionFile = ".gdvm-version";
     private const string ProjectFile = "project.godot";
@@ -14,7 +50,7 @@ public partial class ProjectManager
     /// </summary>
     /// <param name="directory">The directory to search in. If null, uses current working directory.</param>
     /// <returns>The version string if found, null otherwise.</returns>
-    public static string? FindProjectVersion(string? directory = null)
+    public string? FindProjectVersion(string? directory = null)
     {
         var projectInfo = FindProjectInfo(directory);
         return projectInfo?.Version;
@@ -25,7 +61,7 @@ public partial class ProjectManager
     /// </summary>
     /// <param name="directory">The directory to search in. If null, uses current working directory.</param>
     /// <returns>ProjectInfo if found, null otherwise.</returns>
-    public static ProjectInfo? FindProjectInfo(string? directory = null)
+    public ProjectInfo? FindProjectInfo(string? directory = null)
     {
         var targetDir = directory ?? Directory.GetCurrentDirectory();
 
@@ -36,9 +72,11 @@ public partial class ProjectManager
             var content = File.ReadAllText(versionFile).Trim();
             if (!string.IsNullOrEmpty(content))
             {
-                // Try to determine if it's .NET from the version string
-                var isDotNet = content.Contains("mono", StringComparison.OrdinalIgnoreCase);
-                return new ProjectInfo(content, isDotNet);
+                // Determine runtime from version string
+                var runtime = content.Contains("mono", StringComparison.OrdinalIgnoreCase)
+                    ? RuntimeEnvironment.Mono
+                    : RuntimeEnvironment.Standard;
+                return new ProjectInfo(content, runtime);
             }
         }
 
@@ -52,7 +90,7 @@ public partial class ProjectManager
     /// </summary>
     /// <param name="directory">The directory to search in. If null, uses current working directory.</param>
     /// <returns>The full path to project.godot if found, null otherwise.</returns>
-    public static string? FindProjectFilePath(string? directory = null)
+    public string? FindProjectFilePath(string? directory = null)
     {
         var targetDir = directory ?? Directory.GetCurrentDirectory();
         var projectFile = Path.Combine(targetDir, ProjectFile);
@@ -72,7 +110,7 @@ public partial class ProjectManager
             var lines = content.Split('\n', StringSplitOptions.RemoveEmptyEntries);
 
             string? version = null;
-            var isDotNet = false;
+            var runtime = RuntimeEnvironment.Standard;
 
             foreach (var line in lines)
             {
@@ -87,13 +125,13 @@ public partial class ProjectManager
                 // Check for .NET section
                 if (trimmedLine == "[dotnet]")
                 {
-                    isDotNet = true;
+                    runtime = RuntimeEnvironment.Mono;
                 }
             }
 
             if (version != null)
             {
-                return new ProjectInfo(version, isDotNet);
+                return new ProjectInfo(version, runtime);
             }
         }
         catch (Exception)
@@ -130,7 +168,7 @@ public partial class ProjectManager
         return features.FirstOrDefault(feature => VersionRegex().IsMatch(feature));
     }
 
-    public static void CreateVersionFile(string version, string? directory = null)
+    public void CreateVersionFile(string version, string? directory = null)
     {
         var targetDir = directory ?? Directory.GetCurrentDirectory();
         var filePath = Path.Combine(targetDir, VersionFile);
@@ -140,5 +178,16 @@ public partial class ProjectManager
     [GeneratedRegex(@"^\d+\.\d+(\.\d+)?$")]
     private static partial Regex VersionRegex();
 
-    public record ProjectInfo(string Version, bool IsDotNet);
+    public record ProjectInfo(string Version, RuntimeEnvironment Runtime)
+    {
+        /// <summary>
+        /// Gets the runtime display suffix for the project (e.g., " [.NET]" or empty string)
+        /// </summary>
+        public string RuntimeDisplaySuffix => Runtime == RuntimeEnvironment.Mono ? " [.NET]" : "";
+
+        /// <summary>
+        /// Gets whether this project uses .NET runtime (true for Mono, false for Standard)
+        /// </summary>
+        public bool IsDotNet => Runtime == RuntimeEnvironment.Mono;
+    }
 }

@@ -15,6 +15,8 @@ public static class Set
         new SelectionPrompt<string>()
             .Title("[green]Select a version to set: [/]?")
             .PageSize(10)
+            .WrapAround()
+            .EnableSearch()
             .MoreChoicesText("[grey](Move up and down to see more versions)[/]")
             .AddChoices(installed);
 }

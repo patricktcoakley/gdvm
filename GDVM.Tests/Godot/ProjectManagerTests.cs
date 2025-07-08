@@ -5,11 +5,13 @@ namespace GDVM.Test.Godot;
 public sealed class ProjectManagerTests : IDisposable
 {
     private readonly string _tempDirectory;
+    private readonly ProjectManager _projectManager;
 
     public ProjectManagerTests()
     {
         _tempDirectory = Path.Combine(Path.GetTempPath(), $"gdvm-test-{Guid.NewGuid()}");
         Directory.CreateDirectory(_tempDirectory);
+        _projectManager = new ProjectManager();
     }
 
     public void Dispose()
@@ -27,7 +29,7 @@ public sealed class ProjectManagerTests : IDisposable
         var versionFilePath = Path.Combine(_tempDirectory, ".gdvm-version");
         File.WriteAllText(versionFilePath, versionContent);
 
-        var result = ProjectManager.FindProjectVersion(_tempDirectory);
+        var result = _projectManager.FindProjectVersion(_tempDirectory);
 
         Assert.Equal("4.3-stable", result);
     }
@@ -39,7 +41,7 @@ public sealed class ProjectManagerTests : IDisposable
         var versionFilePath = Path.Combine(_tempDirectory, ".gdvm-version");
         File.WriteAllText(versionFilePath, versionContent);
 
-        var result = ProjectManager.FindProjectVersion(_tempDirectory);
+        var result = _projectManager.FindProjectVersion(_tempDirectory);
 
         Assert.Equal("4.3-stable", result);
     }
@@ -59,7 +61,7 @@ public sealed class ProjectManagerTests : IDisposable
 
         File.WriteAllText(projectFilePath, projectContent);
 
-        var result = ProjectManager.FindProjectVersion(_tempDirectory);
+        var result = _projectManager.FindProjectVersion(_tempDirectory);
 
         Assert.Equal("4.3", result);
     }
@@ -76,7 +78,7 @@ public sealed class ProjectManagerTests : IDisposable
 
         File.WriteAllText(projectFilePath, projectContent);
 
-        var result = ProjectManager.FindProjectVersion(_tempDirectory);
+        var result = _projectManager.FindProjectVersion(_tempDirectory);
 
         Assert.Equal("4.3", result);
     }
@@ -93,7 +95,7 @@ public sealed class ProjectManagerTests : IDisposable
 
         File.WriteAllText(projectFilePath, projectContent);
 
-        var result = ProjectManager.FindProjectVersion(_tempDirectory);
+        var result = _projectManager.FindProjectVersion(_tempDirectory);
 
         Assert.Equal("4.3", result);
     }
@@ -101,7 +103,7 @@ public sealed class ProjectManagerTests : IDisposable
     [Fact]
     public void FindProjectVersion_WithNoFiles_ReturnsNull()
     {
-        var result = ProjectManager.FindProjectVersion(_tempDirectory);
+        var result = _projectManager.FindProjectVersion(_tempDirectory);
 
         Assert.Null(result);
     }
@@ -118,7 +120,7 @@ public sealed class ProjectManagerTests : IDisposable
 
         File.WriteAllText(projectFilePath, projectContent);
 
-        var result = ProjectManager.FindProjectVersion(_tempDirectory);
+        var result = _projectManager.FindProjectVersion(_tempDirectory);
 
         Assert.Null(result);
     }
@@ -130,7 +132,7 @@ public sealed class ProjectManagerTests : IDisposable
         var versionFilePath = Path.Combine(_tempDirectory, ".gdvm-version");
         File.WriteAllText(versionFilePath, versionContent);
 
-        var result = ProjectManager.FindProjectInfo(_tempDirectory);
+        var result = _projectManager.FindProjectInfo(_tempDirectory);
 
         Assert.NotNull(result);
         Assert.Equal("4.3-stable", result.Version);
@@ -144,7 +146,7 @@ public sealed class ProjectManagerTests : IDisposable
         var versionFilePath = Path.Combine(_tempDirectory, ".gdvm-version");
         File.WriteAllText(versionFilePath, versionContent);
 
-        var result = ProjectManager.FindProjectInfo(_tempDirectory);
+        var result = _projectManager.FindProjectInfo(_tempDirectory);
 
         Assert.NotNull(result);
         Assert.Equal("4.3-stable-mono", result.Version);
@@ -166,7 +168,7 @@ public sealed class ProjectManagerTests : IDisposable
 
         File.WriteAllText(projectFilePath, projectContent);
 
-        var result = ProjectManager.FindProjectInfo(_tempDirectory);
+        var result = _projectManager.FindProjectInfo(_tempDirectory);
 
         Assert.NotNull(result);
         Assert.Equal("4.3", result.Version);
@@ -185,7 +187,7 @@ public sealed class ProjectManagerTests : IDisposable
 
         File.WriteAllText(projectFilePath, projectContent);
 
-        var result = ProjectManager.FindProjectInfo(_tempDirectory);
+        var result = _projectManager.FindProjectInfo(_tempDirectory);
 
         Assert.NotNull(result);
         Assert.Equal("4.3", result.Version);
@@ -208,7 +210,7 @@ public sealed class ProjectManagerTests : IDisposable
 
         File.WriteAllText(projectFilePath, projectContent);
 
-        var result = ProjectManager.FindProjectInfo(_tempDirectory);
+        var result = _projectManager.FindProjectInfo(_tempDirectory);
 
         Assert.NotNull(result);
         Assert.Equal(version, result.Version);
@@ -229,7 +231,7 @@ public sealed class ProjectManagerTests : IDisposable
 
         File.WriteAllText(projectFilePath, projectContent);
 
-        var result = ProjectManager.FindProjectInfo(_tempDirectory);
+        var result = _projectManager.FindProjectInfo(_tempDirectory);
 
         Assert.NotNull(result);
         Assert.Equal("4.3", result.Version);
@@ -247,7 +249,7 @@ public sealed class ProjectManagerTests : IDisposable
 
         File.WriteAllText(projectFilePath, projectContent);
 
-        var result = ProjectManager.FindProjectInfo(_tempDirectory);
+        var result = _projectManager.FindProjectInfo(_tempDirectory);
 
         Assert.Null(result);
     }
@@ -257,7 +259,7 @@ public sealed class ProjectManagerTests : IDisposable
     {
         const string version = "4.3-stable";
 
-        ProjectManager.CreateVersionFile(version, _tempDirectory);
+        _projectManager.CreateVersionFile(version, _tempDirectory);
 
         var filePath = Path.Combine(_tempDirectory, ".gdvm-version");
         Assert.True(File.Exists(filePath));
@@ -275,7 +277,7 @@ public sealed class ProjectManagerTests : IDisposable
             Directory.SetCurrentDirectory(_tempDirectory);
             const string version = "4.3-stable";
 
-            ProjectManager.CreateVersionFile(version);
+            _projectManager.CreateVersionFile(version);
 
             var filePath = Path.Combine(_tempDirectory, ".gdvm-version");
             Assert.True(File.Exists(filePath));
@@ -299,7 +301,7 @@ public sealed class ProjectManagerTests : IDisposable
             var versionFilePath = Path.Combine(_tempDirectory, ".gdvm-version");
             File.WriteAllText(versionFilePath, "4.3-stable");
 
-            var result = ProjectManager.FindProjectVersion();
+            var result = _projectManager.FindProjectVersion();
 
             Assert.Equal("4.3-stable", result);
         }
@@ -324,7 +326,7 @@ public sealed class ProjectManagerTests : IDisposable
 
         File.WriteAllText(projectFilePath, projectContent);
 
-        var result = ProjectManager.FindProjectInfo(_tempDirectory);
+        var result = _projectManager.FindProjectInfo(_tempDirectory);
 
         Assert.NotNull(result);
         Assert.Equal("4.4-dev", result.Version);

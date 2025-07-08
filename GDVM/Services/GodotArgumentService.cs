@@ -56,12 +56,7 @@ public sealed class GodotArgumentService : IGodotArgumentService
         }
 
         // Standalone tools - ALL require terminal output
-        if (HasStandaloneTools(args))
-        {
-            return true;
-        }
-
-        return false;
+        return HasStandaloneTools(args);
     }
 
     public bool HasGeneralOptions(string args) =>

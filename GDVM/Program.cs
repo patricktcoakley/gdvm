@@ -70,6 +70,7 @@ public class Program
         services.AddSingleton<IDownloadClient, DownloadClient>();
         services.AddSingleton<IReleaseManager, ReleaseManager>();
         services.AddSingleton<IInstallationService, InstallationService>();
+        services.AddSingleton<IProjectManager, ProjectManager>();
         services.AddSingleton<IVersionManagementService, VersionManagementService>();
         services.AddSingleton<IGodotArgumentService, GodotArgumentService>();
         services.AddSingleton<IAnsiConsole>(_ => AnsiConsole.Console);

@@ -10,7 +10,7 @@ using ZLogger;
 
 namespace GDVM.Command;
 
-public sealed class GodotCommand(IVersionManagementService versionManagementService, IGodotArgumentService argumentService, Messages messages, IAnsiConsole console, ILogger<GodotCommand> logger)
+public sealed class GodotCommand(IVersionManagementService versionManagementService, IGodotArgumentService argumentService, IProjectManager projectManager, Messages messages, IAnsiConsole console, ILogger<GodotCommand> logger)
 {
     /// <summary>
     ///     Launches the currently selected Godot version. If a project-specific version is detected but not installed, it prompts the user to automatically install it.
@@ -75,7 +75,7 @@ public sealed class GodotCommand(IVersionManagementService versionManagementServ
             // and launching with a project-specific version
             if (versionResult.IsProjectVersion && string.IsNullOrEmpty(argumentString))
             {
-                var projectFilePath = ProjectManager.FindProjectFilePath();
+                var projectFilePath = projectManager.FindProjectFilePath();
                 if (projectFilePath is not null)
                 {
                     // Godot expects the directory path, not the file path

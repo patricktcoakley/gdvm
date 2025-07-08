@@ -4,12 +4,7 @@ namespace GDVM.Test.Services;
 
 public class GodotArgumentServiceTests
 {
-    private readonly GodotArgumentService _service;
-
-    public GodotArgumentServiceTests()
-    {
-        _service = new GodotArgumentService();
-    }
+    private readonly GodotArgumentService _service = new();
 
     [Theory]
     [InlineData("")]

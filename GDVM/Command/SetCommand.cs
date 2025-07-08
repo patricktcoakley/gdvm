@@ -22,6 +22,12 @@ public sealed class SetCommand(IVersionManagementService versionManagementServic
         {
             _ = await versionManagementService.SetGlobalVersionAsync(query ?? [], interactive, cancellationToken);
         }
+        catch (TaskCanceledException)
+        {
+            logger.ZLogError($"User cancelled setting version.");
+            console.MarkupLine(Messages.UserCancelled("setting version"));
+            throw;
+        }
         catch (InvalidSymlinkException e)
         {
             logger.ZLogError($"Symlink created but appears invalid: {e.SymlinkPath}.");

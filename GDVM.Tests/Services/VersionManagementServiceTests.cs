@@ -12,6 +12,7 @@ public class VersionManagementServiceTests
     private readonly TestConsole _console;
     private readonly Mock<IHostSystem> _mockHostSystem;
     private readonly Mock<IInstallationService> _mockInstallationService;
+    private readonly Mock<IProjectManager> _mockProjectManager;
     private readonly Mock<IReleaseManager> _mockReleaseManager;
     private readonly VersionManagementService _service;
 
@@ -21,6 +22,7 @@ public class VersionManagementServiceTests
         _mockReleaseManager = new Mock<IReleaseManager>();
         var mockPathService = new Mock<IPathService>();
         _mockInstallationService = new Mock<IInstallationService>();
+        _mockProjectManager = new Mock<IProjectManager>();
         var mockLogger = new Mock<ILogger<VersionManagementService>>();
 
         mockPathService.Setup(x => x.RootPath).Returns("/test/gdvm");
@@ -33,11 +35,16 @@ public class VersionManagementServiceTests
 
         _console = new TestConsole();
 
+        // Default mock setup - tests can override this
+        _mockProjectManager.Setup(x => x.FindProjectInfo(It.IsAny<string>()))
+            .Returns((ProjectManager.ProjectInfo?)null);
+
         _service = new VersionManagementService(
             _mockHostSystem.Object,
             _mockReleaseManager.Object,
             _mockInstallationService.Object,
             mockPathService.Object,
+            _mockProjectManager.Object,
             _console,
             mockLogger.Object
         );
@@ -81,6 +88,11 @@ public class VersionManagementServiceTests
                 const string compatibleVersion = "4.3.0-stable";
                 var installedVersions = new[] { compatibleVersion };
 
+                // Mock project info for this test
+                var projectInfo = new ProjectManager.ProjectInfo(projectVersion, RuntimeEnvironment.Standard);
+                _mockProjectManager.Setup(x => x.FindProjectInfo(It.IsAny<string>()))
+                    .Returns(projectInfo);
+
                 _mockHostSystem.Setup(x => x.ListInstallations()).Returns(installedVersions);
                 _mockReleaseManager.Setup(x => x.FindCompatibleVersion(projectVersion, false, installedVersions))
                     .Returns(compatibleVersion);
@@ -116,6 +128,11 @@ public class VersionManagementServiceTests
     {
         const string projectVersion = "4.3.0";
         var installedVersions = Array.Empty<string>();
+
+        // Mock project info for this test
+        var projectInfo = new ProjectManager.ProjectInfo(projectVersion, RuntimeEnvironment.Standard);
+        _mockProjectManager.Setup(x => x.FindProjectInfo(It.IsAny<string>()))
+            .Returns(projectInfo);
 
         _mockHostSystem.Setup(x => x.ListInstallations()).Returns(installedVersions);
         _mockReleaseManager.Setup(x => x.FindCompatibleVersion(projectVersion, false, installedVersions))
@@ -167,6 +184,11 @@ public class VersionManagementServiceTests
                 const string execName = "Godot.app";
                 var installedVersions = new[] { compatibleVersion };
 
+                // Mock project info for this test
+                var projectInfo = new ProjectManager.ProjectInfo(projectVersion, RuntimeEnvironment.Standard);
+                _mockProjectManager.Setup(x => x.FindProjectInfo(It.IsAny<string>()))
+                    .Returns(projectInfo);
+
                 _mockHostSystem.Setup(x => x.ListInstallations()).Returns(installedVersions);
                 _mockReleaseManager.Setup(x => x.FindCompatibleVersion(projectVersion, false, installedVersions))
                     .Returns(compatibleVersion);
@@ -204,6 +226,15 @@ public class VersionManagementServiceTests
         var directory = Path.GetTempPath();
 
         var versionFilePath = Path.Combine(directory, ".gdvm-version");
+
+        // Mock CreateVersionFile to actually create the file
+        _mockProjectManager.Setup(x => x.CreateVersionFile(version, directory))
+            .Callback<string, string>((v, d) =>
+            {
+                var filePath = Path.Combine(d ?? Directory.GetCurrentDirectory(), ".gdvm-version");
+                File.WriteAllText(filePath, v + System.Environment.NewLine);
+            });
+
         try
         {
             _service.CreateOrUpdateVersionFile(version, directory);
@@ -692,6 +723,10 @@ public class VersionManagementServiceTests
 
         _mockReleaseManager.Setup(x => x.TryCreateRelease(selectedVersion))
             .Returns(mockRelease);
+
+        // Mock ProjectManager to return null (no project info found)
+        _mockProjectManager.Setup(x => x.FindProjectInfo(It.IsAny<string>()))
+            .Returns((ProjectManager.ProjectInfo?)null);
 
         _console.Interactive();
         _console.Input.PushKey(ConsoleKey.Enter);

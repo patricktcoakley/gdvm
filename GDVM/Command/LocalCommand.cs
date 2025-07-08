@@ -15,14 +15,28 @@ public sealed class LocalCommand(IVersionManagementService versionManagementServ
     ///     If arguments are provided, it will find the best matching version and install it if necessary.
     ///     Use --interactive to select from already installed versions.
     /// </summary>
-    /// <param name="query">Version query arguments</param>
     /// <param name="interactive">-i, Creates a prompt to select from installed versions for the local project.</param>
-    public async Task Local([Argument] string[]? query = null, bool interactive = false)
+    /// <param name="query">Version query arguments</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    public async Task Local(bool interactive = false, [Argument] string[]? query = null, CancellationToken cancellationToken = default)
     {
+        // Warn if both query and interactive are provided, then default to interactive
+        if (query is { Length: > 0 } && interactive)
+        {
+            console.MarkupLine("[yellow]Warning: Cannot use --interactive with version query. Defaulting to interactive selection.[/]");
+            query = null; // Clear query to use interactive mode
+        }
+
         try
         {
-            var godotRelease = await versionManagementService.SetLocalVersionAsync(query, interactive);
+            var godotRelease = await versionManagementService.SetLocalVersionAsync(query, interactive, cancellationToken);
             console.MarkupLine($"[green]Set local version to {godotRelease.ReleaseNameWithRuntime}.[/]");
+        }
+        catch (TaskCanceledException)
+        {
+            logger.ZLogError($"User cancelled setting local version.");
+            console.MarkupLine(Messages.UserCancelled("setting local version"));
+            throw;
         }
         catch (Exception e)
         {

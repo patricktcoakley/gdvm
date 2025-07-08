@@ -67,6 +67,7 @@ public class VersionManagementService(
     IReleaseManager releaseManager,
     IInstallationService installationService,
     IPathService pathService,
+    IProjectManager projectManager,
     IAnsiConsole console,
     ILogger<VersionManagementService> logger) : IVersionManagementService
 {
@@ -81,7 +82,7 @@ public class VersionManagementService(
             var installed = hostSystem.ListInstallations().ToList();
 
             // Check for project-specific version first (unless interactive mode is requested)
-            var projectInfo = ProjectManager.FindProjectInfo();
+            var projectInfo = projectManager.FindProjectInfo();
 
             if (projectInfo is not null && !forceInteractive)
             {
@@ -239,7 +240,7 @@ public class VersionManagementService(
     /// </summary>
     public void CreateOrUpdateVersionFile(string version, string? directory = null)
     {
-        ProjectManager.CreateVersionFile(version, directory);
+        projectManager.CreateVersionFile(version, directory);
     }
 
     private async Task<VersionResolutionResult> ResolveProjectVersionAsync(ProjectManager.ProjectInfo projectInfo, List<string> installed,
@@ -260,7 +261,7 @@ public class VersionManagementService(
         // Prompt user for automatic installation
         if (!await PromptForInstallationAsync(projectVersion, projectInfo.IsDotNet, cancellationToken))
         {
-            console.MarkupLine($"[yellow]Project specifies {projectVersion}{(projectInfo.IsDotNet ? " [.NET]" : "")} but it's not installed.[/]");
+            console.MarkupLine($"[yellow]Project specifies {projectVersion}{projectInfo.RuntimeDisplaySuffix} but it's not installed.[/]");
             console.MarkupLine(
                 $"[dim]Run 'gdvm install {projectVersion}{(projectInfo.IsDotNet ? " mono" : "")}' or 'gdvm local {projectVersion}{(projectInfo.IsDotNet ? " mono" : "")}' to install it.[/]");
 
@@ -270,7 +271,7 @@ public class VersionManagementService(
         var compatibleInstalled = await FindOrInstallCompatibleVersionAsync(projectVersion, projectInfo.IsDotNet, false, cancellationToken);
         if (compatibleInstalled is null)
         {
-            console.MarkupLine($"[red]Failed to install {projectVersion}{(projectInfo.IsDotNet ? " [.NET]" : "")}.[/]");
+            console.MarkupLine($"[red]Failed to install {projectVersion}{projectInfo.RuntimeDisplaySuffix}.[/]");
             console.MarkupLine($"[dim]You can manually install with: gdvm install {projectVersion}{(projectInfo.IsDotNet ? " mono" : "")}[/]");
             return VersionResolutionResult.Failed();
         }
@@ -288,7 +289,7 @@ public class VersionManagementService(
         var (execPath, workingDirectory) = GetExecutionPaths(newProjectGodotRelease);
 
         console.MarkupLine(
-            $"[green]Successfully installed and using: {projectVersion}{(projectInfo.IsDotNet ? " (.NET)" : "")} → {newCompatibleVersion}[/]");
+            $"[green]Successfully installed and using: {projectVersion}{projectInfo.RuntimeDisplaySuffix} → {newCompatibleVersion}[/]");
 
         return VersionResolutionResult.Found(execPath, workingDirectory, newCompatibleVersion, true);
     }
@@ -371,7 +372,7 @@ public class VersionManagementService(
 
         var (execPath, workingDirectory) = GetExecutionPaths(projectGodotRelease);
 
-        console.MarkupLine($"[dim]Using project version: {projectVersion}{(projectInfo.IsDotNet ? " (.NET)" : "")} → {compatibleVersion}[/]");
+        console.MarkupLine($"[dim]Using project version: {projectVersion}{projectInfo.RuntimeDisplaySuffix} → {compatibleVersion}[/]");
         return VersionResolutionResult.Found(execPath, workingDirectory, compatibleVersion, isProjectVersion);
     }
 
@@ -391,15 +392,9 @@ public class VersionManagementService(
 
     private async Task<string> DetermineVersionToSetAsync(string[]? query, bool forceInteractive, string[] installed, CancellationToken cancellationToken)
     {
-        // Interactive mode
-        if (forceInteractive || query == null)
+        if (query == null || query.Length == 0)
         {
-            return await HandleInteractiveModeAsync(installed, cancellationToken);
-        }
-
-        if (query.Length == 0)
-        {
-            return await HandleAutoDetectionModeAsync(installed, cancellationToken);
+            return await HandleAutoDetectionModeAsync(installed, forceInteractive, cancellationToken);
         }
 
         return await HandleQueryModeAsync(query, installed, cancellationToken);
@@ -416,13 +411,13 @@ public class VersionManagementService(
         throw new InvalidOperationException("No installations found. Install a version first with: gdvm install <version>");
     }
 
-    private async Task<string> HandleAutoDetectionModeAsync(string[] installed, CancellationToken cancellationToken)
+    private async Task<string> HandleAutoDetectionModeAsync(string[] installed, bool forceInteractive, CancellationToken cancellationToken)
     {
         // Check for existing `.gdvm-version` file or `project.godot`
-        var projectInfo = ProjectManager.FindProjectInfo();
+        var projectInfo = projectManager.FindProjectInfo();
         if (projectInfo is not null)
         {
-            return await HandleProjectInfoAsync(projectInfo, installed, cancellationToken);
+            return await HandleProjectInfoAsync(projectInfo, installed, forceInteractive, cancellationToken);
         }
 
         if (installed.Length == 0)
@@ -435,9 +430,23 @@ public class VersionManagementService(
         return await Set.ShowSetVersionPrompt(installed, console, cancellationToken);
     }
 
-    private async Task<string> HandleProjectInfoAsync(ProjectManager.ProjectInfo projectInfo, string[] installed, CancellationToken cancellationToken)
+    private async Task<string> HandleProjectInfoAsync(ProjectManager.ProjectInfo projectInfo, string[] installed, bool forceInteractive,
+        CancellationToken cancellationToken)
     {
         var projectVersion = projectInfo.Version;
+
+        // If interactive mode is forced, show selection regardless of compatible versions
+        if (forceInteractive)
+        {
+            if (installed.Length <= 0)
+            {
+                throw new InvalidOperationException("No versions installed. Install a version first with: `gdvm install <version>`");
+            }
+
+            console.MarkupLine($"[yellow]Project specifies {projectVersion}{projectInfo.RuntimeDisplaySuffix}.[/]");
+            console.MarkupLine("[dim]Choose from installed versions:[/]");
+            return await Set.ShowSetVersionPrompt(installed, console, cancellationToken);
+        }
 
         // Try to find a compatible installed version
         var compatibleVersion = releaseManager.FindCompatibleVersion(projectVersion, projectInfo.IsDotNet, installed);
@@ -448,10 +457,10 @@ public class VersionManagementService(
             return compatibleVersion;
         }
 
-        // Not installed, need to install it
-        logger.ZLogInformation($"Project version {projectVersion} is not installed, attempting to install it.");
-        console.MarkupLine($"[yellow]Project specifies {projectVersion}{(projectInfo.IsDotNet ? " (.NET)" : "")} but it's not installed.[/]");
-        console.MarkupLine($"[dim]Installing {projectVersion}{(projectInfo.IsDotNet ? " (.NET)" : "")}...[/]");
+        // Not installed, auto-install
+        logger.ZLogInformation($"Project version {projectVersion} is not installed, automatically installing it.");
+        console.MarkupLine($"[yellow]Project specifies {projectVersion}{projectInfo.RuntimeDisplaySuffix} but it's not installed.[/]");
+        console.MarkupLine($"[dim]Installing {projectVersion}{projectInfo.RuntimeDisplaySuffix}...[/]");
 
         // Build the query for installation
         var installQuery = projectInfo.IsDotNet
@@ -461,7 +470,7 @@ public class VersionManagementService(
         var installedRelease = await installationService.InstallByQueryAsync(installQuery, cancellationToken: cancellationToken);
         if (!installedRelease.IsSuccess)
         {
-            console.MarkupLine($"[red]Failed to install {projectVersion}{(projectInfo.IsDotNet ? " (.NET)" : "")}.[/]");
+            console.MarkupLine($"[red]Failed to install {projectVersion}{projectInfo.RuntimeDisplaySuffix}.[/]");
 
             if (installed.Length <= 0)
             {

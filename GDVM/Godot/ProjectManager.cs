@@ -3,39 +3,46 @@ using System.Text.RegularExpressions;
 namespace GDVM.Godot;
 
 /// <summary>
-/// Interface for managing Godot project information and version files
+///     Interface for managing Godot project information and version files
 /// </summary>
 public interface IProjectManager
 {
     /// <summary>
-    /// Finds project information including version and runtime environment.
+    ///     Finds project information including version and runtime environment.
     /// </summary>
     /// <param name="directory">The directory to search in. If null, uses current working directory.</param>
     /// <returns>ProjectInfo if found, null otherwise.</returns>
     ProjectManager.ProjectInfo? FindProjectInfo(string? directory = null);
 
     /// <summary>
-    /// Finds the project version using the following priority:
-    /// 1. `.gdvm-version` file (user override) or
-    /// 2. `project.godot` file (automatic detection) and creates a `.gdvm-version` file based on the contents.
+    ///     Finds the project version using the following priority:
+    ///     1. `.gdvm-version` file (user override) or
+    ///     2. `project.godot` file (automatic detection) and creates a `.gdvm-version` file based on the contents.
     /// </summary>
     /// <param name="directory">The directory to search in. If null, uses current working directory.</param>
     /// <returns>The version string if found, null otherwise.</returns>
     string? FindProjectVersion(string? directory = null);
 
     /// <summary>
-    /// Finds the path to the project.godot file in the specified directory.
+    ///     Finds the path to the project.godot file in the specified directory.
     /// </summary>
     /// <param name="directory">The directory to search in. If null, uses current working directory.</param>
     /// <returns>The full path to project.godot if found, null otherwise.</returns>
     string? FindProjectFilePath(string? directory = null);
 
     /// <summary>
-    /// Creates or updates a `.gdvm-version` file in the specified directory.
+    ///     Creates or updates a `.gdvm-version` file in the specified directory.
     /// </summary>
     /// <param name="version">The version to write to the file</param>
     /// <param name="directory">The directory to create the file in (null for current directory)</param>
     void CreateVersionFile(string version, string? directory = null);
+
+    /// <summary>
+    ///     Finds project info from `.gdvm-version` file
+    /// </summary>
+    /// <param name="directory">The directory to search in. If null, uses current working directory.</param>
+    /// <returns>ProjectInfo if .gdvm-version file found, null otherwise.</returns>
+    ProjectManager.ProjectInfo? FindExplicitProjectInfo(string? directory = null);
 }
 
 public partial class ProjectManager : IProjectManager
@@ -76,6 +83,7 @@ public partial class ProjectManager : IProjectManager
                 var runtime = content.Contains("mono", StringComparison.OrdinalIgnoreCase)
                     ? RuntimeEnvironment.Mono
                     : RuntimeEnvironment.Standard;
+
                 return new ProjectInfo(content, runtime);
             }
         }
@@ -95,6 +103,43 @@ public partial class ProjectManager : IProjectManager
         var targetDir = directory ?? Directory.GetCurrentDirectory();
         var projectFile = Path.Combine(targetDir, ProjectFile);
         return File.Exists(projectFile) ? projectFile : null;
+    }
+
+    public void CreateVersionFile(string version, string? directory = null)
+    {
+        var targetDir = directory ?? Directory.GetCurrentDirectory();
+        var filePath = Path.Combine(targetDir, VersionFile);
+        File.WriteAllText(filePath, version + System.Environment.NewLine);
+    }
+
+    /// <summary>
+    ///     Finds project info from `.gdvm-version` file
+    /// </summary>
+    /// <param name="directory">The directory to search in. If null, uses current working directory.</param>
+    /// <returns>ProjectInfo if .gdvm-version file found, null otherwise.</returns>
+    public ProjectInfo? FindExplicitProjectInfo(string? directory = null)
+    {
+        var targetDir = directory ?? Directory.GetCurrentDirectory();
+
+        // Only check for `.gdvm-version` file (user override)
+        var versionFile = Path.Combine(targetDir, VersionFile);
+        if (!File.Exists(versionFile))
+        {
+            return null;
+        }
+
+        var content = File.ReadAllText(versionFile).Trim();
+        if (string.IsNullOrEmpty(content))
+        {
+            return null;
+        }
+
+        // Determine runtime from version string
+        var runtime = content.Contains("mono", StringComparison.OrdinalIgnoreCase)
+            ? RuntimeEnvironment.Mono
+            : RuntimeEnvironment.Standard;
+
+        return new ProjectInfo(content, runtime);
     }
 
     /// <summary>
@@ -136,7 +181,7 @@ public partial class ProjectManager : IProjectManager
         }
         catch (Exception)
         {
-            // If parsing fails, return null
+            return null;
         }
 
         return null;
@@ -168,25 +213,18 @@ public partial class ProjectManager : IProjectManager
         return features.FirstOrDefault(feature => VersionRegex().IsMatch(feature));
     }
 
-    public void CreateVersionFile(string version, string? directory = null)
-    {
-        var targetDir = directory ?? Directory.GetCurrentDirectory();
-        var filePath = Path.Combine(targetDir, VersionFile);
-        File.WriteAllText(filePath, version + System.Environment.NewLine);
-    }
-
     [GeneratedRegex(@"^\d+\.\d+(\.\d+)?$")]
     private static partial Regex VersionRegex();
 
     public record ProjectInfo(string Version, RuntimeEnvironment Runtime)
     {
         /// <summary>
-        /// Gets the runtime display suffix for the project (e.g., " [.NET]" or empty string)
+        ///     Gets the runtime display suffix for the project (e.g., " [.NET]" or empty string)
         /// </summary>
-        public string RuntimeDisplaySuffix => Runtime == RuntimeEnvironment.Mono ? " [.NET]" : "";
+        public string RuntimeDisplaySuffix => Runtime == RuntimeEnvironment.Mono ? " [[.NET]]" : "";
 
         /// <summary>
-        /// Gets whether this project uses .NET runtime (true for Mono, false for Standard)
+        ///     Gets whether this project uses .NET runtime (true for Mono, false for Standard)
         /// </summary>
         public bool IsDotNet => Runtime == RuntimeEnvironment.Mono;
     }

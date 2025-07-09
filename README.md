@@ -103,14 +103,14 @@ but here is a detailed summary of the available commands:
   - Queries:
     - `latest` or `latest standard` will install the latest stable, and `latest mono` will install the latest .NET stable.
     - `4 mono` will grab the latest stable 4.x .NET release, `3.3 rc` will grab the latest rc of 3.3 standard, `1` would take the last stable version `1`, and so on.
-- `gdvm godot` runs the set Godot version, or with the `--interactive` or `-i` flag, will prompt the user to launch an installed version. When run in a project directory it will automatically detect the required version and runtime (.NET vs standard) from existing `.gdvm-version` (first) or `project.godot` (second) files. If the required version is not installed, it will prompt the user to automatically install it.
+- `gdvm godot` runs the appropriate Godot version, or with the `--interactive` or `-i` flag, will prompt the user to launch an installed version. When run in a project directory with a `.gdvm-version` file, it will use that project-specific version. If no `.gdvm-version` file exists, it will use the global default version. The command will automatically detect and launch the project if a `project.godot` file is found.
   - Once a version is installed, it will launch the editor with the project directly from the terminal This feature will only work on projects using `config_version=5` in `project.godot`, which is **Godot 4.0 and later**.
   - Optionally, pass in arguments to the Godot executable directly using the `--args` parameter, such as `gdvm godot --args --headless` or `gdvm godot --args --version`. Multiple arguments should be passed as a double-quoted string, such as --args "--headless -v".
   - Use the `--attached` or `-a` flag to force Godot connected to the terminal for output; by default, Godot runs in detached mode and will launch in a separate instance. Using an argument detection system, certain arguments (like `--version`, `--help`, `--headless`) automatically trigger this  mode since they would otherwise be useless without printing to standard out.
-  - The command will read existing `.gdvm-version` files or detect project versions from `project.godot`, but does not create or modify version files. Use `gdvm local` to manage `.gdvm-version` files.
+  - The command will only read existing `.gdvm-version` files for version selection, and does not create or modify version files. Use `gdvm local` to manage `.gdvm-version` files.
 - `gdvm set [--interactive|-i] [<...strings>]` prompts the user to set an installed version of Godot if no arguments are supplied, or will
   try to find the closest matching version based on the query, including release type (`stable`) and version (`4`, `4.4`), or an exact match (`4.4.1-stable-mono`). Use `-i|--interactive` to select from already installed versions.
-- `gdvm local [--interactive|-i] [<...strings>]` sets the Godot version for the current project by creating or updating a `.gdvm-version` file in the current directory. By default it will automatically detect the project version from `project.godot` or `.gdvm-version` file and installs the most recent compatible version if not already installed; if one already exists, it uses that version.
+- `gdvm local [--interactive|-i] [<...strings>]` sets the Godot version for the current project by creating or updating a `.gdvm-version` file in the current directory. If no `.gdvm-version` file exists, it will automatically detect the project version from `project.godot` and install the most recent compatible version if not already installed. If a `.gdvm-version` file already exists, it will use that version.
   - If a list of arguments are provided, it will find the best matching version based on the query (including runtime preferences like `mono` or `standard`) and install it if necessary.
   - Use `-i|--interactive` to force interactive selection from already installed versions instead of auto-installing.
 - `gdvm which` displays the location that the current Godot symlink points to.
@@ -121,6 +121,39 @@ but here is a detailed summary of the available commands:
   - Queries:
     - `4` would filter all 4.x releases, including "stable", "dev", etc.
     - `4.2-rc` would only list the `4.2` `rc` releases, but `4.2 rc` would list all `4.2.x` releases with the `rc` release type, including `4.2.2.-rc3`
+
+### Project Version Management
+
+gdvm supports project-specific version management through `.gdvm-version` files. Here's how it works:
+
+#### Setting up a project version:
+```bash
+# Navigate to your project directory
+cd my-godot-project
+
+# Option 1: Auto-detect version from project.godot
+gdvm local                    # Detects version from project.godot, creates .gdvm-version
+
+# Option 2: Explicitly set a version
+gdvm local 4.3 mono          # Creates .gdvm-version with 4.3-stable-mono
+```
+
+#### Using project versions:
+```bash
+# In a project directory with .gdvm-version file
+gdvm godot                    # Uses version from .gdvm-version
+
+# In a project directory without .gdvm-version file  
+gdvm godot                    # Uses global default version
+
+# In any directory
+gdvm godot -i                 # Interactive selection from installed versions
+```
+
+#### Workflow:
+1. **`gdvm local`** - Creates/updates `.gdvm-version` file for project-specific version management
+2. **`gdvm godot`** - Respects `.gdvm-version` file if present, otherwise uses global default
+3. **`gdvm set`** - Sets the global default version used when no `.gdvm-version` exists
 
 ### Configuration
 

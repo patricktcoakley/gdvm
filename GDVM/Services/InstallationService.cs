@@ -83,7 +83,7 @@ public class InstallationService(
                 .StartAsync("Installing...", async _ =>
                 {
                     // Verify checksum if available
-                    if (godotRelease is { Major: >= 3, Minor: >= 3 })
+                    if (godotRelease.Major > 3 || godotRelease is { Major: 3, Minor: >= 3 })
                     {
                         console.MarkupLine("Calculating checksum :input_numbers:...");
 

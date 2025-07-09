@@ -56,8 +56,8 @@ public sealed class GodotCommand(IVersionManagementService versionManagementServ
                 return;
             }
 
-            // Use the version management service to resolve the appropriate version
-            versionResult = await versionManagementService.ResolveVersionForLaunchAsync(interactive, cancellationToken);
+            // Use the version management service to resolve the appropriate version (explicit .gdvm-version only)
+            versionResult = await versionManagementService.ResolveVersionForLaunchExplicitAsync(interactive, cancellationToken);
 
             if (!versionResult.IsSuccess)
             {
@@ -72,8 +72,7 @@ public sealed class GodotCommand(IVersionManagementService versionManagementServ
             var argumentString = args != null ? string.Join(" ", args) : "";
 
             // Auto-detect project file and add it to arguments if we're in a project directory
-            // and launching with a project-specific version
-            if (versionResult.IsProjectVersion && string.IsNullOrEmpty(argumentString))
+            if (string.IsNullOrEmpty(argumentString))
             {
                 var projectFilePath = projectManager.FindProjectFilePath();
                 if (projectFilePath is not null)

@@ -22,6 +22,14 @@ public interface IVersionManagementService
     Task<VersionResolutionResult> ResolveVersionForLaunchAsync(bool forceInteractive = false, CancellationToken cancellationToken = default);
 
     /// <summary>
+    ///     Resolves version for launching using only explicit .gdvm-version files (not project.godot auto-detection)
+    /// </summary>
+    /// <param name="forceInteractive">Force interactive selection even if .gdvm-version file is found</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Version resolution result containing execution path and working directory, or failure status</returns>
+    Task<VersionResolutionResult> ResolveVersionForLaunchExplicitAsync(bool forceInteractive = false, CancellationToken cancellationToken = default);
+
+    /// <summary>
     ///     Sets the global Godot version by creating/updating symlinks.
     /// </summary>
     /// <param name="query">Version query to search for</param>
@@ -83,6 +91,42 @@ public class VersionManagementService(
 
             // Check for project-specific version first (unless interactive mode is requested)
             var projectInfo = projectManager.FindProjectInfo();
+
+            if (projectInfo is not null && !forceInteractive)
+            {
+                return await ResolveProjectVersionAsync(projectInfo, installed, cancellationToken);
+            }
+
+            if (forceInteractive)
+            {
+                return await ResolveInteractiveVersionAsync(installed, cancellationToken);
+            }
+
+            return ResolveSymlinkVersion();
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception e)
+        {
+            logger.ZLogError(e, $"Error resolving version for launch");
+            console.MarkupLine("[red]Error resolving Godot version for launch.[/]");
+            return VersionResolutionResult.Failed();
+        }
+    }
+
+    /// <summary>
+    ///     Resolves version for launching using only explicit .gdvm-version files (not project.godot auto-detection)
+    /// </summary>
+    public async Task<VersionResolutionResult> ResolveVersionForLaunchExplicitAsync(bool forceInteractive = false, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var installed = hostSystem.ListInstallations().ToList();
+
+            // Check for explicit .gdvm-version file only (not project.godot auto-detection)
+            var projectInfo = projectManager.FindExplicitProjectInfo();
 
             if (projectInfo is not null && !forceInteractive)
             {
@@ -199,8 +243,13 @@ public class VersionManagementService(
                 return compatibleVersion;
             }
 
-            // No compatible version found, attempt installation if prompted
-            if (!promptForInstallation || !await PromptForInstallationAsync(projectVersion, isDotNet, cancellationToken))
+            // No compatible version found, attempt installation if prompting is enabled
+            if (!promptForInstallation)
+            {
+                return null;
+            }
+
+            if (!await PromptForInstallationAsync(projectVersion, isDotNet, cancellationToken))
             {
                 return null;
             }
@@ -208,9 +257,16 @@ public class VersionManagementService(
             console.MarkupLine($"[dim]Installing {projectVersion}{(isDotNet ? " (.NET)" : "")}...[/]");
 
             // Build the query for installation
+            // Parse the project version to extract base version (remove runtime suffix)
+            var baseVersion = projectVersion;
+            if (baseVersion.EndsWith("-mono"))
+                baseVersion = baseVersion.Replace("-mono", "");
+            else if (baseVersion.EndsWith("-standard"))
+                baseVersion = baseVersion.Replace("-standard", "");
+
             var installQuery = isDotNet
-                ? new[] { projectVersion, "mono" }
-                : new[] { projectVersion };
+                ? new[] { baseVersion, "mono" }
+                : new[] { baseVersion };
 
             var installedRelease = await installationService.InstallByQueryAsync(installQuery, cancellationToken: cancellationToken);
 
@@ -222,6 +278,13 @@ public class VersionManagementService(
             // Re-check for a compatible version after installation
             installed = hostSystem.ListInstallations().ToList();
             compatibleVersion = releaseManager.FindCompatibleVersion(projectVersion, isDotNet, installed);
+
+            // If installation succeeded but compatibility check failed, return the installed version name
+            if (compatibleVersion == null)
+            {
+                return installedRelease.ReleaseNameWithRuntime;
+            }
+
             return compatibleVersion;
         }
         catch (OperationCanceledException)
@@ -463,9 +526,16 @@ public class VersionManagementService(
         console.MarkupLine($"[dim]Installing {projectVersion}{projectInfo.RuntimeDisplaySuffix}...[/]");
 
         // Build the query for installation
+        // Parse the project version to extract base version (remove runtime suffix)
+        var baseVersion = projectVersion;
+        if (baseVersion.EndsWith("-mono"))
+            baseVersion = baseVersion.Replace("-mono", "");
+        else if (baseVersion.EndsWith("-standard"))
+            baseVersion = baseVersion.Replace("-standard", "");
+
         var installQuery = projectInfo.IsDotNet
-            ? new[] { projectVersion, "mono" }
-            : new[] { projectVersion };
+            ? new[] { baseVersion, "mono" }
+            : new[] { baseVersion };
 
         var installedRelease = await installationService.InstallByQueryAsync(installQuery, cancellationToken: cancellationToken);
         if (!installedRelease.IsSuccess)
@@ -535,7 +605,7 @@ public class VersionManagementService(
     {
         try
         {
-            var runtimeText = isDotNet ? " [.NET]" : "";
+            var runtimeText = isDotNet ? " [[.NET]]" : "";
 
             var confirmPrompt =
                 new ConfirmationPrompt($"[yellow]Project requires {projectVersion}{runtimeText} but it's not installed.[/]\n[green]Would you like to install it now?[/]")

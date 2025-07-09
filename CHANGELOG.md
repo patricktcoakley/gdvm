@@ -1,5 +1,12 @@
 # Changelog
 
+<a name="1.1.1"></a>
+## [1.1.1](https://github.com/patricktcoakley/gdvm/releases/tag/v1.1.1) (2025-07-08)
+
+### 🐛 Bug Fixes
+
+* resolve version resolution logic ([76693aa](https://github.com/patricktcoakley/gdvm/commit/76693aa112cb527271a3ad3a366cf69524fdf54c))
+
 <a name="1.1.0"></a>
 ## [1.1.0](https://github.com/patricktcoakley/gdvm/releases/tag/v1.1.0) (2025-07-08)
 

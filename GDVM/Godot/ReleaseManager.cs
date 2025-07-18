@@ -98,9 +98,11 @@ public sealed class ReleaseManager(IHostSystem hostSystem, PlatformStringProvide
         }
 
         var platformString = platformStringProvider.GetPlatformString(release);
-        release.OS = hostSystem.SystemInfo.CurrentOS;
-        release.PlatformString = platformString;
-        return release;
+        return release with
+        {
+            OS = hostSystem.SystemInfo.CurrentOS,
+            PlatformString = platformString
+        };
     }
 
     public string? FindCompatibleVersion(string projectVersion, bool isDotNet, IEnumerable<string> installedVersions)
@@ -122,39 +124,33 @@ public sealed class ReleaseManager(IHostSystem hostSystem, PlatformStringProvide
         }
 
         // Parse all compatible releases and find the best match
-        var compatibleReleases = new List<Release>();
-
-        foreach (var version in versions)
-        {
-            var release = TryCreateRelease(version);
-            if (release == null)
+        var compatibleReleases = versions
+            .Select(TryCreateRelease)
+            .Where(release => release != null)
+            .Cast<Release>()
+            .Where(release =>
             {
-                continue;
-            }
+                // Check if this release matches our criteria
+                var versionString = $"{release.Major}.{release.Minor}";
+                bool isVersionMatch;
 
-            // Check if this release matches our criteria
-            var versionString = $"{release.Major}.{release.Minor}";
-            bool isVersionMatch;
+                if (projectVersion.Contains('.'))
+                {
+                    // Project version is like "4.3" - match exact major.minor
+                    isVersionMatch = versionString == projectVersion;
+                }
+                else
+                {
+                    // Project version is like "4" - match major only
+                    isVersionMatch = release.Major.ToString() == projectVersion;
+                }
 
-            if (projectVersion.Contains('.'))
-            {
-                // Project version is like "4.3" - match exact major.minor
-                isVersionMatch = versionString == projectVersion;
-            }
-            else
-            {
-                // Project version is like "4" - match major only
-                isVersionMatch = release.Major.ToString() == projectVersion;
-            }
+                return isVersionMatch &&
+                       release.RuntimeEnvironment.ToString().Equals(preferredRuntime, StringComparison.CurrentCultureIgnoreCase);
+            })
+            .ToArray();
 
-            if (isVersionMatch &&
-                release.RuntimeEnvironment.ToString().Equals(preferredRuntime, StringComparison.CurrentCultureIgnoreCase))
-            {
-                compatibleReleases.Add(release);
-            }
-        }
-
-        if (compatibleReleases.Count == 0)
+        if (compatibleReleases.Length == 0)
         {
             return null;
         }

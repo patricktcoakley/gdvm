@@ -14,14 +14,6 @@ public interface IProjectManager
     /// <returns>ProjectInfo if found, null otherwise.</returns>
     ProjectManager.ProjectInfo? FindProjectInfo(string? directory = null);
 
-    /// <summary>
-    ///     Finds the project version using the following priority:
-    ///     1. `.gdvm-version` file (user override) or
-    ///     2. `project.godot` file (automatic detection) and creates a `.gdvm-version` file based on the contents.
-    /// </summary>
-    /// <param name="directory">The directory to search in. If null, uses current working directory.</param>
-    /// <returns>The version string if found, null otherwise.</returns>
-    string? FindProjectVersion(string? directory = null);
 
     /// <summary>
     ///     Finds the path to the project.godot file in the specified directory.
@@ -49,19 +41,6 @@ public partial class ProjectManager : IProjectManager
 {
     private const string VersionFile = ".gdvm-version";
     private const string ProjectFile = "project.godot";
-
-    /// <summary>
-    ///     Finds the project version using the following priority:
-    ///     1. `.gdvm-version` file (user override) or
-    ///     2. `project.godot` file (automatic detection) and creates a `.gdvm-version` file based on the contents.
-    /// </summary>
-    /// <param name="directory">The directory to search in. If null, uses current working directory.</param>
-    /// <returns>The version string if found, null otherwise.</returns>
-    public string? FindProjectVersion(string? directory = null)
-    {
-        var projectInfo = FindProjectInfo(directory);
-        return projectInfo?.Version;
-    }
 
     /// <summary>
     ///     Finds project information including version and .NET status.
@@ -140,6 +119,19 @@ public partial class ProjectManager : IProjectManager
             : RuntimeEnvironment.Standard;
 
         return new ProjectInfo(content, runtime);
+    }
+
+    /// <summary>
+    ///     Finds the project version using the following priority:
+    ///     1. `.gdvm-version` file (user override) or
+    ///     2. `project.godot` file (automatic detection) and creates a `.gdvm-version` file based on the contents.
+    /// </summary>
+    /// <param name="directory">The directory to search in. If null, uses current working directory.</param>
+    /// <returns>The version string if found, null otherwise.</returns>
+    public string? FindProjectVersion(string? directory = null)
+    {
+        var projectInfo = FindProjectInfo(directory);
+        return projectInfo?.Version;
     }
 
     /// <summary>

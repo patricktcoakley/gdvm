@@ -8,7 +8,7 @@ using ZLogger;
 
 namespace GDVM.Command;
 
-public sealed class LogsCommand(IPathService pathService, Messages messages, IAnsiConsole console, ILogger<LogsCommand> logger)
+public sealed class LogsCommand(IPathService pathService, IAnsiConsole console, ILogger<LogsCommand> logger)
 {
     private const string DateTimeFormat = "yyyy-MM-dd HH:mm:ss.fff";
     private static readonly string[] LogLevels = ["DEFAULT", "DEBUG", "INFORMATION", "WARNING", "ERROR", "CRITICAL"];
@@ -90,7 +90,7 @@ public sealed class LogsCommand(IPathService pathService, Messages messages, IAn
         {
             logger.ZLogError($"Error reading the logs: {e.Message}");
             console.MarkupLine(
-                messages.SomethingWentWrong("when trying to read the logs")
+                Messages.SomethingWentWrong("when trying to read the logs", pathService)
             );
 
             throw;

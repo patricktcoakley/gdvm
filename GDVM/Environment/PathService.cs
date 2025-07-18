@@ -16,7 +16,7 @@ public interface IPathService
     string ConfigPath { get; }
 
     /// <summary>
-    ///     Path to the releases cache directory.
+    ///     Path to the releases cache file.
     /// </summary>
     string ReleasesPath { get; }
 

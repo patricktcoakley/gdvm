@@ -1,3 +1,4 @@
+using GDVM.Error;
 using GDVM.Godot;
 using Spectre.Console;
 

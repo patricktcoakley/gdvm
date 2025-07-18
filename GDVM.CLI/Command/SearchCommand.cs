@@ -2,13 +2,19 @@
 using GDVM.Environment;
 using GDVM.Error;
 using GDVM.Godot;
+using GDVM.Services;
 using Microsoft.Extensions.Logging;
 using Spectre.Console;
 using ZLogger;
 
 namespace GDVM.Command;
 
-public sealed class SearchCommand(IReleaseManager releaseManager, IPathService pathService, Messages messages, IAnsiConsole console, ILogger<SearchCommand> logger)
+public sealed class SearchCommand(
+    IReleaseManager releaseManager,
+    IInstallationService installationService,
+    IPathService pathService,
+    IAnsiConsole console,
+    ILogger<SearchCommand> logger)
 {
     /// <summary>
     ///     A remote search that takes an optional query and displays a filtered list of Godot releases available to download.
@@ -22,9 +28,7 @@ public sealed class SearchCommand(IReleaseManager releaseManager, IPathService p
             Panel panel;
             if (query.Length == 0)
             {
-                var releaseNames = (await releaseManager.ListReleases(cancellationToken)).ToArray();
-
-                await File.WriteAllLinesAsync(pathService.ReleasesPath, releaseNames, cancellationToken);
+                var releaseNames = await installationService.FetchReleaseNames(cancellationToken);
                 panel = new Panel(string.Join("\n", releaseNames))
                 {
                     Header = new PanelHeader("[green]List Of Available Versions[/]"),
@@ -50,7 +54,7 @@ public sealed class SearchCommand(IReleaseManager releaseManager, IPathService p
         {
             logger.ZLogError($"Error searching releases: {e.Message}");
             console.MarkupLine(
-                messages.SomethingWentWrong("when trying to search releases")
+                Messages.SomethingWentWrong("when trying to search releases", pathService)
             );
 
             throw;

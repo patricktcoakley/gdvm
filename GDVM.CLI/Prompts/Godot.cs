@@ -1,3 +1,4 @@
+using GDVM.Error;
 using Spectre.Console;
 
 namespace GDVM.Prompts;
@@ -5,13 +6,13 @@ namespace GDVM.Prompts;
 public static class Godot
 {
     public static async Task<string> ShowGodotSelectionPrompt(
-        List<string> installed, IAnsiConsole console, CancellationToken cancellationToken)
+        IReadOnlyList<string> installed, IAnsiConsole console, CancellationToken cancellationToken)
     {
         var prompt = CreateGodotSelectionPrompt(installed);
         return await prompt.ShowAsync(console, cancellationToken);
     }
 
-    private static SelectionPrompt<string> CreateGodotSelectionPrompt(List<string> installed) =>
+    private static SelectionPrompt<string> CreateGodotSelectionPrompt(IReadOnlyList<string> installed) =>
         new SelectionPrompt<string>()
             .Title($"{Messages.SelectAVersionTo("launch")}")
             .PageSize(10)

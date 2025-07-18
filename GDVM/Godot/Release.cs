@@ -58,8 +58,8 @@ public sealed record Release : IComparable<Release>
 
     /// <summary>Minor version</summary>
     public int Minor { get; }
-    public string? PlatformString { get; set; }
-    public OS OS { get; set; }
+    public string? PlatformString { get; init; }
+    public OS OS { get; init; }
 
     /// <summary>Patch version</summary>
     public int? Patch { get; }

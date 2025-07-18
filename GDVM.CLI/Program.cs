@@ -1,9 +1,9 @@
 ﻿using ConsoleAppFramework;
 using GDVM.Command;
 using GDVM.Environment;
-using GDVM.Error;
 using GDVM.Filter;
 using GDVM.Godot;
+using GDVM.Progress;
 using GDVM.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -45,7 +45,6 @@ public class Program
 
         // Register services
         services.AddSingleton<IPathService>(pathService);
-        services.AddSingleton<Messages>();
         services.AddSingleton<SystemInfo>();
         services.AddSingleton<PlatformStringProvider>();
         services.AddSingleton<IHostSystem, HostSystem>();
@@ -74,6 +73,9 @@ public class Program
         services.AddSingleton<IVersionManagementService, VersionManagementService>();
         services.AddSingleton<IGodotArgumentService, GodotArgumentService>();
         services.AddSingleton<IAnsiConsole>(_ => AnsiConsole.Console);
+
+        // Progress handling
+        services.AddSingleton<IProgressHandler<InstallationStage>, SpectreProgressHandler<InstallationStage>>();
 
         // ensure we have a writeable directory
         if (!Directory.Exists(pathService.BinPath))

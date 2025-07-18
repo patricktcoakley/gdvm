@@ -1,3 +1,4 @@
+using GDVM.Error;
 using Spectre.Console;
 
 namespace GDVM.Prompts;
@@ -13,7 +14,7 @@ public static class Set
 
     private static SelectionPrompt<string> CreateSetVersionPrompt(string[] installed) =>
         new SelectionPrompt<string>()
-            .Title("[green]Select a version to set: [/]?")
+            .Title($"{Messages.SelectAVersionTo("set")}")
             .PageSize(10)
             .WrapAround()
             .EnableSearch()

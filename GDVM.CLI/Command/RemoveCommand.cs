@@ -12,7 +12,6 @@ public sealed class RemoveCommand(
     IHostSystem hostSystem,
     IReleaseManager releaseManager,
     IPathService pathService,
-    Messages messages,
     IAnsiConsole console,
     ILogger<RemoveCommand> logger)
 {
@@ -90,7 +89,7 @@ public sealed class RemoveCommand(
         {
             logger.ZLogError($"Error removing installations: {e.Message}");
             console.MarkupLine(
-                messages.SomethingWentWrong("when trying to remove installations")
+                Messages.SomethingWentWrong("when trying to remove installations", pathService)
             );
 
             throw;

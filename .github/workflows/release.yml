@@ -4,6 +4,7 @@ on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
 jobs:
   build:
     runs-on: ${{ matrix.os }}
@@ -31,7 +32,7 @@ jobs:
         run: |
           $ARTIFACT_NAME = "gdvm-${{ matrix.rid }}.zip"
           $TARGET = "${{ matrix.os }}" -eq "windows-latest" ? "gdvm.exe" : "gdvm"
-          $SOURCE = Join-Path "GDVM" "bin" "Release" "net9.0" "${{ matrix.rid }}" "publish" "$TARGET"
+          $SOURCE = Join-Path "GDVM.CLI" "bin" "Release" "net9.0" "${{ matrix.rid }}" "publish" "$TARGET"
 
           # Create ZIP
           Compress-Archive -Path $SOURCE -DestinationPath $ARTIFACT_NAME -Force

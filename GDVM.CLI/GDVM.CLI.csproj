@@ -1,0 +1,54 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net9.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <LangVersion>13</LangVersion>
+        <AssemblyName>gdvm</AssemblyName>
+        <Authors>Patrick T Coakley</Authors>
+        <PackageProjectUrl>https://github.com/patricktcoakley/gdvm</PackageProjectUrl>
+        <PackageLicenseUrl>https://github.com/patricktcoakley/GDVM/blob/main/LICENSE</PackageLicenseUrl>
+        <Version>1.1.2</Version>
+        <RootNamespace>GDVM</RootNamespace>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+        <PublishAot>true</PublishAot>
+        <SelfContained>true</SelfContained>
+        <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+        <StripSymbols>true</StripSymbols>
+        <PublishTrimmed>true</PublishTrimmed>
+        <TrimMode>full</TrimMode>
+        <InvariantGlobalization>true</InvariantGlobalization>
+        <IlcOptimizationPreference>Size</IlcOptimizationPreference>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
+        <SelfContained>true</SelfContained>
+        <PublishSingleFile>true</PublishSingleFile>
+    </PropertyGroup>
+
+
+    <ItemGroup>
+        <PackageReference Include="ConsoleAppFramework" Version="5.4.1">
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+            <PrivateAssets>all</PrivateAssets>
+        </PackageReference>
+        <PackageReference Include="Microsoft.Extensions.Configuration" Version="9.0.6" />
+        <PackageReference Include="Microsoft.Extensions.Configuration.Ini" Version="9.0.6" />
+        <PackageReference Include="Microsoft.Extensions.Http" Version="9.0.6" />
+        <PackageReference Include="Spectre.Console" Version="0.50.0" />
+        <PackageReference Include="ZLogger" Version="2.5.10" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <InternalsVisibleTo Include="GDVM.Tests" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\GDVM\GDVM.csproj" />
+    </ItemGroup>
+
+</Project>

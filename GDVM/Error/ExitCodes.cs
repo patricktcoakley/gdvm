@@ -1,11 +1,11 @@
 namespace GDVM.Error;
 
-internal static class ExitCodes
+public static class ExitCodes
 {
-    internal const int Success = 0;
-    internal const int GeneralError = 1;
-    internal const int ArgumentError = 2;
-    internal const int SymlinkError = 3;
-    internal const int ConfigurationError = 78;
-    internal const int Cancelled = 130;
+    public const int Success = 0;
+    public const int GeneralError = 1;
+    public const int ArgumentError = 2;
+    public const int SymlinkError = 3;
+    public const int ConfigurationError = 78;
+    public const int Cancelled = 130;
 }

@@ -32,5 +32,6 @@
 
     <ItemGroup>
         <ProjectReference Include="..\GDVM\GDVM.csproj"/>
+        <ProjectReference Include="..\GDVM.CLI\GDVM.CLI.csproj"/>
     </ItemGroup>
 </Project>

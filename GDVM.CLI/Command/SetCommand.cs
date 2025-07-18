@@ -4,10 +4,11 @@ using GDVM.Services;
 using Microsoft.Extensions.Logging;
 using Spectre.Console;
 using ZLogger;
+using Messages = GDVM.Error.Messages;
 
 namespace GDVM.Command;
 
-public sealed class SetCommand(IVersionManagementService versionManagementService, Messages messages, IAnsiConsole console, ILogger<SetCommand> logger)
+public sealed class SetCommand(IVersionManagementService versionManagementService, IAnsiConsole console, ILogger<SetCommand> logger)
 {
     /// <summary>
     ///     Sets the selected version of Godot.
@@ -39,7 +40,7 @@ public sealed class SetCommand(IVersionManagementService versionManagementServic
         {
             logger.ZLogError($"Error setting a version: {e.Message}");
             console.MarkupLine(
-                messages.SomethingWentWrong("when trying to set the version")
+                Messages.SomethingWentWrong("when trying to set the version")
             );
 
             throw;

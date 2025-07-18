@@ -1,3 +1,4 @@
+using GDVM.Error;
 using Spectre.Console;
 
 namespace GDVM.Prompts;

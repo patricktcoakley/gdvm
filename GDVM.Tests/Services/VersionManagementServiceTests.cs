@@ -1,9 +1,11 @@
 using GDVM.Environment;
 using GDVM.Godot;
 using GDVM.Services;
+using GDVM.Types;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Spectre.Console.Testing;
+using InstallationProgress = GDVM.Progress.OperationProgress<GDVM.Progress.InstallationStage>;
 
 namespace GDVM.Test.Services;
 
@@ -39,6 +41,7 @@ public class VersionManagementServiceTests
         _mockProjectManager.Setup(x => x.FindProjectInfo(It.IsAny<string>()))
             .Returns((ProjectManager.ProjectInfo?)null);
 
+
         _service = new VersionManagementService(
             _mockHostSystem.Object,
             _mockReleaseManager.Object,
@@ -57,8 +60,7 @@ public class VersionManagementServiceTests
 
         var result = await _service.ResolveVersionForLaunchAsync();
 
-        Assert.False(result.IsSuccess);
-        Assert.Equal(VersionResolutionStatus.NotFound, result.Status);
+        Assert.True(result is Result<VersionResolutionOutcome, VersionResolutionError>.Failure { Error: VersionResolutionError.NotFound });
         var hasProjectMessage = _console.Output.Contains("Project requires") || _console.Output.Contains("Project specifies");
         var hasNoInstallationMessage = _console.Output.Contains("No Godot versions installed");
         var hasNoVersionSetMessage = _console.Output.Contains("No current Godot version set");
@@ -103,11 +105,14 @@ public class VersionManagementServiceTests
 
                 var result = await _service.ResolveVersionForLaunchAsync();
 
-                Assert.True(result.IsSuccess);
-                Assert.Equal(compatibleVersion, result.VersionName);
-                Assert.Contains(compatibleVersion, result.ExecutablePath);
-                Assert.Contains(compatibleVersion, result.WorkingDirectory);
-                Assert.True(result.IsProjectVersion);
+                Assert.True(result is Result<VersionResolutionOutcome, VersionResolutionError>.Success);
+                var success = (Result<VersionResolutionOutcome, VersionResolutionError>.Success)result;
+                Assert.True(success.Value is VersionResolutionOutcome.Found);
+                var found = (VersionResolutionOutcome.Found)success.Value;
+                Assert.Equal(compatibleVersion, found.VersionName);
+                Assert.Contains(compatibleVersion, found.ExecutablePath);
+                Assert.Contains(compatibleVersion, found.WorkingDirectory);
+                Assert.True(found.IsProjectVersion);
             }
             finally
             {
@@ -140,8 +145,7 @@ public class VersionManagementServiceTests
 
         var result = await _service.ResolveVersionForLaunchAsync();
 
-        Assert.False(result.IsSuccess);
-        Assert.Equal(VersionResolutionStatus.NotFound, result.Status);
+        Assert.True(result is Result<VersionResolutionOutcome, VersionResolutionError>.Failure { Error: VersionResolutionError.NotFound });
         Assert.Contains("Project requires", _console.Output);
     }
 
@@ -199,11 +203,14 @@ public class VersionManagementServiceTests
 
                 var result = await _service.ResolveVersionForLaunchAsync();
 
-                Assert.True(result.IsSuccess);
-                Assert.Equal(compatibleVersion, result.VersionName);
-                Assert.Contains(compatibleVersion, result.ExecutablePath);
-                Assert.Contains(compatibleVersion, result.WorkingDirectory);
-                Assert.True(result.IsProjectVersion);
+                Assert.True(result is Result<VersionResolutionOutcome, VersionResolutionError>.Success);
+                var success = (Result<VersionResolutionOutcome, VersionResolutionError>.Success)result;
+                Assert.True(success.Value is VersionResolutionOutcome.Found);
+                var found = (VersionResolutionOutcome.Found)success.Value;
+                Assert.Equal(compatibleVersion, found.VersionName);
+                Assert.Contains(compatibleVersion, found.ExecutablePath);
+                Assert.Contains(compatibleVersion, found.WorkingDirectory);
+                Assert.True(found.IsProjectVersion);
             }
             finally
             {
@@ -272,16 +279,18 @@ public class VersionManagementServiceTests
 
         if (execName is "Godot.app" or "Godot_mono.app")
         {
-            release.OS = OS.MacOS;
-            release.PlatformString = "macos.universal.zip";
-        }
-        else
-        {
-            release.OS = OS.Windows;
-            release.PlatformString = "win64.exe";
+            return release with
+            {
+                OS = OS.MacOS,
+                PlatformString = "macos.universal.zip"
+            };
         }
 
-        return release;
+        return release with
+        {
+            OS = OS.Windows,
+            PlatformString = "win64.exe"
+        };
     }
 
     [Fact]
@@ -334,8 +343,10 @@ public class VersionManagementServiceTests
             .Returns((Release?)null);
 
         var mockRelease = CreateMockRelease(newVersion);
-        var installationResult = new InstallationResult(mockRelease.ReleaseNameWithRuntime, InstallationStatus.NewInstallation);
-        _mockInstallationService.Setup(x => x.InstallByQueryAsync(query, It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+        var installationResult = new Result<InstallationOutcome, InstallationError>.Success(
+            new InstallationOutcome.NewInstallation(mockRelease.ReleaseNameWithRuntime));
+
+        _mockInstallationService.Setup(x => x.InstallByQueryAsync(query, It.IsAny<bool>(), It.IsAny<IProgress<InstallationProgress>?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(installationResult);
 
         _mockReleaseManager.Setup(x => x.TryFindReleaseByQuery(query, new[] { newVersion }))
@@ -347,7 +358,8 @@ public class VersionManagementServiceTests
         var result = await _service.SetLocalVersionAsync(query);
 
         Assert.Equal(mockRelease, result);
-        _mockInstallationService.Verify(x => x.InstallByQueryAsync(query, It.IsAny<bool>(), It.IsAny<CancellationToken>()), Times.Once);
+        _mockInstallationService.Verify(x => x.InstallByQueryAsync(query, It.IsAny<bool>(), It.IsAny<IProgress<InstallationProgress>?>(), It.IsAny<CancellationToken>()),
+            Times.Once);
 
         Assert.Contains("No installed version found matching", _console.Output);
         Assert.Contains("Installing", _console.Output);
@@ -404,8 +416,11 @@ public class VersionManagementServiceTests
             .Returns(compatibleVersion);
 
         var mockRelease = CreateMockRelease(compatibleVersion);
-        var installationResult = new InstallationResult(mockRelease.ReleaseNameWithRuntime, InstallationStatus.NewInstallation);
-        _mockInstallationService.Setup(x => x.InstallByQueryAsync(new[] { projectVersion }, It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+        var installationResult = new Result<InstallationOutcome, InstallationError>.Success(
+            new InstallationOutcome.NewInstallation(mockRelease.ReleaseNameWithRuntime));
+
+        _mockInstallationService.Setup(x =>
+                x.InstallByQueryAsync(new[] { projectVersion }, It.IsAny<bool>(), It.IsAny<IProgress<InstallationProgress>?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(installationResult);
 
         _console.Interactive();
@@ -414,7 +429,9 @@ public class VersionManagementServiceTests
         var result = await _service.FindOrInstallCompatibleVersionAsync(projectVersion, false);
 
         Assert.Equal(compatibleVersion, result);
-        _mockInstallationService.Verify(x => x.InstallByQueryAsync(new[] { projectVersion }, It.IsAny<bool>(), It.IsAny<CancellationToken>()), Times.Once);
+        _mockInstallationService.Verify(
+            x => x.InstallByQueryAsync(new[] { projectVersion }, It.IsAny<bool>(), It.IsAny<IProgress<InstallationProgress>?>(), It.IsAny<CancellationToken>()),
+            Times.Once);
     }
 
     [Fact]
@@ -454,14 +471,19 @@ public class VersionManagementServiceTests
         _console.Input.PushKey(ConsoleKey.Enter);
 
         var mockRelease = CreateMockRelease(compatibleVersion);
-        var installationResult = new InstallationResult(mockRelease.ReleaseNameWithRuntime, InstallationStatus.NewInstallation);
-        _mockInstallationService.Setup(x => x.InstallByQueryAsync(new[] { projectVersion }, It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+        var installationResult = new Result<InstallationOutcome, InstallationError>.Success(
+            new InstallationOutcome.NewInstallation(mockRelease.ReleaseNameWithRuntime));
+
+        _mockInstallationService.Setup(x =>
+                x.InstallByQueryAsync(new[] { projectVersion }, It.IsAny<bool>(), It.IsAny<IProgress<InstallationProgress>?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(installationResult);
 
         var result = await _service.FindOrInstallCompatibleVersionAsync(projectVersion, false);
 
         Assert.Equal(compatibleVersion, result);
-        _mockInstallationService.Verify(x => x.InstallByQueryAsync(new[] { projectVersion }, It.IsAny<bool>(), It.IsAny<CancellationToken>()), Times.Once);
+        _mockInstallationService.Verify(
+            x => x.InstallByQueryAsync(new[] { projectVersion }, It.IsAny<bool>(), It.IsAny<IProgress<InstallationProgress>?>(), It.IsAny<CancellationToken>()),
+            Times.Once);
 
         Assert.Contains("Project requires", _console.Output);
         Assert.Contains("Installing", _console.Output);
@@ -596,9 +618,11 @@ public class VersionManagementServiceTests
 
         var result = await _service.ResolveVersionForLaunchAsync(true);
 
-        Assert.False(result.IsSuccess);
-        Assert.Equal(VersionResolutionStatus.NotFound, result.Status);
-        Assert.Contains("No Godot versions installed", _console.Output);
+        Assert.True(result is Result<VersionResolutionOutcome, VersionResolutionError>.Success);
+        var success = (Result<VersionResolutionOutcome, VersionResolutionError>.Success)result;
+        Assert.True(success.Value is VersionResolutionOutcome.InteractiveRequired);
+        var interactive = (VersionResolutionOutcome.InteractiveRequired)success.Value;
+        Assert.Empty(interactive.AvailableVersions);
     }
 
     [Fact]
@@ -617,8 +641,13 @@ public class VersionManagementServiceTests
 
         var result = await _service.ResolveVersionForLaunchAsync(true);
 
-        Assert.True(result.IsSuccess);
-        Assert.Equal(selectedVersion, result.VersionName);
+        Assert.True(result is Result<VersionResolutionOutcome, VersionResolutionError>.Success);
+        var success = (Result<VersionResolutionOutcome, VersionResolutionError>.Success)result;
+        Assert.True(success.Value is VersionResolutionOutcome.InteractiveRequired);
+        var interactive = (VersionResolutionOutcome.InteractiveRequired)success.Value;
+        Assert.Equal(2, interactive.AvailableVersions.Count); // Using Assert.Equal since we need exactly 2
+        Assert.Contains(selectedVersion, interactive.AvailableVersions);
+        Assert.Contains("4.2.0-stable", interactive.AvailableVersions);
     }
 
     [Fact]
@@ -637,9 +666,12 @@ public class VersionManagementServiceTests
 
         var result = await _service.ResolveVersionForLaunchAsync(true);
 
-        Assert.False(result.IsSuccess);
-        Assert.Equal(VersionResolutionStatus.InvalidVersion, result.Status);
-        Assert.Contains("Invalid Godot version", _console.Output);
+        Assert.True(result is Result<VersionResolutionOutcome, VersionResolutionError>.Success);
+        var success = (Result<VersionResolutionOutcome, VersionResolutionError>.Success)result;
+        Assert.True(success.Value is VersionResolutionOutcome.InteractiveRequired);
+        var interactive = (VersionResolutionOutcome.InteractiveRequired)success.Value;
+        Assert.Single(interactive.AvailableVersions);
+        Assert.Contains(selectedVersion, interactive.AvailableVersions);
     }
 
     [Fact]
@@ -651,8 +683,7 @@ public class VersionManagementServiceTests
 
         var result = await _service.ResolveVersionForLaunchAsync();
 
-        Assert.False(result.IsSuccess);
-        Assert.Equal(VersionResolutionStatus.Failed, result.Status);
+        Assert.True(result is Result<VersionResolutionOutcome, VersionResolutionError>.Failure { Error: VersionResolutionError.Failed });
         Assert.Contains("Error resolving Godot version for launch", _console.Output);
     }
 
@@ -665,7 +696,8 @@ public class VersionManagementServiceTests
         await cancellationTokenSource.CancelAsync();
 
         _mockHostSystem.Setup(x => x.ListInstallations()).Returns([]);
-        _mockInstallationService.Setup(x => x.InstallByQueryAsync(It.IsAny<string[]>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+        _mockInstallationService.Setup(x =>
+                x.InstallByQueryAsync(It.IsAny<string[]>(), It.IsAny<bool>(), It.IsAny<IProgress<InstallationProgress>?>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new OperationCanceledException());
 
         await Assert.ThrowsAsync<OperationCanceledException>(() =>
@@ -703,7 +735,7 @@ public class VersionManagementServiceTests
         _mockReleaseManager.Setup(x => x.TryFindReleaseByQuery(query, Array.Empty<string>()))
             .Returns((Release?)null);
 
-        _mockInstallationService.Setup(x => x.InstallByQueryAsync(query, It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+        _mockInstallationService.Setup(x => x.InstallByQueryAsync(query, It.IsAny<bool>(), It.IsAny<IProgress<InstallationProgress>?>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new InvalidOperationException(errorMessage));
 
         var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>

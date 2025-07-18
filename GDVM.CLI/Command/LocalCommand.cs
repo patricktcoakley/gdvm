@@ -1,13 +1,13 @@
 using ConsoleAppFramework;
+using GDVM.Error;
 using GDVM.Services;
 using Microsoft.Extensions.Logging;
 using Spectre.Console;
 using ZLogger;
-using Messages = GDVM.Error.Messages;
 
 namespace GDVM.Command;
 
-public sealed class LocalCommand(IVersionManagementService versionManagementService, Messages messages, IAnsiConsole console, ILogger<LocalCommand> logger)
+public sealed class LocalCommand(IVersionManagementService versionManagementService, IAnsiConsole console, ILogger<LocalCommand> logger)
 {
     /// <summary>
     ///     Sets the Godot version for the current project using `.gdvm-version` file.
@@ -41,7 +41,7 @@ public sealed class LocalCommand(IVersionManagementService versionManagementServ
         catch (Exception e)
         {
             logger.ZLogError($"Error setting local version: {e.Message}");
-            console.MarkupLine(messages.SomethingWentWrong("when trying to set the local version"));
+            console.MarkupLine(Messages.SomethingWentWrong("when trying to set the local version"));
             throw;
         }
     }

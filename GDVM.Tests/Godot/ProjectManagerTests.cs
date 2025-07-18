@@ -4,8 +4,8 @@ namespace GDVM.Test.Godot;
 
 public sealed class ProjectManagerTests : IDisposable
 {
-    private readonly string _tempDirectory;
     private readonly ProjectManager _projectManager;
+    private readonly string _tempDirectory;
 
     public ProjectManagerTests()
     {

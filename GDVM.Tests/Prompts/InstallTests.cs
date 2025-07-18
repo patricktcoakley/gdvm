@@ -17,6 +17,7 @@ public class InstallTests
         "4.3-rc2"
     ];
 
+
     public InstallTests()
     {
         _testConsole = new TestConsole

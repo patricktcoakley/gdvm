@@ -1,6 +1,5 @@
 using GDVM.Command;
 using GDVM.Environment;
-using GDVM.Error;
 using GDVM.Godot;
 using Microsoft.Extensions.Logging;
 using Moq;
@@ -12,7 +11,6 @@ public class RemoveCommandTests
 {
     private readonly Mock<IHostSystem> _mockHostSystem;
     private readonly Mock<ILogger<RemoveCommand>> _mockLogger;
-    private readonly Mock<Messages> _mockMessages;
     private readonly Mock<IPathService> _mockPathService;
     private readonly Mock<IReleaseManager> _mockReleaseManager;
     private readonly RemoveCommand _removeCommand;
@@ -31,15 +29,14 @@ public class RemoveCommandTests
         _mockPathService.Setup(x => x.BinPath).Returns("/test/bin");
         _mockPathService.Setup(x => x.MacAppSymlinkPath).Returns("/test/bin/Godot.app");
 
-        _mockMessages = new Mock<Messages>(_mockPathService.Object);
         _mockLogger = new Mock<ILogger<RemoveCommand>>();
         var testConsole = new TestConsole();
-        _removeCommand = new RemoveCommand(_mockHostSystem.Object, _mockReleaseManager.Object, _mockPathService.Object, _mockMessages.Object, testConsole,
+        _removeCommand = new RemoveCommand(_mockHostSystem.Object, _mockReleaseManager.Object, _mockPathService.Object, testConsole,
             _mockLogger.Object);
     }
 
     private RemoveCommand CreateRemoveCommandWithConsole(TestConsole console) =>
-        new(_mockHostSystem.Object, _mockReleaseManager.Object, _mockPathService.Object, _mockMessages.Object, console, _mockLogger.Object);
+        new(_mockHostSystem.Object, _mockReleaseManager.Object, _mockPathService.Object, console, _mockLogger.Object);
 
     [Fact]
     public async Task Remove_WithNoInstallations_ShowsNoInstallationsMessage()

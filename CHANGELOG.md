@@ -7,7 +7,7 @@
 
 * Add GitHub token validation and switch to Versionize. ([9a791ac](https://github.com/patricktcoakley/gdvm/commit/9a791acedcfcb34f9c056910bda5d6fe3b28d165))
 * **gdvm:** Add remaining features, refactor existing code, and update README to reflect first stable version: ([b03d245](https://github.com/patricktcoakley/gdvm/commit/b03d245001b8c15da0eb88837b9072e61f5f93b7))
-* **local:** Make auto-install default behavior; refactoring to imporve testability. ([604b75a](https://github.com/patricktcoakley/gdvm/commit/604b75a697ab078f5320ecd079dd68ca85f37ccc))
+* **local:** Make auto-install default behavior; refactoring to improve testability. ([604b75a](https://github.com/patricktcoakley/gdvm/commit/604b75a697ab078f5320ecd079dd68ca85f37ccc))
 
 ### 🐛 Bug Fixes
 
@@ -30,7 +30,7 @@
 
 ### ✨ Features
 
-* **local:** Make auto-install default behavior; refactoring to imporve testability. ([604b75a](https://github.com/patricktcoakley/gdvm/commit/604b75a697ab078f5320ecd079dd68ca85f37ccc))
+* **local:** Make auto-install default behavior; refactoring to improve testability. ([604b75a](https://github.com/patricktcoakley/gdvm/commit/604b75a697ab078f5320ecd079dd68ca85f37ccc))
 
 <a name="1.0.0"></a>
 ## [1.0.0](https://github.com/patricktcoakley/gdvm/releases/tag/v1.0.0) (2025-06-17)

@@ -32,6 +32,8 @@ brew tap patricktcoakley/formulae
 brew install gdvm
 ```
 
+Note that you may periodically need to run `brew update` if any changes are applied to the formula.
+
 #### Scoop (Windows)
 
 If you're on Windows, you can install gdvm using [Scoop](https://scoop.sh) by running the following commands:

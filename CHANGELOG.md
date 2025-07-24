@@ -1,5 +1,12 @@
 # Changelog
 
+<a name="1.2.0"></a>
+## [1.2.0](https://github.com/patricktcoakley/gdvm/releases/tag/v1.2.0) (2025-07-24)
+
+### ✨ Features
+
+* Update the installation status to include download information and updated design; refactor out remaining CLI dependencies from the core. ([11e5849](https://github.com/patricktcoakley/gdvm/commit/11e5849665c8d896cd3d313adab9a83cb512ac0a))
+
 <a name="1.1.2"></a>
 ## [1.1.2](https://github.com/patricktcoakley/gdvm/releases/tag/v1.1.2) (2025-07-21)
 

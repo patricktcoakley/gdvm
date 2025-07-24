@@ -1,21 +1,9 @@
 namespace GDVM.Progress;
 
 /// <summary>
-///     Generic progress model for any operation with stages
+///     Progress model for any operation with typed stages
 /// </summary>
 /// <typeparam name="TStage">The enum type representing operation stages</typeparam>
-public record OperationProgress<TStage>(
-    string Message,
-    TStage Stage = default!)
-    where TStage : Enum;
-
-/// <summary>
-///     Stages for installation operations
-/// </summary>
-public enum InstallationStage
-{
-    Downloading,
-    VerifyingChecksum,
-    Extracting,
-    SettingDefault
-}
+/// <param name="Stage">The current stage of the operation</param>
+/// <param name="Message">A descriptive message about the current progress</param>
+public readonly record struct OperationProgress<TStage>(TStage Stage, string Message) where TStage : Enum;

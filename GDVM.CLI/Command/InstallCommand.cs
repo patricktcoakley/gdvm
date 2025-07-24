@@ -87,7 +87,7 @@ public sealed class InstallCommand(
                     wasAutoSetAsDefault = !setAsDefault && installedVersions.Count == 0;
 
                     installationResult = await progressHandler.TrackProgressAsync(progress =>
-                        installationService.InstallReleaseAsync(godotRelease, autoSetAsDefault, progress, cancellationToken));
+                        installationService.InstallReleaseAsync(godotRelease, progress, autoSetAsDefault, cancellationToken));
                 }
             }
             else
@@ -112,7 +112,7 @@ public sealed class InstallCommand(
                         wasAutoSetAsDefault = !setAsDefault && installedVersions.Count == 0;
 
                         installationResult = await progressHandler.TrackProgressAsync(progress =>
-                            installationService.InstallByQueryAsync(query, autoSetAsDefault, progress, cancellationToken));
+                            installationService.InstallByQueryAsync(query, progress, autoSetAsDefault, cancellationToken));
                     }
                 }
                 else
@@ -124,7 +124,7 @@ public sealed class InstallCommand(
                     wasAutoSetAsDefault = !setAsDefault && installedVersions.Count == 0;
 
                     installationResult = await progressHandler.TrackProgressAsync(progress =>
-                        installationService.InstallByQueryAsync(query, autoSetAsDefault, progress, cancellationToken));
+                        installationService.InstallByQueryAsync(query, progress, autoSetAsDefault, cancellationToken));
                 }
             }
 

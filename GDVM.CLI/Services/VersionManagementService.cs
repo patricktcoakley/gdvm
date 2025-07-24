@@ -1,5 +1,6 @@
 using GDVM.Environment;
 using GDVM.Godot;
+using GDVM.Progress;
 using GDVM.Prompts;
 using GDVM.Types;
 using Microsoft.Extensions.Logging;
@@ -288,7 +289,7 @@ public class VersionManagementService(
                 ? new[] { baseVersion, "mono" }
                 : new[] { baseVersion };
 
-            var installedRelease = await installationService.InstallByQueryAsync(installQuery, cancellationToken: cancellationToken);
+            var installedRelease = await installationService.InstallByQueryAsync(installQuery, new Progress<OperationProgress<InstallationStage>>(), cancellationToken: cancellationToken);
 
             if (installedRelease is not Result<InstallationOutcome, InstallationError>.Success installSuccess)
             {
@@ -562,7 +563,7 @@ public class VersionManagementService(
             ? new[] { baseVersion, "mono" }
             : new[] { baseVersion };
 
-        var installedRelease = await installationService.InstallByQueryAsync(installQuery, cancellationToken: cancellationToken);
+        var installedRelease = await installationService.InstallByQueryAsync(installQuery, new Progress<OperationProgress<InstallationStage>>(), cancellationToken: cancellationToken);
         if (installedRelease is not Result<InstallationOutcome, InstallationError>.Success installSuccess)
         {
             console.MarkupLine($"[red]Failed to install {projectVersion}{projectInfo.RuntimeDisplaySuffix}.[/]");
@@ -602,7 +603,7 @@ public class VersionManagementService(
         console.MarkupLine($"[dim]Installing {string.Join(" ", query)}...[/]");
 
         // Try to install
-        var installedRelease = await installationService.InstallByQueryAsync(query, cancellationToken: cancellationToken);
+        var installedRelease = await installationService.InstallByQueryAsync(query, new Progress<OperationProgress<InstallationStage>>(), cancellationToken: cancellationToken);
         if (installedRelease is not Result<InstallationOutcome, InstallationError>.Success installSuccess)
         {
             console.MarkupLine($"[red]Failed to install version matching '{string.Join(" ", query)}'.[/]");

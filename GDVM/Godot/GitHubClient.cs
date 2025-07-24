@@ -2,7 +2,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using System.Net.Http.Headers;
 using System.Text.Json;
-using ZLogger;
 
 namespace GDVM.Godot;
 
@@ -42,7 +41,7 @@ public class GitHubClient : IGitHubClient
 
             if (!response.IsSuccessStatusCode)
             {
-                _logger.ZLogError($"{ApiUrl} returned {response.StatusCode}.");
+                _logger.LogError("{ApiUrl} returned {StatusCode}", ApiUrl, response.StatusCode);
                 throw new HttpRequestException($"{ApiUrl} returned {response.StatusCode}.");
             }
 
@@ -53,7 +52,7 @@ public class GitHubClient : IGitHubClient
         }
         catch (Exception ex)
         {
-            _logger.ZLogError($"Failed to list releases from GitHub: {ex.Message}");
+            _logger.LogError(ex, "Failed to list releases from GitHub");
             throw;
         }
     }
@@ -71,12 +70,12 @@ public class GitHubClient : IGitHubClient
                 return await response.Content.ReadAsStringAsync(cancellationToken);
             }
 
-            _logger.ZLogError($"{url} returned {response.StatusCode}.");
+            _logger.LogError("{Url} returned {StatusCode}", url, response.StatusCode);
             throw new HttpRequestException($"GitHub SHA512 request failed: {response.StatusCode}");
         }
         catch (Exception ex)
         {
-            _logger.ZLogError($"Failed to get SHA512 from GitHub for {godotRelease.Version}: {ex.Message}");
+            _logger.LogError(ex, "Failed to get SHA512 from GitHub for {Version}", godotRelease.Version);
             throw;
         }
     }
@@ -94,12 +93,12 @@ public class GitHubClient : IGitHubClient
                 return response;
             }
 
-            _logger.ZLogError($"{url} returned {response.StatusCode}.");
+            _logger.LogError("{Url} returned {StatusCode}", url, response.StatusCode);
             throw new HttpRequestException($"GitHub zip file request failed: {response.StatusCode}");
         }
         catch (Exception ex)
         {
-            _logger.ZLogError($"Failed to get zip file from GitHub for {godotRelease.ReleaseNameWithRuntime}: {ex.Message}");
+            _logger.LogError(ex, "Failed to get zip file from GitHub for {ReleaseNameWithRuntime}", godotRelease.ReleaseNameWithRuntime);
             throw;
         }
     }

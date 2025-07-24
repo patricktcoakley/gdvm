@@ -10,36 +10,22 @@ public class SpectreProgressHandler<TStage>(IAnsiConsole console) : IProgressHan
     where TStage : Enum
 {
     /// <summary>
-    ///     Creates a progress reporter and automatically starts a progress context
+    ///     Executes an operation with progress tracking
     /// </summary>
     /// <param name="operation">The operation to perform with progress tracking</param>
     /// <returns>The result of the operation</returns>
     public async Task<T> TrackProgressAsync<T>(Func<IProgress<OperationProgress<TStage>>, Task<T>> operation)
     {
-        // Simple approach: just handle non-download stages
-        var progress = new Progress<OperationProgress<TStage>>(progressUpdate =>
-        {
-            // Only handle InstallationStage for now, could be extended for other stage types
-            if (progressUpdate.Stage is not InstallationStage stage)
+        return await console.Status()
+            .StartAsync("Starting operation...", async ctx =>
             {
-                return;
-            }
+                var progress = new Progress<OperationProgress<TStage>>(progressUpdate =>
+                {
+                    ctx.Status = progressUpdate.Message;
+                    ctx.Refresh();
+                });
 
-            var message = stage switch
-            {
-                InstallationStage.Downloading => null, // Handled progress indicator
-                InstallationStage.VerifyingChecksum => "Calculating checksum :input_numbers:",
-                InstallationStage.Extracting => "Extracting files :file_folder:",
-                InstallationStage.SettingDefault => $"{progressUpdate.Message} :gear:",
-                _ => null // Handle any unknown stages gracefully
-            };
-
-            if (message != null)
-            {
-                console.MarkupLine(message);
-            }
-        });
-
-        return await operation(progress);
+                return await operation(progress);
+            });
     }
 }

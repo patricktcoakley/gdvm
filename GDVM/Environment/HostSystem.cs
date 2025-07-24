@@ -2,7 +2,6 @@ using GDVM.Error;
 using Microsoft.Extensions.Logging;
 using System.ComponentModel;
 using System.IO.Enumeration;
-using ZLogger;
 
 namespace GDVM.Environment;
 
@@ -43,8 +42,8 @@ public sealed class HostSystem(SystemInfo systemInfo, IPathService pathService, 
                 // TODO: Consider adding an option to ignore/disable symlinks for people who don't care
                 catch (Exception e) when (e.Message.StartsWith("A required privilege is not held by the client"))
                 {
-                    logger.ZLogWarning(
-                        $"Windows requires Developer Mode enabled to create symlinks. See: https://learn.microsoft.com/en-us/windows/apps/get-started/enable-your-device-for-development.");
+                    logger.LogWarning(
+                        "Windows requires Developer Mode enabled to create symlinks. See: https://learn.microsoft.com/en-us/windows/apps/get-started/enable-your-device-for-development.");
                 }
 
                 break;
@@ -93,7 +92,7 @@ public sealed class HostSystem(SystemInfo systemInfo, IPathService pathService, 
         var file = new FileInfo(pathService.SymlinkPath);
         if (file.LinkTarget is null)
         {
-            logger.ZLogInformation($"Ran `which` without version set");
+            logger.LogInformation("Ran `which` without version set");
             throw new InvalidOperationException("No Godot version is set.");
         }
 
@@ -102,7 +101,7 @@ public sealed class HostSystem(SystemInfo systemInfo, IPathService pathService, 
             throw new InvalidSymlinkException("Symlink was created but appears to be invalid.", file.LinkTarget);
         }
 
-        logger.ZLogInformation($"{pathService.SymlinkPath} is currently set to: {file.LinkTarget}");
+        logger.LogInformation("{SymlinkPath} is currently set to: {LinkTarget}", pathService.SymlinkPath, file.LinkTarget);
 
         // Only macOS has two symlinks
         if (SystemInfo.CurrentOS != OS.MacOS)
@@ -121,7 +120,7 @@ public sealed class HostSystem(SystemInfo systemInfo, IPathService pathService, 
             throw new InvalidSymlinkException("Symlink was created but appears to be invalid.", file.LinkTarget);
         }
 
-        logger.ZLogInformation($"{pathService.MacAppSymlinkPath} is currently set to: {file.LinkTarget}");
+        logger.LogInformation("{MacAppSymlinkPath} is currently set to: {LinkTarget}", pathService.MacAppSymlinkPath, file.LinkTarget);
     }
 
     /// <summary>

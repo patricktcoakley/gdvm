@@ -1,6 +1,5 @@
 using Microsoft.Extensions.Logging;
 using System.Text.Json.Serialization;
-using ZLogger;
 
 namespace GDVM.Godot;
 
@@ -25,7 +24,7 @@ public class DownloadClient(IGitHubClient gitHubClient, ITuxFamilyClient tuxFami
         }
         catch (Exception ex)
         {
-            logger.ZLogError($"Failed to list releases from GitHub: {ex.Message}");
+            logger.LogError(ex, "Failed to list releases from GitHub");
             throw;
         }
     }
@@ -36,27 +35,27 @@ public class DownloadClient(IGitHubClient gitHubClient, ITuxFamilyClient tuxFami
         try
         {
             var sha512 = await gitHubClient.GetSha512Async(godotRelease, cancellationToken);
-            logger.ZLogInformation($"Found SHA512 for {godotRelease.Version} at GitHub.");
+            logger.LogInformation("Found SHA512 for {Version} at GitHub", godotRelease.Version);
             return sha512;
         }
         catch (Exception ex)
         {
-            logger.ZLogError($"GitHub SHA512 failed for {godotRelease.Version}: {ex.Message}");
+            logger.LogError(ex, "GitHub SHA512 failed for {Version}", godotRelease.Version);
         }
 
         // Fallback to TuxFamily
         try
         {
             var sha512 = await tuxFamilyClient.GetSha512Async(godotRelease, cancellationToken);
-            logger.ZLogInformation($"Found SHA512 for {godotRelease.Version} at TuxFamily.");
+            logger.LogInformation("Found SHA512 for {Version} at TuxFamily", godotRelease.Version);
             return sha512;
         }
         catch (Exception ex)
         {
-            logger.ZLogError($"TuxFamily SHA512 failed for {godotRelease.Version}: {ex.Message}");
+            logger.LogError(ex, "TuxFamily SHA512 failed for {Version}", godotRelease.Version);
         }
 
-        logger.ZLogError($"SHA512-SUMS.txt was missing from all sources for {godotRelease.Version}.");
+        logger.LogError("SHA512-SUMS.txt was missing from all sources for {Version}", godotRelease.Version);
         throw new HttpRequestException("Wasn't able to download SHA512-SUMS.txt from any sources.");
     }
 
@@ -66,27 +65,27 @@ public class DownloadClient(IGitHubClient gitHubClient, ITuxFamilyClient tuxFami
         try
         {
             var response = await gitHubClient.GetZipFileAsync(filename, godotRelease, cancellationToken);
-            logger.ZLogInformation($"Found {godotRelease.ReleaseNameWithRuntime} at GitHub.");
+            logger.LogInformation("Found {ReleaseNameWithRuntime} at GitHub", godotRelease.ReleaseNameWithRuntime);
             return response;
         }
         catch (Exception ex)
         {
-            logger.ZLogError($"GitHub zip file failed for {godotRelease.ReleaseNameWithRuntime}: {ex.Message}");
+            logger.LogError(ex, "GitHub zip file failed for {ReleaseNameWithRuntime}", godotRelease.ReleaseNameWithRuntime);
         }
 
         // Fallback to TuxFamily
         try
         {
             var response = await tuxFamilyClient.GetZipFileAsync(filename, godotRelease, cancellationToken);
-            logger.ZLogInformation($"Found {godotRelease.ReleaseNameWithRuntime} at TuxFamily.");
+            logger.LogInformation("Found {ReleaseNameWithRuntime} at TuxFamily", godotRelease.ReleaseNameWithRuntime);
             return response;
         }
         catch (Exception ex)
         {
-            logger.ZLogError($"TuxFamily zip file failed for {godotRelease.ReleaseNameWithRuntime}: {ex.Message}");
+            logger.LogError(ex, "TuxFamily zip file failed for {ReleaseNameWithRuntime}", godotRelease.ReleaseNameWithRuntime);
         }
 
-        logger.ZLogError($"{filename} was missing from all sources for {godotRelease.ReleaseNameWithRuntime}.");
+        logger.LogError("{Filename} was missing from all sources for {ReleaseNameWithRuntime}", filename, godotRelease.ReleaseNameWithRuntime);
         throw new HttpRequestException($"Wasn't able to download {filename} from any sources.");
     }
 }

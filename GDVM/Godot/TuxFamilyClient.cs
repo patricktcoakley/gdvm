@@ -1,5 +1,4 @@
 using Microsoft.Extensions.Logging;
-using ZLogger;
 
 namespace GDVM.Godot;
 
@@ -28,12 +27,12 @@ public class TuxFamilyClient(HttpClient httpClient, ILogger<TuxFamilyClient> log
                 return await response.Content.ReadAsStringAsync(cancellationToken);
             }
 
-            logger.ZLogError($"{url} returned {response.StatusCode}.");
+            logger.LogError("{Url} returned {StatusCode}", url, response.StatusCode);
             throw new HttpRequestException($"TuxFamily SHA512 request failed: {response.StatusCode}");
         }
         catch (Exception ex)
         {
-            logger.ZLogError($"Failed to get SHA512 from TuxFamily for {godotRelease.Version}: {ex.Message}");
+            logger.LogError(ex, "Failed to get SHA512 from TuxFamily for {Version}", godotRelease.Version);
             throw;
         }
     }
@@ -51,12 +50,12 @@ public class TuxFamilyClient(HttpClient httpClient, ILogger<TuxFamilyClient> log
                 return response;
             }
 
-            logger.ZLogError($"{url} returned {response.StatusCode}.");
+            logger.LogError("{Url} returned {StatusCode}", url, response.StatusCode);
             throw new HttpRequestException($"TuxFamily zip file request failed: {response.StatusCode}");
         }
         catch (Exception ex)
         {
-            logger.ZLogError($"Failed to get zip file from TuxFamily for {godotRelease.ReleaseNameWithRuntime}: {ex.Message}");
+            logger.LogError(ex, "Failed to get zip file from TuxFamily for {ReleaseNameWithRuntime}", godotRelease.ReleaseNameWithRuntime);
             throw;
         }
     }

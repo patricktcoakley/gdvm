@@ -27,13 +27,12 @@ public sealed class LogsCommand(IPathService pathService, IAnsiConsole console, 
             cancellationToken.ThrowIfCancellationRequested();
             if (!Path.Exists(pathService.LogPath))
             {
-                throw new FileNotFoundException($"Path to logs {pathService.LogPath} doesn't exist.");
+                throw new FileNotFoundException(Messages.LogPathNotFound(pathService.LogPath));
             }
 
             if (!string.IsNullOrEmpty(level) && !LogLevels.Any(x => x.StartsWith(level, StringComparison.OrdinalIgnoreCase)))
             {
-                throw new ArgumentOutOfRangeException(
-                    $"{level} is not valid. Accepted values include: default, debug, info, warning, error, or critical");
+                throw new ArgumentOutOfRangeException(Messages.LogLevelOutOfRange(level));
             }
 
 

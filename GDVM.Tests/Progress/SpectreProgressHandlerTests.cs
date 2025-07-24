@@ -112,7 +112,7 @@ public class SpectreProgressHandlerTests
     public async Task TrackProgressAsync_ShouldSequentiallyDisplayStages_WhenFullInstallationFlow()
     {
         var handler = new SpectreProgressHandler<InstallationStage>(_testConsole);
-        var installPathBase = "4.4.1-stable-standard";
+        const string installPathBase = "4.4.1-stable-standard";
 
         var result = await handler.TrackProgressAsync(async progress =>
         {

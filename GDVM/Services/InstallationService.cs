@@ -18,23 +18,27 @@ public enum InstallationStage
 {
     /// <summary>Preparing for installation</summary>
     Initializing,
+
     /// <summary>Downloading the release archive</summary>
     Downloading,
+
     /// <summary>Verifying the downloaded file's checksum</summary>
     VerifyingChecksum,
+
     /// <summary>Extracting files from the archive</summary>
     Extracting,
+
     /// <summary>Setting the installed version as default</summary>
     SettingDefault
 }
 
 public interface IInstallationService
 {
-    Task<Result<InstallationOutcome, InstallationError>> InstallReleaseAsync(Release godotRelease, 
+    Task<Result<InstallationOutcome, InstallationError>> InstallReleaseAsync(Release godotRelease,
         IProgress<OperationProgress<InstallationStage>> progress, bool setAsDefault = true,
         CancellationToken cancellationToken = default);
 
-    Task<Result<InstallationOutcome, InstallationError>> InstallByQueryAsync(string[] query, 
+    Task<Result<InstallationOutcome, InstallationError>> InstallByQueryAsync(string[] query,
         IProgress<OperationProgress<InstallationStage>> progress, bool setAsDefault = false,
         CancellationToken cancellationToken = default);
 
@@ -56,7 +60,7 @@ public class InstallationService(
     /// <param name="setAsDefault">Whether to set this version as the global default</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>The installation result if successful, null if the installation failed.</returns>
-    public async Task<Result<InstallationOutcome, InstallationError>> InstallReleaseAsync(Release godotRelease, 
+    public async Task<Result<InstallationOutcome, InstallationError>> InstallReleaseAsync(Release godotRelease,
         IProgress<OperationProgress<InstallationStage>> progress, bool setAsDefault = true,
         CancellationToken cancellationToken = default)
     {
@@ -197,7 +201,7 @@ public class InstallationService(
     /// <param name="setAsDefault">Whether to set the installed version as the global default</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>The installation result if successful, null if installation failed.</returns>
-    public async Task<Result<InstallationOutcome, InstallationError>> InstallByQueryAsync(string[] query, 
+    public async Task<Result<InstallationOutcome, InstallationError>> InstallByQueryAsync(string[] query,
         IProgress<OperationProgress<InstallationStage>> progress, bool setAsDefault = false,
         CancellationToken cancellationToken = default)
     {
@@ -210,13 +214,13 @@ public class InstallationService(
             godotRelease ??= releaseManager.TryFindReleaseByQuery(query, await FetchReleaseNames(cancellationToken, true));
 
             return godotRelease == null
-                ? new Result<InstallationOutcome, InstallationError>.Failure(new InstallationError.NotFound())
+                ? new Result<InstallationOutcome, InstallationError>.Failure(new InstallationError.NotFound(string.Join(" ", query)))
                 : await InstallReleaseAsync(godotRelease, progress, setAsDefault, cancellationToken);
         }
-        catch
+        catch (Exception e)
         {
             return new Result<InstallationOutcome, InstallationError>.Failure(
-                new InstallationError.Failed());
+                new InstallationError.Failed($"Installation failed for query '{string.Join(" ", query)}': {e.Message}"));
         }
     }
 

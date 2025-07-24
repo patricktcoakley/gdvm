@@ -36,7 +36,7 @@ public static class Install
             .PageSize(20)
             .WrapAround()
             .EnableSearch()
-            .MoreChoicesText("[grey](Move up and down to see more versions)[/]")
+            .MoreChoicesText(Messages.MoreChoicesText)
             .SearchPlaceholderText(Messages.TypeToSearch)
             .AddChoices(releaseNames);
 

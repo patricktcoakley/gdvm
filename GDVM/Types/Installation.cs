@@ -5,9 +5,9 @@ namespace GDVM.Types;
 /// </summary>
 public abstract record InstallationOutcome
 {
-    public record NewInstallation(string ReleaseNameWithRuntime, IReadOnlyList<string>? InfoMessages = null) : InstallationOutcome;
+    public record NewInstallation(string ReleaseNameWithRuntime) : InstallationOutcome;
 
-    public record AlreadyInstalled(string ReleaseNameWithRuntime, IReadOnlyList<string>? InfoMessages = null) : InstallationOutcome;
+    public record AlreadyInstalled(string ReleaseNameWithRuntime) : InstallationOutcome;
 }
 
 /// <summary>
@@ -15,7 +15,7 @@ public abstract record InstallationOutcome
 /// </summary>
 public abstract record InstallationError
 {
-    public record NotFound(IReadOnlyList<string>? ErrorMessages = null) : InstallationError;
+    public record NotFound(string Version) : InstallationError;
 
-    public record Failed(IReadOnlyList<string>? ErrorMessages = null) : InstallationError;
+    public record Failed(string Reason) : InstallationError;
 }

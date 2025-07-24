@@ -32,7 +32,7 @@ public sealed class SetCommand(IVersionManagementService versionManagementServic
         catch (InvalidSymlinkException e)
         {
             logger.ZLogError($"Symlink created but appears invalid: {e.SymlinkPath}.");
-            console.MarkupLine($"[orange1]WARN: Symlink for {e.SymlinkPath} was created but appears to be invalid. Removing it.[/]");
+            console.MarkupLine(Messages.InvalidSymlinkWarn(e.SymlinkPath));
 
             throw;
         }

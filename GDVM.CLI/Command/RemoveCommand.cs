@@ -33,7 +33,7 @@ public sealed class RemoveCommand(
             if (installed.Length == 0)
             {
                 hostSystem.RemoveSymbolicLinks();
-                console.MarkupLine("[orange1] No installations available to remove. [/]");
+                console.MarkupLine(Messages.NoInstallationsToRemove);
                 return;
             }
 
@@ -42,7 +42,7 @@ public sealed class RemoveCommand(
             {
                 var queryJoin = string.Join(' ', query);
                 logger.ZLogInformation($"Query didn't find any installations: {queryJoin}.");
-                console.MarkupLine($"[orange1]Couldn't find any versions with query `{queryJoin}`. Please try again. [/]");
+                console.MarkupLine(Messages.NoVersionsMatchingQuery(queryJoin));
                 return;
             }
 
@@ -51,7 +51,7 @@ public sealed class RemoveCommand(
             {
                 var versionToRemove = filteredInstallations[0];
                 logger.ZLogInformation($"Automatically removing single matched version: {versionToRemove}.");
-                console.MarkupLine($"[yellow]Found exactly one version matching your query: {versionToRemove}[/]");
+                console.MarkupLine(Messages.FoundExactMatch(versionToRemove));
                 versionsToDelete = [versionToRemove];
             }
             else
@@ -65,7 +65,7 @@ public sealed class RemoveCommand(
                 {
                     Directory.Delete(selectionPath, true);
                     logger.ZLogInformation($"Removed {selectionPath}.");
-                    console.MarkupLine($"Successfully removed {selectionPath} :wastebasket: ");
+                    console.MarkupLine(Messages.SuccessfullyRemoved(selectionPath));
                 }
                 else
                 {

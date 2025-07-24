@@ -70,7 +70,7 @@ public sealed class InstallCommand(
             {
                 var releaseNames = await installationService.FetchReleaseNames(cancellationToken);
                 var version = await Prompts.Install.ShowVersionSelectionPrompt(releaseNames, console, cancellationToken);
-                var godotRelease = releaseManager.TryCreateRelease(version) ?? throw new Exception($"Unable to get release with selection `{version}`.");
+                var godotRelease = releaseManager.TryCreateRelease(version) ?? throw new Exception(Messages.UnableToGetRelease(version));
 
                 // Check if already installed before starting progress
                 var existingPath = Path.Combine(pathService.RootPath, godotRelease.ReleaseNameWithRuntime);
@@ -128,36 +128,20 @@ public sealed class InstallCommand(
                 }
             }
 
-            // Display messages based on result type
-            var messages = installationResult switch
-            {
-                Result<InstallationOutcome, InstallationError>.Success(InstallationOutcome.NewInstallation(_, var info)) => (info, "dim"),
-                Result<InstallationOutcome, InstallationError>.Success(InstallationOutcome.AlreadyInstalled(_, var info)) => (info, "dim"),
-                Result<InstallationOutcome, InstallationError>.Failure(InstallationError.NotFound(var errors)) => (errors, "red"),
-                Result<InstallationOutcome, InstallationError>.Failure(InstallationError.Failed(var errors)) => (errors, "red"),
-                _ => (null, "")
-            };
-
-            if (messages.Item1 != null)
-            {
-                foreach (var message in messages.Item1)
-                {
-                    console.MarkupLine($"[{messages.Item2}]{message}[/]");
-                }
-            }
+            // Messages are now handled via the Messages class instead of embedded parameters
 
             // Then determine the main message
             var msg = installationResult switch
             {
-                Result<InstallationOutcome, InstallationError>.Success(InstallationOutcome.NewInstallation(var release, _)) =>
+                Result<InstallationOutcome, InstallationError>.Success(InstallationOutcome.NewInstallation(var release)) =>
                     GetInstallationSuccessMessage(new InstallationOutcome.NewInstallation(release), setAsDefault, wasAutoSetAsDefault),
-                Result<InstallationOutcome, InstallationError>.Success(InstallationOutcome.AlreadyInstalled(var release, _)) =>
-                    $"[yellow]{release}[/] is already installed.",
-                Result<InstallationOutcome, InstallationError>.Failure(InstallationError.NotFound(_)) =>
-                    Messages.SomethingWentWrong($"Unable to find Godot release with query `{string.Join(", ", query)}`", pathService),
-                Result<InstallationOutcome, InstallationError>.Failure(InstallationError.Failed(_)) =>
-                    Messages.SomethingWentWrong($"Installation failed for query `{string.Join(", ", query)}`", pathService),
-                _ => throw new Exception("Unknown installation result type")
+                Result<InstallationOutcome, InstallationError>.Success(InstallationOutcome.AlreadyInstalled(var release)) =>
+                    Messages.AlreadyInstalled(release),
+                Result<InstallationOutcome, InstallationError>.Failure(InstallationError.NotFound notFound) =>
+                    Messages.InstallationNotFound(notFound.Version),
+                Result<InstallationOutcome, InstallationError>.Failure(InstallationError.Failed failed) =>
+                    Messages.InstallationFailed(failed.Reason),
+                _ => throw new Exception(Messages.UnknownInstallationResultType)
             };
 
             console.MarkupLine(msg);
@@ -192,18 +176,18 @@ public sealed class InstallCommand(
     {
         var releaseNameWithRuntime = outcome switch
         {
-            InstallationOutcome.NewInstallation(var name, _) => name,
-            InstallationOutcome.AlreadyInstalled(var name, _) => name,
+            InstallationOutcome.NewInstallation(var name) => name,
+            InstallationOutcome.AlreadyInstalled(var name) => name,
             _ => throw new ArgumentException($"Unknown installation outcome type: {outcome.GetType()}")
         };
 
-        var baseMessage = $"Finished installing {releaseNameWithRuntime}! :party_popper:";
+        var baseMessage = Messages.InstallationSuccessBase(releaseNameWithRuntime);
 
         if (wasAutoSetAsDefault)
         {
-            return $"{baseMessage}\n[dim]Set as default version since no other versions are installed.[/]";
+            return $"{baseMessage}\n{Messages.AutoSetAsDefaultNote}";
         }
 
-        return setAsDefault ? $"{baseMessage}\n[dim]Set as default version.[/]" : baseMessage;
+        return setAsDefault ? $"{baseMessage}\n{Messages.SetAsDefaultVersionNote}" : baseMessage;
     }
 }

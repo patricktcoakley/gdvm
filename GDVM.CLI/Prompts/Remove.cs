@@ -18,7 +18,7 @@ public static class Remove
             .Title($"{Messages.SelectVersionsTo("remove")}")
             .Required()
             .PageSize(10)
-            .MoreChoicesText("[grey](Move up and down to reveal more versions)[/]")
+            .MoreChoicesText(Messages.MoreChoicesText)
             .Mode(SelectionMode.Independent)
             .InstructionsText(
                 "[grey](Press [blue]<space>[/] to toggle an installation, " +

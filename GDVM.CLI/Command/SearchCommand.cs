@@ -31,7 +31,7 @@ public sealed class SearchCommand(
                 var releaseNames = await installationService.FetchReleaseNames(cancellationToken);
                 panel = new Panel(string.Join("\n", releaseNames))
                 {
-                    Header = new PanelHeader("[green]List Of Available Versions[/]"),
+                    Header = new PanelHeader(Messages.AvailableVersionsHeader),
                     Width = 40
                 };
 

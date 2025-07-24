@@ -22,7 +22,7 @@ public sealed class ListCommand(IHostSystem hostSystem, IPathService pathService
 
             var panel = new Panel(string.Join("\n", versions))
             {
-                Header = new PanelHeader("List Of Installed Versions"),
+                Header = new PanelHeader(Messages.ListPanelHeader),
                 Width = 40,
                 Border = BoxBorder.Rounded
             };

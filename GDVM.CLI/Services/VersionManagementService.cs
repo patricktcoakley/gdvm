@@ -1,4 +1,5 @@
 using GDVM.Environment;
+using GDVM.Error;
 using GDVM.Godot;
 using GDVM.Progress;
 using GDVM.Prompts;
@@ -124,9 +125,9 @@ public class VersionManagementService(
         catch (Exception e)
         {
             logger.ZLogError(e, $"Error resolving version for launch");
-            console.MarkupLine("[red]Error resolving Godot version for launch.[/]");
+            console.MarkupLine(Messages.ErrorResolvingVersion);
             return new Result<VersionResolutionOutcome, VersionResolutionError>.Failure(
-                new VersionResolutionError.Failed());
+                new VersionResolutionError.Failed($"Error resolving version for launch: {e.Message}"));
         }
     }
 
@@ -163,9 +164,9 @@ public class VersionManagementService(
         catch (Exception e)
         {
             logger.ZLogError(e, $"Error resolving version for launch");
-            console.MarkupLine("[red]Error resolving Godot version for launch.[/]");
+            console.MarkupLine(Messages.ErrorResolvingVersion);
             return new Result<VersionResolutionOutcome, VersionResolutionError>.Failure(
-                new VersionResolutionError.Failed());
+                new VersionResolutionError.Failed($"Error resolving explicit version for launch: {e.Message}"));
         }
     }
 
@@ -180,7 +181,7 @@ public class VersionManagementService(
             if (installed.Length == 0)
             {
                 logger.ZLogWarning($"Tried to set a version when there were none installed.");
-                throw new InvalidOperationException("No installations found. Please install one or more versions first.");
+                throw new InvalidOperationException(Messages.NoInstallationsFound);
             }
 
             var versionToSet = forceInteractive || query.Length == 0
@@ -193,7 +194,7 @@ public class VersionManagementService(
             var godotRelease = releaseManager.TryCreateRelease(versionToSet);
             if (godotRelease == null)
             {
-                throw new InvalidOperationException("Invalid Godot version.");
+                throw new InvalidOperationException(Messages.InvalidGodotVersion);
             }
 
             var symlinkTargetPath = Path.Combine(pathService.RootPath, godotRelease.ReleaseNameWithRuntime);
@@ -201,7 +202,7 @@ public class VersionManagementService(
             hostSystem.CreateOrOverwriteSymbolicLink(symlinkTargetPath);
 
             logger.ZLogInformation($"Successfully set version to {godotRelease.ReleaseNameWithRuntime}.");
-            console.MarkupLine($"[green]Successfully set version to {godotRelease.ReleaseNameWithRuntime}. [/]");
+            console.MarkupLine(Messages.SuccessfullySetVersion(godotRelease.ReleaseNameWithRuntime));
 
             return godotRelease;
         }
@@ -223,7 +224,7 @@ public class VersionManagementService(
             var installed = hostSystem.ListInstallations().ToArray();
             var versionToSet = await DetermineVersionToSetAsync(query, forceInteractive, installed, cancellationToken);
 
-            var godotRelease = releaseManager.TryCreateRelease(versionToSet) ?? throw new InvalidOperationException("Invalid Godot version.");
+            var godotRelease = releaseManager.TryCreateRelease(versionToSet) ?? throw new InvalidOperationException(Messages.InvalidGodotVersion);
 
             // Create the `.gdvm-version` file
             CreateOrUpdateVersionFile(godotRelease.ReleaseNameWithRuntime);
@@ -232,7 +233,7 @@ public class VersionManagementService(
             var fileExists = File.Exists(versionFilePath);
 
             logger.ZLogInformation($"Successfully set local version to {godotRelease.ReleaseNameWithRuntime}.");
-            console.MarkupLine($"[dim]{(fileExists ? "Updated" : "Created")} `.gdvm-version` file in current directory.[/]");
+            console.MarkupLine(fileExists ? Messages.UpdatedVersionFile : Messages.CreatedVersionFile);
 
             return godotRelease;
         }
@@ -271,7 +272,7 @@ public class VersionManagementService(
                 return null;
             }
 
-            console.MarkupLine($"[dim]Installing {projectVersion}{(isDotNet ? " (.NET)" : "")}...[/]");
+            console.MarkupLine(Messages.InstallingAutoDetected(projectVersion, isDotNet ? " (.NET)" : ""));
 
             // Build the query for installation
             // Parse the project version to extract base version (remove runtime suffix)
@@ -305,9 +306,9 @@ public class VersionManagementService(
             {
                 var releaseNameWithRuntime = installSuccess.Value switch
                 {
-                    InstallationOutcome.NewInstallation newInstall => newInstall.ReleaseNameWithRuntime,
-                    InstallationOutcome.AlreadyInstalled alreadyInstalled => alreadyInstalled.ReleaseNameWithRuntime,
-                    _ => throw new InvalidOperationException("Unknown installation outcome")
+                    InstallationOutcome.NewInstallation(var name) => name,
+                    InstallationOutcome.AlreadyInstalled(var name) => name,
+                    _ => throw new InvalidOperationException(Messages.UnknownInstallationOutcome)
                 };
 
                 return releaseNameWithRuntime;
@@ -341,7 +342,7 @@ public class VersionManagementService(
             logger.ZLogError($"Invalid Godot version selected: {selection}");
             console.MarkupLine($"[red]Invalid Godot version: {selection}[/]");
             return new Result<VersionResolutionOutcome, VersionResolutionError>.Failure(
-                new VersionResolutionError.InvalidVersion());
+                new VersionResolutionError.InvalidVersion(selection));
         }
 
         var (execPath, workingDirectory) = GetExecutionPaths(godotRelease);
@@ -368,21 +369,20 @@ public class VersionManagementService(
         // Prompt user for automatic installation
         if (!await PromptForInstallationAsync(projectVersion, projectInfo.IsDotNet, cancellationToken))
         {
-            console.MarkupLine($"[yellow]Project specifies {projectVersion}{projectInfo.RuntimeDisplaySuffix} but it's not installed.[/]");
-            console.MarkupLine(
-                $"[dim]Run 'gdvm install {projectVersion}{(projectInfo.IsDotNet ? " mono" : "")}' or 'gdvm local {projectVersion}{(projectInfo.IsDotNet ? " mono" : "")}' to install it.[/]");
+            console.MarkupLine(Messages.ProjectVersionNotInstalled(projectVersion, projectInfo.RuntimeDisplaySuffix));
+            console.MarkupLine(Messages.InstallationInstructions(projectVersion, projectInfo.IsDotNet));
 
             return new Result<VersionResolutionOutcome, VersionResolutionError>.Failure(
-                new VersionResolutionError.NotFound());
+                new VersionResolutionError.NotFound(projectVersion));
         }
 
         var compatibleInstalled = await FindOrInstallCompatibleVersionAsync(projectVersion, projectInfo.IsDotNet, false, cancellationToken);
         if (compatibleInstalled is null)
         {
-            console.MarkupLine($"[red]Failed to install {projectVersion}{projectInfo.RuntimeDisplaySuffix}.[/]");
-            console.MarkupLine($"[dim]You can manually install with: gdvm install {projectVersion}{(projectInfo.IsDotNet ? " mono" : "")}[/]");
+            console.MarkupLine(Messages.FailedToInstallProjectVersion(projectVersion, projectInfo.RuntimeDisplaySuffix));
+            console.MarkupLine(Messages.ManualInstallInstructions(projectVersion, projectInfo.IsDotNet));
             return new Result<VersionResolutionOutcome, VersionResolutionError>.Failure(
-                new VersionResolutionError.Failed());
+                new VersionResolutionError.Failed($"Failed to install {projectVersion}{projectInfo.RuntimeDisplaySuffix}"));
         }
 
         // Re-get installed versions and resolve again
@@ -391,15 +391,14 @@ public class VersionManagementService(
 
         if (newCompatibleVersion is null || releaseManager.TryCreateRelease(newCompatibleVersion) is not { } newProjectGodotRelease)
         {
-            console.MarkupLine("[red]Installation succeeded but version not found in installed list.[/]");
+            console.MarkupLine(Messages.InstallationSucceededButNotFound);
             return new Result<VersionResolutionOutcome, VersionResolutionError>.Failure(
-                new VersionResolutionError.Failed());
+                new VersionResolutionError.Failed($"Installation succeeded but version {projectVersion} not found in installed list"));
         }
 
         var (execPath, workingDirectory) = GetExecutionPaths(newProjectGodotRelease);
 
-        console.MarkupLine(
-            $"[green]Successfully installed and using: {projectVersion}{projectInfo.RuntimeDisplaySuffix} → {newCompatibleVersion}[/]");
+        console.MarkupLine(Messages.SuccessfullyInstalledAndUsing(projectVersion, projectInfo.RuntimeDisplaySuffix, newCompatibleVersion));
 
         return new Result<VersionResolutionOutcome, VersionResolutionError>.Success(
             new VersionResolutionOutcome.Found(execPath, workingDirectory, newCompatibleVersion, true));
@@ -410,9 +409,9 @@ public class VersionManagementService(
         if (!Path.Exists(pathService.SymlinkPath))
         {
             logger.ZLogError($"Tried to launch when no version is set.");
-            console.MarkupLine("[red]No current Godot version set.[/]");
+            console.MarkupLine(Messages.NoCurrentVersionSet);
             return new Result<VersionResolutionOutcome, VersionResolutionError>.Failure(
-                new VersionResolutionError.NotFound());
+                new VersionResolutionError.NotFound("No current version set"));
         }
 
         var symlinkInfo = new FileInfo(pathService.SymlinkPath);
@@ -459,14 +458,14 @@ public class VersionManagementService(
         if (releaseManager.TryCreateRelease(compatibleVersion) is not { } projectGodotRelease)
         {
             logger.ZLogError($"Invalid project version: {compatibleVersion}");
-            console.MarkupLine($"[red]Invalid project version: {compatibleVersion}[/]");
+            console.MarkupLine(Messages.InvalidProjectVersion(compatibleVersion));
             return new Result<VersionResolutionOutcome, VersionResolutionError>.Failure(
-                new VersionResolutionError.InvalidVersion());
+                new VersionResolutionError.InvalidVersion(compatibleVersion));
         }
 
         var (execPath, workingDirectory) = GetExecutionPaths(projectGodotRelease);
 
-        console.MarkupLine($"[dim]Using project version: {projectVersion}{projectInfo.RuntimeDisplaySuffix} → {compatibleVersion}[/]");
+        console.MarkupLine(Messages.UsingProjectVersion(projectVersion, projectInfo.RuntimeDisplaySuffix, compatibleVersion));
         return new Result<VersionResolutionOutcome, VersionResolutionError>.Success(
             new VersionResolutionOutcome.Found(execPath, workingDirectory, compatibleVersion, isProjectVersion));
     }
@@ -508,7 +507,7 @@ public class VersionManagementService(
         if (installed.Length == 0)
         {
             logger.ZLogWarning($"No versions installed and no `.gdvm-version` file found.");
-            throw new InvalidOperationException("No installations found and no `.gdvm-version` file. Install a version first with: gdvm install <version>");
+            throw new InvalidOperationException(Messages.NoInstallationsAndNoVersionFile);
         }
 
         // No `.gdvm-version` found, prompt for selection
@@ -525,11 +524,11 @@ public class VersionManagementService(
         {
             if (installed.Length <= 0)
             {
-                throw new InvalidOperationException("No versions installed. Install a version first with: `gdvm install <version>`");
+                throw new InvalidOperationException(Messages.NoVersionsInstalledPrompt);
             }
 
-            console.MarkupLine($"[yellow]Project specifies {projectVersion}{projectInfo.RuntimeDisplaySuffix}.[/]");
-            console.MarkupLine("[dim]Choose from installed versions:[/]");
+            console.MarkupLine(Messages.ProjectSpecifiesVersion(projectVersion, projectInfo.RuntimeDisplaySuffix));
+            console.MarkupLine(Messages.ChooseFromInstalled);
             return await Set.ShowSetVersionPrompt(installed, console, cancellationToken);
         }
 
@@ -544,8 +543,8 @@ public class VersionManagementService(
 
         // Not installed, auto-install
         logger.ZLogInformation($"Project version {projectVersion} is not installed, automatically installing it.");
-        console.MarkupLine($"[yellow]Project specifies {projectVersion}{projectInfo.RuntimeDisplaySuffix} but it's not installed.[/]");
-        console.MarkupLine($"[dim]Installing {projectVersion}{projectInfo.RuntimeDisplaySuffix}...[/]");
+        console.MarkupLine(Messages.ProjectVersionNotInstalled(projectVersion, projectInfo.RuntimeDisplaySuffix));
+        console.MarkupLine(Messages.InstallingProjectVersion(projectVersion, projectInfo.RuntimeDisplaySuffix));
 
         // Build the query for installation
         // Parse the project version to extract base version (remove runtime suffix)
@@ -566,25 +565,25 @@ public class VersionManagementService(
         var installedRelease = await installationService.InstallByQueryAsync(installQuery, new Progress<OperationProgress<InstallationStage>>(), cancellationToken: cancellationToken);
         if (installedRelease is not Result<InstallationOutcome, InstallationError>.Success installSuccess)
         {
-            console.MarkupLine($"[red]Failed to install {projectVersion}{projectInfo.RuntimeDisplaySuffix}.[/]");
+            console.MarkupLine(Messages.FailedToInstallProjectVersion(projectVersion, projectInfo.RuntimeDisplaySuffix));
 
             if (installed.Length <= 0)
             {
                 throw new InvalidOperationException("No versions installed. Install a version first with: gdvm install <version>");
             }
 
-            console.MarkupLine("[dim]Choose from installed versions:[/]");
+            console.MarkupLine(Messages.ChooseFromInstalled);
             return await Set.ShowSetVersionPrompt(installed, console, cancellationToken);
         }
 
         var releaseNameWithRuntime = installSuccess.Value switch
         {
-            InstallationOutcome.NewInstallation newInstall => newInstall.ReleaseNameWithRuntime,
-            InstallationOutcome.AlreadyInstalled alreadyInstalled => alreadyInstalled.ReleaseNameWithRuntime,
-            _ => throw new InvalidOperationException("Unknown installation outcome")
+            InstallationOutcome.NewInstallation(var name) => name,
+            InstallationOutcome.AlreadyInstalled(var name) => name,
+            _ => throw new InvalidOperationException(Messages.UnknownInstallationOutcome)
         };
 
-        console.MarkupLine($"[green]Successfully installed {releaseNameWithRuntime}.[/]");
+        console.MarkupLine(Messages.SuccessfullyInstalled(releaseNameWithRuntime));
         return releaseNameWithRuntime;
     }
 
@@ -599,21 +598,21 @@ public class VersionManagementService(
         }
 
         logger.ZLogInformation($"Version matching '{string.Join(" ", query)}' not installed, attempting to install it.");
-        console.MarkupLine($"[yellow]No installed version found matching '{string.Join(" ", query)}'.[/]");
-        console.MarkupLine($"[dim]Installing {string.Join(" ", query)}...[/]");
+        console.MarkupLine(Messages.NoInstalledVersionMatching(string.Join(" ", query)));
+        console.MarkupLine(Messages.Installing(string.Join(" ", query)));
 
         // Try to install
         var installedRelease = await installationService.InstallByQueryAsync(query, new Progress<OperationProgress<InstallationStage>>(), cancellationToken: cancellationToken);
         if (installedRelease is not Result<InstallationOutcome, InstallationError>.Success installSuccess)
         {
-            console.MarkupLine($"[red]Failed to install version matching '{string.Join(" ", query)}'.[/]");
+            console.MarkupLine(Messages.FailedToInstallMatching(string.Join(" ", query)));
 
             if (installed.Length <= 0)
             {
-                throw new InvalidOperationException("Installation failed and no versions available.");
+                throw new InvalidOperationException(Messages.InstallationFailedNoVersions);
             }
 
-            console.MarkupLine("[dim]Choose from installed versions:[/]");
+            console.MarkupLine(Messages.ChooseFromInstalled);
             return await Set.ShowSetVersionPrompt(installed, console, cancellationToken);
         }
 
@@ -623,18 +622,18 @@ public class VersionManagementService(
 
         if (foundVersion == null)
         {
-            console.MarkupLine("[red]Installation succeeded but version not found in installed list.[/]");
-            throw new InvalidOperationException("Installation succeeded but version not found in installed list.");
+            console.MarkupLine(Messages.InstallationSucceededButNotFound);
+            throw new InvalidOperationException(Messages.InstallationSucceededButNotFound);
         }
 
         var releaseNameWithRuntime = installSuccess.Value switch
         {
-            InstallationOutcome.NewInstallation newInstall => newInstall.ReleaseNameWithRuntime,
-            InstallationOutcome.AlreadyInstalled alreadyInstalled => alreadyInstalled.ReleaseNameWithRuntime,
-            _ => throw new InvalidOperationException("Unknown installation outcome")
+            InstallationOutcome.NewInstallation(var name) => name,
+            InstallationOutcome.AlreadyInstalled(var name) => name,
+            _ => throw new InvalidOperationException(Messages.UnknownInstallationOutcome)
         };
 
-        console.MarkupLine($"[green]Successfully installed {releaseNameWithRuntime}.[/]");
+        console.MarkupLine(Messages.SuccessfullyInstalled(releaseNameWithRuntime));
         return foundVersion;
     }
 
@@ -648,7 +647,7 @@ public class VersionManagementService(
             var runtimeText = isDotNet ? " [[.NET]]" : "";
 
             var confirmPrompt =
-                new ConfirmationPrompt($"[yellow]Project requires {projectVersion}{runtimeText} but it's not installed.[/]\n[green]Would you like to install it now?[/]")
+                new ConfirmationPrompt(Messages.ProjectRequiresInstall(projectVersion, runtimeText))
                 {
                     DefaultValue = true
                 };

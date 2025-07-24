@@ -23,14 +23,14 @@ internal sealed class ExitCodeFilter(ConsoleAppFilter next) : ConsoleAppFilter(n
         }
         catch (ConfigurationException ex)
         {
-            AnsiConsole.MarkupLine($"[red]Configuration error: {ex.Message}[/]");
+            AnsiConsole.MarkupLine(Messages.ConfigurationError(ex.Message));
             exitCode = ExitCodes.ConfigurationError;
         }
         catch (Exception e) when (e is ArgumentOutOfRangeException or ArgumentNullException or ArgumentException or ArgumentParseFailedException)
         {
             if (e is ArgumentParseFailedException)
             {
-                AnsiConsole.MarkupLine($"[red]{e.Message}.[/]");
+                AnsiConsole.MarkupLine(Messages.ExceptionMessage(e.Message));
             }
 
             exitCode = ExitCodes.ArgumentError;

@@ -56,9 +56,9 @@ public sealed class GodotCommand(
             // Validate arg string
             if (args is { Length: > 1 })
             {
-                console.MarkupLine("[red]Error: Multiple arguments detected. Please pass all Godot arguments as a single quoted string.[/]");
-                console.MarkupLine($"[yellow]Example: gdvm godot --args \"{string.Join(" ", args)}\"[/]");
-                console.MarkupLine("[dim]This ensures proper argument parsing and avoids shell interpretation issues.[/]");
+                console.MarkupLine(Messages.MultipleArgsError);
+                console.MarkupLine(Messages.ArgsExampleUsage(string.Join(" ", args)));
+                console.MarkupLine(Messages.ArgsExplanation);
                 return;
             }
 
@@ -74,7 +74,7 @@ public sealed class GodotCommand(
                 var installed = interactiveRequired.AvailableVersions;
                 if (installed.Count == 0)
                 {
-                    console.MarkupLine("[red]No Godot versions installed.[/]");
+                    console.MarkupLine(Messages.NoVersionsInstalled);
                     return;
                 }
 
@@ -84,30 +84,13 @@ public sealed class GodotCommand(
 
             if (versionResult is Result<VersionResolutionOutcome, VersionResolutionError>.Failure failure)
             {
-                // Display any error messages from the result
-                var errorMessages = failure.Error switch
-                {
-                    VersionResolutionError.NotFound notFound => notFound.ErrorMessages,
-                    VersionResolutionError.Failed failed => failed.ErrorMessages,
-                    VersionResolutionError.InvalidVersion invalidVersion => invalidVersion.ErrorMessages,
-                    _ => null
-                };
-
-                if (errorMessages != null)
-                {
-                    foreach (var message in errorMessages)
-                    {
-                        console.MarkupLine($"[red]{message}[/]");
-                    }
-                }
-
-                // Display generic error based on error type
+                // Display error message based on error type using Messages class
                 var errorMessage = failure.Error switch
                 {
-                    VersionResolutionError.NotFound => "[red]No current Godot version set.[/]",
-                    VersionResolutionError.Failed => "[red]Error resolving Godot version for launch.[/]",
-                    VersionResolutionError.InvalidVersion => "[red]Invalid Godot version selected.[/]",
-                    _ => "[red]Unknown error occurred while resolving version.[/]"
+                    VersionResolutionError.NotFound notFound => Messages.VersionResolutionNotFound(notFound.Version),
+                    VersionResolutionError.Failed failed => Messages.VersionResolutionFailed(failed.Reason),
+                    VersionResolutionError.InvalidVersion invalid => Messages.InvalidVersion(invalid.Version),
+                    _ => Messages.UnknownResolutionError
                 };
 
                 console.MarkupLine(errorMessage);
@@ -117,24 +100,15 @@ public sealed class GodotCommand(
             // Extract success result
             if (versionResult is not Result<VersionResolutionOutcome, VersionResolutionError>.Success success)
             {
-                console.MarkupLine("[red]Unexpected error: version resolution succeeded but result is not success.[/]");
+                console.MarkupLine(Messages.UnexpectedError);
                 return;
             }
 
-            var (execPath, workingDirectory, versionName, infoMessages) = success.Value switch
+            var (execPath, workingDirectory, versionName) = success.Value switch
             {
-                VersionResolutionOutcome.Found found => (found.ExecutablePath, found.WorkingDirectory, found.VersionName, found.InfoMessages),
+                VersionResolutionOutcome.Found found => (found.ExecutablePath, found.WorkingDirectory, found.VersionName),
                 _ => throw new InvalidOperationException("Expected Found outcome for successful resolution")
             };
-
-            // Display any info messages from the result
-            if (infoMessages != null)
-            {
-                foreach (var message in infoMessages)
-                {
-                    console.MarkupLine($"[dim]{message}[/]");
-                }
-            }
 
             // Check if this is a help or version command that should output directly to console
             var argumentString = args != null ? string.Join(" ", args) : "";
@@ -148,7 +122,7 @@ public sealed class GodotCommand(
                     // Godot expects the directory path, not the file path
                     var projectDirectory = Path.GetDirectoryName(projectFilePath);
                     argumentString = $"--editor --path \"{projectDirectory}\"";
-                    console.MarkupLine($"[dim]Auto-detected project file: {Path.GetFileName(projectFilePath)}[/]");
+                    console.MarkupLine(Messages.AutoDetectedProject(Path.GetFileName(projectFilePath)));
                 }
             }
 
@@ -176,7 +150,7 @@ public sealed class GodotCommand(
                 // Close the streams to fully disconnect from terminal
                 process.StandardInput.Close();
 
-                console.MarkupLine($"[green]Launched Godot {versionName} in detached mode (PID: {process.Id}).[/]");
+                console.MarkupLine(Messages.LaunchedGodotDetached(versionName, process.Id));
                 return;
             }
 
@@ -194,7 +168,7 @@ public sealed class GodotCommand(
 
             if (forceAttached && !attached)
             {
-                console.MarkupLine($"[yellow]Note: Running Godot {versionName} in attached mode due to arguments requiring terminal output.[/]");
+                console.MarkupLine(Messages.RunningAttachedMode(versionName));
             }
 
             process.EnableRaisingEvents = true;

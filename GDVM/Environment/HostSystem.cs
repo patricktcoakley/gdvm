@@ -1,4 +1,5 @@
 using GDVM.Error;
+using GDVM.Types;
 using Microsoft.Extensions.Logging;
 using System.ComponentModel;
 using System.IO.Enumeration;
@@ -10,7 +11,7 @@ public interface IHostSystem
     SystemInfo SystemInfo { get; }
     void CreateOrOverwriteSymbolicLink(string symlinkTargetPath);
     void RemoveSymbolicLinks();
-    void DisplaySymbolicLinks();
+    Result<SymlinkInfo, SymlinkError> ResolveCurrentSymlinks();
     IEnumerable<string> ListInstallations();
 }
 
@@ -87,6 +88,71 @@ public sealed class HostSystem(SystemInfo systemInfo, IPathService pathService, 
         }
     }
 
+    public Result<SymlinkInfo, SymlinkError> ResolveCurrentSymlinks()
+    {
+        var file = new FileInfo(pathService.SymlinkPath);
+        if (file.LinkTarget is null)
+        {
+            logger.LogInformation("Ran `which` without version set");
+            return new Result<SymlinkInfo, SymlinkError>.Failure(
+                new SymlinkError.NoVersionSet());
+        }
+
+        if (!IsSymbolicLinkValid(pathService.SymlinkPath))
+        {
+            return new Result<SymlinkInfo, SymlinkError>.Failure(
+                new SymlinkError.InvalidSymlink(pathService.SymlinkPath, file.LinkTarget));
+        }
+
+        logger.LogInformation("{SymlinkPath} is currently set to: {LinkTarget}", pathService.SymlinkPath, file.LinkTarget);
+
+        // Only macOS has two symlinks
+        string? macAppSymlinkPath = null;
+        if (SystemInfo.CurrentOS == OS.MacOS)
+        {
+            var appFile = new FileInfo(pathService.MacAppSymlinkPath);
+            if (appFile.LinkTarget is not null)
+            {
+                if (IsSymbolicLinkValid(pathService.MacAppSymlinkPath))
+                {
+                    logger.LogInformation("{MacAppSymlinkPath} is currently set to: {LinkTarget}", pathService.MacAppSymlinkPath, appFile.LinkTarget);
+                    macAppSymlinkPath = appFile.LinkTarget;
+                }
+                else
+                {
+                    logger.LogWarning("Mac App symlink {MacAppSymlinkPath} exists but is invalid", pathService.MacAppSymlinkPath);
+                }
+            }
+            else
+            {
+                logger.LogWarning("Mac App symlink {MacAppSymlinkPath} is not set", pathService.MacAppSymlinkPath);
+            }
+        }
+
+        return new Result<SymlinkInfo, SymlinkError>.Success(
+            new SymlinkInfo(file.LinkTarget, macAppSymlinkPath));
+    }
+
+    /// <summary>
+    ///     Lists the local installations naively by just seeing what directories exist. Possibly will use some kind of ledger
+    ///     in the future.
+    /// </summary>
+    /// <returns>List of local installations</returns>
+    public IEnumerable<string> ListInstallations()
+    {
+        var installed = new FileSystemEnumerable<string>(
+            pathService.RootPath,
+            (ref FileSystemEntry entry) => entry.FileName.ToString())
+        {
+            ShouldIncludePredicate = (ref FileSystemEntry entry) =>
+                entry is { IsDirectory: true, FileName: not "bin", IsHidden: false }
+        };
+
+        return installed
+            .OrderDescending()
+            .ThenBy(x => x.EndsWith("standard"));
+    }
+
     public void DisplaySymbolicLinks()
     {
         var file = new FileInfo(pathService.SymlinkPath);
@@ -121,26 +187,6 @@ public sealed class HostSystem(SystemInfo systemInfo, IPathService pathService, 
         }
 
         logger.LogInformation("{MacAppSymlinkPath} is currently set to: {LinkTarget}", pathService.MacAppSymlinkPath, file.LinkTarget);
-    }
-
-    /// <summary>
-    ///     Lists the local installations naively by just seeing what directories exist. Possibly will use some kind of ledger
-    ///     in the future.
-    /// </summary>
-    /// <returns>List of local installations</returns>
-    public IEnumerable<string> ListInstallations()
-    {
-        var installed = new FileSystemEnumerable<string>(
-            pathService.RootPath,
-            (ref FileSystemEntry entry) => entry.FileName.ToString())
-        {
-            ShouldIncludePredicate = (ref FileSystemEntry entry) =>
-                entry is { IsDirectory: true, FileName: not "bin", IsHidden: false }
-        };
-
-        return installed
-            .OrderDescending()
-            .ThenBy(x => x.EndsWith("standard"));
     }
 
     private static bool IsSymbolicLinkValid(string symlinkTargetPath)

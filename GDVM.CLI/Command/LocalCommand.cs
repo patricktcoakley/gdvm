@@ -23,14 +23,14 @@ public sealed class LocalCommand(IVersionManagementService versionManagementServ
         // Warn if both query and interactive are provided, then default to interactive
         if (query is { Length: > 0 } && interactive)
         {
-            console.MarkupLine("[yellow]Warning: Cannot use --interactive with version query. Defaulting to interactive selection.[/]");
+            console.MarkupLine(Messages.InteractiveWithQueryWarning);
             query = null; // Clear query to use interactive mode
         }
 
         try
         {
             var godotRelease = await versionManagementService.SetLocalVersionAsync(query, interactive, cancellationToken);
-            console.MarkupLine($"[green]Set local version to {godotRelease.ReleaseNameWithRuntime}.[/]");
+            console.MarkupLine(Messages.SetLocalVersion(godotRelease.ReleaseNameWithRuntime));
         }
         catch (TaskCanceledException)
         {

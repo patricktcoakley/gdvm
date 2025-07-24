@@ -18,6 +18,6 @@ public static class Godot
             .PageSize(10)
             .WrapAround()
             .EnableSearch()
-            .MoreChoicesText("[grey](Move up and down to see more versions)[/]")
+            .MoreChoicesText(Messages.MoreChoicesText)
             .AddChoices(installed);
 }

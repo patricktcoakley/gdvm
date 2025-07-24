@@ -1,30 +1,42 @@
 using GDVM.Environment;
 using GDVM.Error;
-using Microsoft.Extensions.Logging;
+using GDVM.Types;
 using Spectre.Console;
-using ZLogger;
 
 namespace GDVM.Command;
 
-public sealed class WhichCommand(IHostSystem hostSystem, IAnsiConsole console, ILogger<WhichCommand> logger)
+public sealed class WhichCommand(IHostSystem hostSystem, IAnsiConsole console)
 {
     /// <summary>
     ///     Displays the currently selected version of Godot (if any).
     /// </summary>
     public void Which()
     {
-        try
-        {
-            hostSystem.DisplaySymbolicLinks();
-        }
-        catch (Exception e)
-        {
-            logger.ZLogError($"Error reading symlink: {e.Message}");
-            console.MarkupLine(
-                Messages.SomethingWentWrong("when trying to read which Godot version is set")
-            );
+        var result = hostSystem.ResolveCurrentSymlinks();
 
-            throw;
+        var message = result switch
+        {
+            Result<SymlinkInfo, SymlinkError>.Success(var info) =>
+                FormatSymlinkInfo(info),
+            Result<SymlinkInfo, SymlinkError>.Failure(SymlinkError.NoVersionSet) =>
+                Messages.NoVersionSet,
+            Result<SymlinkInfo, SymlinkError>.Failure(SymlinkError.InvalidSymlink(var path, var target)) =>
+                Messages.InvalidSymlink(path, target),
+            _ => Messages.UnknownSymlinkError
+        };
+
+        console.MarkupLine(message);
+    }
+
+    private static string FormatSymlinkInfo(SymlinkInfo info)
+    {
+        var message = Messages.CurrentVersionSetTo(info.SymlinkPath);
+
+        if (info.MacAppSymlinkPath is not null)
+        {
+            message += Messages.CurrentMacosAppSetTo(info.MacAppSymlinkPath);
         }
+
+        return message;
     }
 }

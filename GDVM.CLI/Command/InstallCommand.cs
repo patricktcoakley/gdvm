@@ -117,8 +117,6 @@ public sealed class InstallCommand(
                 }
                 else
                 {
-                    // Need to do full lookup with progress
-                    // Check if this would be the only version installed
                     var installedVersions = hostSystem.ListInstallations().ToList();
                     var autoSetAsDefault = setAsDefault || installedVersions.Count == 0;
                     wasAutoSetAsDefault = !setAsDefault && installedVersions.Count == 0;
@@ -128,9 +126,6 @@ public sealed class InstallCommand(
                 }
             }
 
-            // Messages are now handled via the Messages class instead of embedded parameters
-
-            // Then determine the main message
             var msg = installationResult switch
             {
                 Result<InstallationOutcome, InstallationError>.Success(InstallationOutcome.NewInstallation(var release)) =>

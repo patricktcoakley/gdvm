@@ -190,18 +190,14 @@ public sealed class ReleaseManager(IHostSystem hostSystem, PlatformStringProvide
             releaseType = "stable";
         }
 
-        // Try to find the first release
-        var matchingRelease = releaseNames
-            .OrderDescending()
+        // Try to find the first release that matches the criteria
+        return releaseNames
             .Where(x => x.StartsWith(possibleVersion))
-            .FirstOrDefault(x => x.Contains(releaseType));
-
-        if (matchingRelease == null)
-        {
-            return null;
-        }
-
-        return TryCreateRelease($"{matchingRelease}-{runtime.Name()}");
+            .Where(x => string.IsNullOrEmpty(releaseType) || x.Contains(releaseType))
+            .Select(releaseName => TryCreateRelease($"{releaseName}-{runtime.Name()}"))
+            .OfType<Release>()
+            .OrderByDescending(release => release)
+            .FirstOrDefault();
     }
 
     private Release? TryFilterLatest(string type, string runtime, string[] releaseNames)

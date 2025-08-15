@@ -49,7 +49,7 @@ public class Program
         services.AddSingleton<PlatformStringProvider>();
         services.AddSingleton<IHostSystem, HostSystem>();
 
-        // HTTP Clients - Named clients for different services
+        // Register HTTP clients
         services.AddHttpClient<IGitHubClient, GitHubClient>("github")
             .ConfigureHttpClient((_, client) =>
             {
@@ -66,6 +66,7 @@ public class Program
                 client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("gdvm", version));
             });
 
+        // Register core services
         services.AddSingleton<IDownloadClient, DownloadClient>();
         services.AddSingleton<IReleaseManager, ReleaseManager>();
         services.AddSingleton<IInstallationService, InstallationService>();
@@ -77,13 +78,13 @@ public class Program
         // Progress handling
         services.AddSingleton<IProgressHandler<InstallationStage>, SpectreProgressHandler<InstallationStage>>();
 
-        // ensure we have a writeable directory
+        // Ensure we have a writeable directory
         if (!Directory.Exists(pathService.BinPath))
         {
             Directory.CreateDirectory(pathService.BinPath);
         }
 
-        // ensure we have a config file
+        // Ensure we have a config file
         if (!File.Exists(pathService.ConfigPath))
         {
             File.WriteAllText(pathService.ConfigPath, "# GDVM Configuration File\n");

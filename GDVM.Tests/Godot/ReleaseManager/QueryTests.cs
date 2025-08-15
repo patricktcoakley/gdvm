@@ -132,4 +132,25 @@ public class QueryTests
 
         await Assert.ThrowsAsync<OperationCanceledException>(() => releaseManager.SearchRemoteReleases(["stable"], cts.Token));
     }
+
+    [Fact]
+    public void FindReleaseByQuery_4_5_ShouldSelectBetaOverDev()
+    {
+        var releaseNames = new[]
+        {
+            "4.5-dev5",
+            "4.5-dev4",
+            "4.5-dev3",
+            "4.5-beta3",
+            "4.5-beta2",
+            "4.5-beta1"
+        };
+
+        var releaseManager = new ReleaseManagerBuilder().Build();
+
+        var result = releaseManager.TryFindReleaseByQuery(["4.5"], releaseNames);
+
+        Assert.NotNull(result);
+        Assert.Equal("4.5-beta3-standard", result.ReleaseNameWithRuntime);
+    }
 }

@@ -33,7 +33,7 @@ public sealed class GodotCommand(
         var process = new Process();
         Result<VersionResolutionOutcome, VersionResolutionError>? versionResult = null;
 
-        // Register cancellation callback early to handle cancellation during version resolution
+        // Register cancellation callback
         await using var cancellationRegistration = cancellationToken.Register(() =>
         {
             try
@@ -84,7 +84,6 @@ public sealed class GodotCommand(
 
             if (versionResult is Result<VersionResolutionOutcome, VersionResolutionError>.Failure failure)
             {
-                // Display error message based on error type using Messages class
                 var errorMessage = failure.Error switch
                 {
                     VersionResolutionError.NotFound notFound => Messages.VersionResolutionNotFound(notFound.Version),

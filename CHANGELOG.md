@@ -1,5 +1,12 @@
 # Changelog
 
+<a name="1.2.2"></a>
+## [1.2.2](https://github.com/patricktcoakley/gdvm/releases/tag/v1.2.2) (2025-08-14)
+
+### 🐛 Bug Fixes
+
+* **release:** Fix filtering incorrectly sorting alphabetically instead of by release type ordering. ([8069f7d](https://github.com/patricktcoakley/gdvm/commit/8069f7d48546e0d5f4ceea4db0a79933527b0d41))
+
 <a name="1.2.0"></a>
 ## [1.2.0](https://github.com/patricktcoakley/gdvm/releases/tag/v1.2.0) (2025-07-24)
 

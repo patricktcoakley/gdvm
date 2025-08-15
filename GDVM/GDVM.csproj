@@ -8,7 +8,6 @@
         <Authors>Patrick T Coakley</Authors>
         <PackageProjectUrl>https://github.com/patricktcoakley/gdvm</PackageProjectUrl>
         <PackageLicenseUrl>https://github.com/patricktcoakley/GDVM/blob/main/LICENSE</PackageLicenseUrl>
-        <Version>1.2.0</Version>
         <RootNamespace>GDVM</RootNamespace>
         <AssemblyName>gdvm-core</AssemblyName>
     </PropertyGroup>

@@ -7,6 +7,13 @@
 
 * **release:** Fix filtering incorrectly sorting alphabetically instead of by release type ordering. ([8069f7d](https://github.com/patricktcoakley/gdvm/commit/8069f7d48546e0d5f4ceea4db0a79933527b0d41))
 
+<a name="1.2.1"></a>
+## [1.2.1](https://www.github.com/patricktcoakley/gdvm/releases/tag/v1.2.1) (2025-07-24)
+
+### 🐛 Bug Fixes
+
+* **which:** Fixed `which` not displaying the currently set versions after last refactor; consolidated error messaging; minor refactoring. ([bd4ae28](https://www.github.com/patricktcoakley/gdvm/commit/bd4ae282bbe02e41fee70bc01b38bdcbb859fde2))
+
 <a name="1.2.0"></a>
 ## [1.2.0](https://github.com/patricktcoakley/gdvm/releases/tag/v1.2.0) (2025-07-24)
 
@@ -27,10 +34,6 @@
 
 * Fix having setting the default when only one version is installed; separate CLI and library code; introduce a standardized Result type; remove dead code. ([96c063a](https://github.com/patricktcoakley/gdvm/commit/96c063a190b83a1ae1da9f6d5979443060bae8d1))
 * resolve version resolution logic ([76693aa](https://github.com/patricktcoakley/gdvm/commit/76693aa112cb527271a3ad3a366cf69524fdf54c))
-
-### Breaking Changes
-
-* **gdvm:** Add remaining features, refactor existing code, and update README to reflect first stable version: ([b03d245](https://github.com/patricktcoakley/gdvm/commit/b03d245001b8c15da0eb88837b9072e61f5f93b7))
 
 <a name="1.1.1"></a>
 ## [1.1.1](https://github.com/patricktcoakley/gdvm/releases/tag/v1.1.1) (2025-07-08)

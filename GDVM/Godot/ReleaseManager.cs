@@ -169,6 +169,13 @@ public sealed class ReleaseManager(IHostSystem hostSystem, PlatformStringProvide
 
     private Release? TryFilterRelease(string[] query, string[] releaseNames)
     {
+        var invalidArgs = ArgumentValidator.GetInvalidArguments(query);
+        if (invalidArgs.Count > 0)
+        {
+            throw new ArgumentException(
+                $"Invalid arguments: {string.Join(", ", invalidArgs)}. Valid arguments are version numbers (e.g. `4`, `4.2`), release types ( {string.Join(", ", ReleaseType.Prefixes.Select(p => $"`{p}`"))}), and runtime environments (`mono`, `standard`).");
+        }
+
         var runtime = query
             .FirstOrDefault(x => x is "mono" or "standard")?.ToLowerInvariant() == "mono"
             ? RuntimeEnvironment.Mono
@@ -199,6 +206,7 @@ public sealed class ReleaseManager(IHostSystem hostSystem, PlatformStringProvide
             .OrderByDescending(release => release)
             .FirstOrDefault();
     }
+
 
     private Release? TryFilterLatest(string type, string runtime, string[] releaseNames)
     {

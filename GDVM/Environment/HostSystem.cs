@@ -1,4 +1,5 @@
 using GDVM.Error;
+using GDVM.Godot;
 using GDVM.Types;
 using Microsoft.Extensions.Logging;
 using System.ComponentModel;
@@ -149,44 +150,10 @@ public sealed class HostSystem(SystemInfo systemInfo, IPathService pathService, 
         };
 
         return installed
-            .OrderDescending()
-            .ThenBy(x => x.EndsWith("standard"));
-    }
-
-    public void DisplaySymbolicLinks()
-    {
-        var file = new FileInfo(pathService.SymlinkPath);
-        if (file.LinkTarget is null)
-        {
-            logger.LogInformation("Ran `which` without version set");
-            throw new InvalidOperationException("No Godot version is set.");
-        }
-
-        if (!IsSymbolicLinkValid(pathService.SymlinkPath))
-        {
-            throw new InvalidSymlinkException("Symlink was created but appears to be invalid.", file.LinkTarget);
-        }
-
-        logger.LogInformation("{SymlinkPath} is currently set to: {LinkTarget}", pathService.SymlinkPath, file.LinkTarget);
-
-        // Only macOS has two symlinks
-        if (SystemInfo.CurrentOS != OS.MacOS)
-        {
-            return;
-        }
-
-        file = new FileInfo(pathService.MacAppSymlinkPath);
-        if (file.LinkTarget is null)
-        {
-            throw new FileNotFoundException($"{pathService.MacAppSymlinkPath} not set.");
-        }
-
-        if (!IsSymbolicLinkValid(pathService.MacAppSymlinkPath))
-        {
-            throw new InvalidSymlinkException("Symlink was created but appears to be invalid.", file.LinkTarget);
-        }
-
-        logger.LogInformation("{MacAppSymlinkPath} is currently set to: {LinkTarget}", pathService.MacAppSymlinkPath, file.LinkTarget);
+            .Select(Release.TryParse)
+            .OfType<Release>()
+            .OrderByDescending(release => release)
+            .Select(release => release.ReleaseNameWithRuntime);
     }
 
     private static bool IsSymbolicLinkValid(string symlinkTargetPath)

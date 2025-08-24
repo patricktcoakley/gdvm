@@ -13,10 +13,6 @@ public static class Messages
     public static string UnexpectedError => "[red]Unexpected error: version resolution succeeded but result is not success.[/]";
     public static string UnknownResolutionError => "[red]Unknown error occurred while resolving version.[/]";
     public static string UnknownSymlinkError => "[red]Unknown error occurred while checking current version[/]";
-    public static string CurrentVersionSetTo(string symlinkPath) => $"[green]Current version set to:[/] {symlinkPath}";
-    public static string CurrentMacosAppSetTo(string macAppSymlinkPath) => $"\n[green]Current macOS App set to:[/] {macAppSymlinkPath}";
-    public static string ConfigurationError(string message) => $"[red]Configuration error: {message}[/]";
-    public static string ExceptionMessage(string message) => $"[red]{message}.[/]";
     public static string MoreChoicesText => "[grey](Move up and down to see more versions)[/]";
 
     // Symlinks
@@ -55,6 +51,10 @@ public static class Messages
     public static string InstallationFailedNoVersions => "Installation failed and no versions available.";
     public static string UnknownInstallationOutcome => "Unknown installation outcome";
     public static string UnknownInstallationResultType => "Unknown installation result type";
+    public static string CurrentVersionSetTo(string symlinkPath) => $"[green]Current version set to:[/] {symlinkPath}";
+    public static string CurrentMacOSAppSetTo(string macAppSymlinkPath) => $"\n[green]Current macOS App set to:[/] {macAppSymlinkPath}";
+    public static string ConfigurationError(string message) => $"[red]Configuration error: {message}[/]";
+    public static string ExceptionMessage(string message) => $"[red]{message}.[/]";
     public static string SelectAVersionTo(string what) => $"[green]Select a version to {what}[/]\n[hotpink_1](Press CTRL+C to cancel)[/]";
     public static string SelectVersionsTo(string what) => $"[green]Select the versions to {what}[/]\n[hotpink_1](Press CTRL+C to cancel)[/]";
 

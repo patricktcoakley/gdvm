@@ -27,7 +27,7 @@ public class ReleaseQueryPropertyTests
         VersionGen.Zip(ReleaseTypeStringGen).Select(t => $"{t.Item1}-{t.Item2}");
 
     private static Gen<string[]> ReleaseNamesGen =>
-        Gen.ListOf(ReleaseNameGen)
+        ReleaseNameGen.ListOf()
             .Where(list => list.Count > 0)
             .Select(list => list.Distinct().ToArray());
 
@@ -43,19 +43,28 @@ public class ReleaseQueryPropertyTests
                 .Where(r => r.StartsWith(version + "-"))
                 .ToArray();
 
-            if (matchingReleases.Length == 0) return true;
+            if (matchingReleases.Length == 0)
+            {
+                return true;
+            }
 
             var result = releaseManager.TryFindReleaseByQuery([version], matchingReleases);
-            
-            if (result == null) return true;
+
+            if (result == null)
+            {
+                return true;
+            }
 
             // Parse all matching releases to get their types
             var parsedReleases = matchingReleases
-                .Select(r => Release.TryParse(r))
+                .Select(Release.TryParse)
                 .OfType<Release>()
                 .ToArray();
 
-            if (parsedReleases.Length == 0) return true;
+            if (parsedReleases.Length == 0)
+            {
+                return true;
+            }
 
             // The selected release should be the highest priority one
             var expectedBest = parsedReleases
@@ -71,7 +80,7 @@ public class ReleaseQueryPropertyTests
     {
         var releaseManager = new ReleaseManagerBuilder().Build();
 
-        return Prop.ForAll(VersionGen.ToArbitrary(), Gen.Choose(1, 10).ToArbitrary(), Gen.Choose(1, 10).ToArbitrary(), 
+        return Prop.ForAll(VersionGen.ToArbitrary(), Gen.Choose(1, 10).ToArbitrary(), Gen.Choose(1, 10).ToArbitrary(),
             (version, betaNum, devNum) =>
             {
                 var releases = new[]
@@ -81,19 +90,22 @@ public class ReleaseQueryPropertyTests
                 };
 
                 var result = releaseManager.TryFindReleaseByQuery([version], releases);
-                
-                return result?.ReleaseName?.Contains("beta") == true;
+
+                return result?.ReleaseName.Contains("beta") == true;
             });
     }
 
-    [Property] 
+    [Property]
     public FsCheck.Property StableIsPreferredOverAllOthers()
     {
         var releaseManager = new ReleaseManagerBuilder().Build();
 
         return Prop.ForAll(VersionGen.ToArbitrary(), ReleaseTypeStringGen.ToArbitrary(), (version, otherType) =>
         {
-            if (otherType == "stable") return true;
+            if (otherType == "stable")
+            {
+                return true;
+            }
 
             var releases = new[]
             {
@@ -102,8 +114,8 @@ public class ReleaseQueryPropertyTests
             };
 
             var result = releaseManager.TryFindReleaseByQuery([version], releases);
-            
-            return result?.ReleaseName?.Contains("stable") == true;
+
+            return result?.ReleaseName.Contains("stable") == true;
         });
     }
 
@@ -127,8 +139,8 @@ public class ReleaseQueryPropertyTests
             };
 
             var result = releaseManager.TryFindReleaseByQuery([data.Version], releases);
-            
-            return result?.ReleaseName?.Contains("rc") == true;
+
+            return result?.ReleaseName.Contains("rc") == true;
         });
     }
 
@@ -147,8 +159,8 @@ public class ReleaseQueryPropertyTests
                 };
 
                 var result = releaseManager.TryFindReleaseByQuery([version], releases);
-                
-                return result?.ReleaseName?.Contains("alpha") == true;
+
+                return result?.ReleaseName.Contains("alpha") == true;
             });
     }
 
@@ -172,8 +184,8 @@ public class ReleaseQueryPropertyTests
             };
 
             var result = releaseManager.TryFindReleaseByQuery([data.Version], releases);
-            
-            return result?.ReleaseName?.Contains($"{data.ReleaseType}{data.HigherNum}") == true;
+
+            return result?.ReleaseName.Contains($"{data.ReleaseType}{data.HigherNum}") == true;
         });
     }
 }

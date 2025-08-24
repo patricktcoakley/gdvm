@@ -34,7 +34,7 @@ public sealed class WhichCommand(IHostSystem hostSystem, IAnsiConsole console)
 
         if (info.MacAppSymlinkPath is not null)
         {
-            message += Messages.CurrentMacosAppSetTo(info.MacAppSymlinkPath);
+            message += Messages.CurrentMacOSAppSetTo(info.MacAppSymlinkPath);
         }
 
         return message;

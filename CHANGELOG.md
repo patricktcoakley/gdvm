@@ -1,5 +1,12 @@
 # Changelog
 
+<a name="1.2.3"></a>
+## [1.2.3](https://github.com/patricktcoakley/gdvm/releases/tag/v1.2.3) (2025-08-24)
+
+### 🐛 Bug Fixes
+
+* Improve version sorting and argument validation. ([9c11bc3](https://github.com/patricktcoakley/gdvm/commit/9c11bc3e3733c7475d95461074179628a97588e3))
+
 <a name="1.2.2"></a>
 ## [1.2.2](https://github.com/patricktcoakley/gdvm/releases/tag/v1.2.2) (2025-08-14)
 

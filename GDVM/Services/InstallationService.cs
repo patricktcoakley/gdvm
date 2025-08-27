@@ -131,8 +131,9 @@ public class InstallationService(
                 }
             }
 
+            // TODO: Revisit this to use the godot-builds JSON artifacts instead
             // Verify checksum if available
-            if (godotRelease.Major > 3 || godotRelease is { Major: 3, Minor: >= 3 })
+            if (godotRelease is { Major: 4, Minor: >= 3 })
             {
                 progress.Report(new OperationProgress<InstallationStage>(InstallationStage.VerifyingChecksum, "Verifying checksum..."));
                 memStream.Position = 0;
@@ -229,28 +230,50 @@ public class InstallationService(
         var lastWriteTime = File.GetLastWriteTime(pathService.ReleasesPath);
         var isCacheValid = !remote && File.Exists(pathService.ReleasesPath) && DateTime.Now.AddDays(-1) <= lastWriteTime;
 
+        IEnumerable<string> releaseNames = [];
+
         if (isCacheValid)
         {
             logger.LogInformation("Reading from {ReleasesPath}, last updated {LastWriteTime}", pathService.ReleasesPath, lastWriteTime);
             var cachedReleases = await File.ReadAllLinesAsync(pathService.ReleasesPath, cancellationToken);
             if (cachedReleases.Length > 0)
             {
-                return cachedReleases;
+                releaseNames = cachedReleases;
             }
 
-            logger.LogError("Cached releases file is empty, fetching from remote");
+            logger.LogWarning("Cached releases file is empty, fetching from remote");
+        }
+        else
+        {
+            releaseNames = await releaseManager
+                .ListReleases(cancellationToken);
         }
 
-        var releaseNames = (await releaseManager.ListReleases(cancellationToken)).ToArray();
+        string[] validReleases;
 
-        if (releaseNames.Length == 0)
+        try
+        {
+            validReleases = releaseNames
+                .Select(releaseManager.TryCreateRelease)
+                .OfType<Release>()
+                .OrderByDescending(release => release)
+                .Select(release => release.ReleaseName)
+                .ToArray();
+        }
+        catch (ArgumentException e)
+        {
+            logger.LogError(e, "Unable to install {ReleaseName}: ", e.ParamName);
+            return [];
+        }
+
+        if (validReleases.Length == 0)
         {
             logger.LogError("Unable to fetch remote releases");
             return [];
         }
 
-        await File.WriteAllLinesAsync(pathService.ReleasesPath, releaseNames, cancellationToken);
-        return releaseNames;
+        await File.WriteAllLinesAsync(pathService.ReleasesPath, validReleases, cancellationToken);
+        return validReleases;
     }
 
     private static async Task<string> CalculateChecksum(MemoryStream memStream, CancellationToken cancellationToken)

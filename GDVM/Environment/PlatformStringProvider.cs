@@ -37,12 +37,12 @@ public sealed class PlatformStringProvider(SystemInfo systemInfo)
             (RuntimeEnvironment.Standard, 3, Architecture.Arm64 or Architecture.X64) when release.Minor >= 3 => "osx.universal",
 
             (RuntimeEnvironment.Mono, 3, Architecture.X64) when release.Minor == 0 => "mono_osx64",
-            (RuntimeEnvironment.Mono, 3, Architecture.X64) when release.Minor <= 2 => "mono_osx.64",
-            (RuntimeEnvironment.Mono, 3, Architecture.Arm64 or Architecture.X64) => "mono_osx.universal",
+            (RuntimeEnvironment.Mono, 3, Architecture.X64) when release.Minor <= 3 => "mono_osx.64",
+            (RuntimeEnvironment.Mono, 3, Architecture.Arm64 or Architecture.X64) when release.Minor > 3 => "mono_osx.universal",
 
             (RuntimeEnvironment.Mono, 4, Architecture.Arm64 or Architecture.X64) => "mono_macos.universal",
             (RuntimeEnvironment.Standard, 4, Architecture.Arm64 or Architecture.X64) => "macos.universal",
-            _ => throw new ArgumentOutOfRangeException(nameof(arch), $"Architecture `{arch}` is not supported on {release.ReleaseName} for macOS.")
+            _ => throw new ArgumentOutOfRangeException(nameof(arch), $"Architecture `{arch}` is not supported on {release.ReleaseNameWithRuntime} for macOS.")
         };
     }
 

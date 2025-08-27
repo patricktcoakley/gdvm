@@ -1,5 +1,12 @@
 # Changelog
 
+<a name="1.2.4"></a>
+## [1.2.4](https://github.com/patricktcoakley/gdvm/releases/tag/v1.2.4) (2025-08-27)
+
+### 🐛 Bug Fixes
+
+* **install:** Installation command now properly sorts by release type and only dislays versions supported by local machine. ([0edf52a](https://github.com/patricktcoakley/gdvm/commit/0edf52a4b9afbb397c710387eb56058c4a79a89e))
+
 <a name="1.2.3"></a>
 ## [1.2.3](https://github.com/patricktcoakley/gdvm/releases/tag/v1.2.3) (2025-08-24)
 

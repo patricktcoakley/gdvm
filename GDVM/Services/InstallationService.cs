@@ -250,31 +250,16 @@ public class InstallationService(
                 .ListReleases(cancellationToken);
         }
 
-        string[] validReleases;
+        var releaseNamesArray = releaseNames.ToArray();
 
-        try
-        {
-            validReleases = releaseNames
-                .Select(releaseManager.TryCreateRelease)
-                .OfType<Release>()
-                .OrderByDescending(release => release)
-                .Select(release => release.ReleaseName)
-                .ToArray();
-        }
-        catch (ArgumentException e)
-        {
-            logger.LogError(e, "Unable to install {ReleaseName}: ", e.ParamName);
-            return [];
-        }
-
-        if (validReleases.Length == 0)
+        if (releaseNamesArray.Length == 0)
         {
             logger.LogError("Unable to fetch remote releases");
             return [];
         }
 
-        await File.WriteAllLinesAsync(pathService.ReleasesPath, validReleases, cancellationToken);
-        return validReleases;
+        await File.WriteAllLinesAsync(pathService.ReleasesPath, releaseNamesArray, cancellationToken);
+        return releaseNamesArray;
     }
 
     private static async Task<string> CalculateChecksum(MemoryStream memStream, CancellationToken cancellationToken)

@@ -47,6 +47,7 @@ public partial class ProjectManager : IProjectManager
     /// </summary>
     /// <param name="directory">The directory to search in. If null, uses current working directory.</param>
     /// <returns>ProjectInfo if found, null otherwise.</returns>
+    // TODO: Replace with Result<ProjectInfo, ProjectError> FindProjectInfo(string? directory = null)
     public ProjectInfo? FindProjectInfo(string? directory = null)
     {
         var targetDir = directory ?? Directory.GetCurrentDirectory();
@@ -77,6 +78,7 @@ public partial class ProjectManager : IProjectManager
     /// </summary>
     /// <param name="directory">The directory to search in. If null, uses current working directory.</param>
     /// <returns>The full path to project.godot if found, null otherwise.</returns>
+    // TODO: Replace with Result<string, ProjectError> FindProjectFilePath(string? directory = null)
     public string? FindProjectFilePath(string? directory = null)
     {
         var targetDir = directory ?? Directory.GetCurrentDirectory();
@@ -96,6 +98,7 @@ public partial class ProjectManager : IProjectManager
     /// </summary>
     /// <param name="directory">The directory to search in. If null, uses current working directory.</param>
     /// <returns>ProjectInfo if .gdvm-version file found, null otherwise.</returns>
+    // TODO: Replace with Result<ProjectInfo, ProjectError> FindExplicitProjectInfo(string? directory = null)
     public ProjectInfo? FindExplicitProjectInfo(string? directory = null)
     {
         var targetDir = directory ?? Directory.GetCurrentDirectory();
@@ -128,6 +131,7 @@ public partial class ProjectManager : IProjectManager
     /// </summary>
     /// <param name="directory">The directory to search in. If null, uses current working directory.</param>
     /// <returns>The version string if found, null otherwise.</returns>
+    // TODO: Replace with Result<string, ProjectError> FindProjectVersion(string? directory = null)
     public string? FindProjectVersion(string? directory = null)
     {
         var projectInfo = FindProjectInfo(directory);
@@ -139,6 +143,7 @@ public partial class ProjectManager : IProjectManager
     /// </summary>
     /// <param name="projectFilePath">Path to the project.godot file.</param>
     /// <returns>ProjectInfo if parsing succeeds, null otherwise.</returns>
+    // TODO: Replace with Result<ProjectInfo, ProjectError> ParseProjectGodot(string projectFilePath)
     private static ProjectInfo? ParseProjectGodot(string projectFilePath)
     {
         try

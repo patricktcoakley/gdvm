@@ -33,6 +33,7 @@ public class GitHubClient : IGitHubClient
 
     private string? GitHubToken => _configuration["github:token"];
 
+    // TODO: Replace with Task<Result<IEnumerable<string>, NetworkError>> ListReleasesAsync(CancellationToken cancellationToken)
     public async Task<IEnumerable<string>> ListReleasesAsync(CancellationToken cancellationToken)
     {
         try
@@ -57,6 +58,7 @@ public class GitHubClient : IGitHubClient
         }
     }
 
+    // TODO: Replace with Task<Result<string, NetworkError>> GetSha512Async(Release godotRelease, CancellationToken cancellationToken)
     public async Task<string> GetSha512Async(Release godotRelease, CancellationToken cancellationToken)
     {
         var url = $"{BaseUrl}/{godotRelease.ReleaseName}/SHA512-SUMS.txt";
@@ -80,6 +82,7 @@ public class GitHubClient : IGitHubClient
         }
     }
 
+    // TODO: Replace with Task<Result<HttpResponseMessage, NetworkError>> GetZipFileAsync(string filename, Release godotRelease, CancellationToken cancellationToken)
     public async Task<HttpResponseMessage> GetZipFileAsync(string filename, Release godotRelease, CancellationToken cancellationToken)
     {
         var url = $"{BaseUrl}/{godotRelease.ReleaseName}/{filename}";

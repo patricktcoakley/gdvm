@@ -40,6 +40,7 @@ public sealed class ReleaseManager(IHostSystem hostSystem, PlatformStringProvide
     /// <param name="releaseNames"></param>
     /// <returns></returns>
     /// <exception cref="ArgumentException"></exception>
+    // TODO: Replace with Result<Release, QueryError> FindReleaseByQuery(string[] query, string[] releaseNames)
     public Release? TryFindReleaseByQuery(string[] query, string[] releaseNames)
     {
         return query switch
@@ -89,6 +90,7 @@ public sealed class ReleaseManager(IHostSystem hostSystem, PlatformStringProvide
         ];
     }
 
+    // TODO: Replace with Result<Release, ReleaseCreationError> CreateRelease(string versionString)
     public Release? TryCreateRelease(string versionString)
     {
         var release = Release.TryParse(versionString);
@@ -105,6 +107,7 @@ public sealed class ReleaseManager(IHostSystem hostSystem, PlatformStringProvide
         };
     }
 
+    // TODO: Replace with Result<string, CompatibilityError> FindCompatibleVersion(string projectVersion, bool isDotNet, IEnumerable<string> installedVersions)
     public string? FindCompatibleVersion(string projectVersion, bool isDotNet, IEnumerable<string> installedVersions)
     {
         var versions = installedVersions.ToList();

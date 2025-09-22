@@ -12,6 +12,7 @@ public sealed class PlatformStringProvider(SystemInfo systemInfo)
     ///     of parity between platform support. At this point only a few are tested on actual hardware but they "should work" in theory.
     /// </summary>
     /// <exception cref="ArgumentException"></exception>
+    // TODO: Replace with Result<string, PlatformError> GetPlatformString(Release release)
     public string GetPlatformString(Release release)
     {
         return systemInfo switch

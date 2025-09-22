@@ -23,6 +23,7 @@ public sealed class HostSystem(SystemInfo systemInfo, IPathService pathService, 
 {
     public SystemInfo SystemInfo { get; } = systemInfo;
 
+    // TODO: Replace with Result<Unit, SystemError> CreateOrOverwriteSymbolicLink(string symlinkTargetPath)
     public void CreateOrOverwriteSymbolicLink(string symlinkTargetPath)
     {
         RemoveSymbolicLinks();

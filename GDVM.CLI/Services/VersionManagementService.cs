@@ -247,6 +247,7 @@ public class VersionManagementService(
     /// <summary>
     ///     Finds or installs a compatible version for the given project requirements.
     /// </summary>
+    // TODO: Replace with Task<Result<string, VersionError>> FindOrInstallCompatibleVersionAsync(...)
     public async Task<string?> FindOrInstallCompatibleVersionAsync(string projectVersion, bool isDotNet, bool promptForInstallation = true,
         CancellationToken cancellationToken = default)
     {

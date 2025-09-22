@@ -140,6 +140,7 @@ public class InstallationService(
                 var sha512String = await releaseManager.GetSha512(godotRelease, cancellationToken);
                 var calculatedChecksum = await CalculateChecksum(memStream, cancellationToken);
 
+                // TODO: Replace throws with Result<..., InstallationError>.Failure(...) - remove CryptographicException and SecurityException
                 if (TryParseSha512SumsContent(godotRelease.ZipFileName, sha512String) is not { } expectedHash)
                 {
                     throw new CryptographicException($"Unable to Parse {sha512String} or find expected hash.");
@@ -284,6 +285,7 @@ public class InstallationService(
         return checksum;
     }
 
+    // TODO: Replace with Result<string, ParseError> ParseSha512SumsContent(string fileName, string content)
     public static string? TryParseSha512SumsContent(string fileName, string content)
     {
         var lines = content.Split(['\n', '\r'], StringSplitOptions.RemoveEmptyEntries);

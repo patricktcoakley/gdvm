@@ -5,6 +5,7 @@ namespace GDVM.Environment;
 
 public static class Configuration
 {
+    // TODO: Replace with Result<Unit, ConfigError> ValidateConfiguration(IConfiguration configuration)
     public static void ValidateConfiguration(IConfiguration configuration)
     {
         var githubToken = configuration["github:token"];

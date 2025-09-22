@@ -14,6 +14,7 @@ public class TuxFamilyClient(HttpClient httpClient, ILogger<TuxFamilyClient> log
 {
     private const string BaseUrl = "https://web.archive.org/web/20240927142429/https://downloads.tuxfamily.org/godotengine";
 
+    // TODO: Replace with Task<Result<string, NetworkError>> GetSha512Async(Release godotRelease, CancellationToken cancellationToken)
     public async Task<string> GetSha512Async(Release godotRelease, CancellationToken cancellationToken)
     {
         var url = BuildUrl("SHA512-SUMS.txt", godotRelease);
@@ -37,6 +38,7 @@ public class TuxFamilyClient(HttpClient httpClient, ILogger<TuxFamilyClient> log
         }
     }
 
+    // TODO: Replace with Task<Result<HttpResponseMessage, NetworkError>> GetZipFileAsync(string filename, Release godotRelease, CancellationToken cancellationToken)
     public async Task<HttpResponseMessage> GetZipFileAsync(string filename, Release godotRelease, CancellationToken cancellationToken)
     {
         var url = BuildUrl(filename, godotRelease);

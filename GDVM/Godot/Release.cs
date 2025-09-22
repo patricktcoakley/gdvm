@@ -129,6 +129,7 @@ public sealed record Release : IComparable<Release>
     ///     The primary way to create a Release. Instead of using ctors, we want to try parsing the version string and figure it out contextually.
     /// </summary>
     /// <param name="versionString"></param>
+    // TODO: Replace with Result<Release, ParseError> ParseRelease(string versionString)
     internal static Release? TryParse(string versionString)
     {
         if (string.IsNullOrWhiteSpace(versionString))

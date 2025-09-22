@@ -16,6 +16,7 @@ public interface IDownloadClient
 /// </summary>
 public class DownloadClient(IGitHubClient gitHubClient, ITuxFamilyClient tuxFamilyClient, ILogger<DownloadClient> logger) : IDownloadClient
 {
+    // TODO: Replace with Task<Result<IEnumerable<string>, NetworkError>> ListReleases(CancellationToken cancellationToken)
     public async Task<IEnumerable<string>> ListReleases(CancellationToken cancellationToken)
     {
         try
@@ -29,6 +30,7 @@ public class DownloadClient(IGitHubClient gitHubClient, ITuxFamilyClient tuxFami
         }
     }
 
+    // TODO: Replace with Task<Result<string, NetworkError>> GetSha512(Release godotRelease, CancellationToken cancellationToken)
     public async Task<string> GetSha512(Release godotRelease, CancellationToken cancellationToken)
     {
         // Try GitHub first
@@ -59,6 +61,7 @@ public class DownloadClient(IGitHubClient gitHubClient, ITuxFamilyClient tuxFami
         throw new HttpRequestException("Wasn't able to download SHA512-SUMS.txt from any sources.");
     }
 
+    // TODO: Replace with Task<Result<HttpResponseMessage, NetworkError>> GetZipFile(string filename, Release godotRelease, CancellationToken cancellationToken)
     public async Task<HttpResponseMessage> GetZipFile(string filename, Release godotRelease, CancellationToken cancellationToken)
     {
         // Try GitHub first

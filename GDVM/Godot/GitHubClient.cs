@@ -16,12 +16,12 @@ public class GitHubClient : IGitHubClient
 {
     private const string BaseUrl = "https://github.com/godotengine/godot-builds/releases/download";
     private const string ApiUrl = "https://api.github.com/repos/godotengine/godot-builds/contents/releases";
-    private readonly IConfiguration _configuration;
+    private readonly Lazy<IConfiguration> _configuration;
 
     private readonly HttpClient _httpClient;
     private readonly ILogger<GitHubClient> _logger;
 
-    public GitHubClient(HttpClient httpClient, IConfiguration configuration, ILogger<GitHubClient> logger)
+    public GitHubClient(HttpClient httpClient, Lazy<IConfiguration> configuration, ILogger<GitHubClient> logger)
     {
         _httpClient = httpClient;
         _configuration = configuration;
@@ -31,7 +31,7 @@ public class GitHubClient : IGitHubClient
         ConfigureHttpClient();
     }
 
-    private string? GitHubToken => _configuration["github:token"];
+    private string? GitHubToken => _configuration.Value["github:token"];
 
     // TODO: Replace with Task<Result<IEnumerable<string>, NetworkError>> ListReleasesAsync(CancellationToken cancellationToken)
     public async Task<IEnumerable<string>> ListReleasesAsync(CancellationToken cancellationToken)

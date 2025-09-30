@@ -23,25 +23,34 @@ public class Program
         var pathService = new PathService();
 
         var services = new ServiceCollection();
-        services.AddLogging(logger =>
+
+        // Lazy logging - only opens file handle when first logger is created
+        services.AddSingleton<Lazy<ILoggerFactory>>(_ => new Lazy<ILoggerFactory>(() =>
         {
-            logger.ClearProviders();
-            logger.SetMinimumLevel(LogLevel.Information);
-            logger.AddZLoggerFile(pathService.LogPath,
-                opts =>
-                {
-                    opts.UsePlainTextFormatter(formatter =>
+            return LoggerFactory.Create(builder =>
+            {
+                builder.ClearProviders();
+                builder.SetMinimumLevel(LogLevel.Information);
+                builder.AddZLoggerFile(pathService.LogPath,
+                    opts =>
                     {
-                        formatter.SetPrefixFormatter($"{0}|{1}|",
-                            (in MessageTemplate template, in LogInfo info) => template.Format(info.Timestamp, info.LogLevel));
+                        opts.UsePlainTextFormatter(formatter =>
+                        {
+                            formatter.SetPrefixFormatter($"{0}|{1}|",
+                                (in MessageTemplate template, in LogInfo info) => template.Format(info.Timestamp, info.LogLevel));
 
-                        formatter.SetSuffixFormatter($"|({0})",
-                            (in MessageTemplate template, in LogInfo info) => template.Format(info.Category));
+                            formatter.SetSuffixFormatter($"|({0})",
+                                (in MessageTemplate template, in LogInfo info) => template.Format(info.Category));
 
-                        formatter.SetExceptionFormatter((writer, ex) => Utf8String.Format(writer, $"{ex.Message}"));
+                            formatter.SetExceptionFormatter((writer, ex) => Utf8String.Format(writer, $"{ex.Message}"));
+                        });
                     });
-                });
-        });
+            });
+        }));
+
+        // Add logging infrastructure that uses the lazy factory
+        services.AddSingleton<ILoggerFactory>(sp => sp.GetRequiredService<Lazy<ILoggerFactory>>().Value);
+        services.AddLogging();
 
         // Register services
         services.AddSingleton<IPathService>(pathService);
@@ -79,25 +88,26 @@ public class Program
         services.AddSingleton<IProgressHandler<InstallationStage>, SpectreProgressHandler<InstallationStage>>();
 
         // Ensure we have a writeable directory
-        if (!Directory.Exists(pathService.BinPath))
+        Directory.CreateDirectory(pathService.BinPath);
+
+        // Lazy configuration - only load and validate when first accessed
+        services.AddSingleton<Lazy<IConfiguration>>(_ => new Lazy<IConfiguration>(() =>
         {
-            Directory.CreateDirectory(pathService.BinPath);
-        }
+            // Ensure config file exists before loading
+            if (!File.Exists(pathService.ConfigPath))
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(pathService.ConfigPath)!);
+                File.WriteAllText(pathService.ConfigPath, "# GDVM Configuration File\n");
+            }
 
-        // Ensure we have a config file
-        if (!File.Exists(pathService.ConfigPath))
-        {
-            File.WriteAllText(pathService.ConfigPath, "# GDVM Configuration File\n");
-        }
+            var configuration = new ConfigurationBuilder()
+                .SetBasePath(AppContext.BaseDirectory)
+                .AddIniFile(pathService.ConfigPath, false, true)
+                .Build();
 
-        var configuration = new ConfigurationBuilder()
-            .SetBasePath(AppContext.BaseDirectory)
-            .AddIniFile(pathService.ConfigPath, false, true)
-            .Build();
-
-        services.AddSingleton<IConfiguration>(configuration);
-
-        Configuration.ValidateConfiguration(configuration);
+            Configuration.ValidateConfiguration(configuration);
+            return configuration;
+        }));
 
         using var serviceProvider = services.BuildServiceProvider();
 

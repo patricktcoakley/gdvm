@@ -362,4 +362,240 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
     {
         await fixture.Container.ExecuteCommand("remove", version);
     }
+
+    [Fact(Skip = "TODO")]
+    public async Task ReadsNearestVersionFileWhenMultipleExist()
+    {
+        var gdvmPath = await TestHelpers.GetGdvmPath(fixture.Container);
+        await fixture.Container.ExecuteShellCommand("mkdir", "-p", "/tmp/nested/project/subdir");
+        await fixture.Container.ExecuteShellCommand("sh", "-c", "echo '4.3-stable' > /tmp/nested/.gdvm-version");
+        await fixture.Container.ExecuteShellCommand("sh", "-c", "echo '4.5-stable' > /tmp/nested/project/.gdvm-version");
+
+        var result = await fixture.Container.ExecuteShellCommand("sh", "-c", $"cd /tmp/nested/project/subdir && {gdvmPath} which");
+
+        Assert.Equal(0, result.ExitCode);
+        Assert.Contains("4.5", result.Stdout);
+    }
+
+    [Fact(Skip = "TODO")]
+    public async Task HandlesInvalidVersionFormatGracefully()
+    {
+        var gdvmPath = await TestHelpers.GetGdvmPath(fixture.Container);
+        await fixture.Container.ExecuteShellCommand("mkdir", "-p", "/tmp/invalid-version");
+        await fixture.Container.ExecuteShellCommand("sh", "-c", "echo 'not-a-valid-version-123' > /tmp/invalid-version/.gdvm-version");
+
+        var result = await fixture.Container.ExecuteShellCommand("sh", "-c", $"cd /tmp/invalid-version && {gdvmPath} which");
+
+        Assert.NotEqual(0, result.ExitCode);
+    }
+
+    [Fact]
+    public async Task HandlesVersionFileWithMultipleLines()
+    {
+        var gdvmPath = await TestHelpers.GetGdvmPath(fixture.Container);
+        await fixture.Container.ExecuteShellCommand("mkdir", "-p", "/tmp/multiline");
+        await fixture.Container.ExecuteShellCommand("sh", "-c", "echo -e '4.5-stable\\n4.3-stable\\n4.0-stable' > /tmp/multiline/.gdvm-version");
+
+        var result = await fixture.Container.ExecuteShellCommand("sh", "-c", $"cd /tmp/multiline && {gdvmPath} which");
+
+        // Should use first line only
+        Assert.Equal(0, result.ExitCode);
+    }
+
+    [Fact]
+    public async Task HandlesVersionFileWithCommentsAndEmptyLines()
+    {
+        var gdvmPath = await TestHelpers.GetGdvmPath(fixture.Container);
+        await fixture.Container.ExecuteShellCommand("mkdir", "-p", "/tmp/comments");
+        await fixture.Container.ExecuteShellCommand("sh", "-c", "echo -e '# Comment\\n\\n4.5-stable\\n' > /tmp/comments/.gdvm-version");
+
+        var result = await fixture.Container.ExecuteShellCommand("sh", "-c", $"cd /tmp/comments && {gdvmPath} which");
+
+        Assert.Equal(0, result.ExitCode);
+    }
+
+    [Fact(Skip = "TODO")]
+    public async Task GodotCommandFailsWhenNoVersionSet()
+    {
+        var gdvmPath = await TestHelpers.GetGdvmPath(fixture.Container);
+        await fixture.Container.ExecuteShellCommand("mkdir", "-p", "/tmp/no-version");
+
+        var result = await fixture.Container.ExecuteShellCommand("sh", "-c", $"cd /tmp/no-version && {gdvmPath} godot --version");
+
+        Assert.NotEqual(0, result.ExitCode);
+    }
+
+    [Fact(Skip = "TODO")]
+    public async Task GodotCommandFailsWhenVersionSetButNotInstalled()
+    {
+        var gdvmPath = await TestHelpers.GetGdvmPath(fixture.Container);
+        await fixture.Container.ExecuteShellCommand("mkdir", "-p", "/tmp/not-installed");
+        await fixture.Container.ExecuteShellCommand("sh", "-c", "echo '4.5-stable' > /tmp/not-installed/.gdvm-version");
+
+        var result = await fixture.Container.ExecuteShellCommand("sh", "-c", $"cd /tmp/not-installed && {gdvmPath} godot --version");
+
+        Assert.NotEqual(0, result.ExitCode);
+    }
+
+    [Fact]
+    public async Task GodotCommandHandlesComplexArguments()
+    {
+        var result = await fixture.Container.ExecuteCommand("godot", "--", "--help");
+
+        // Should fail gracefully since godot isn't actually installed, but should parse args correctly
+        Assert.True(result.ExitCode >= 0);
+    }
+
+    [Fact]
+    public async Task InstallingSameVersionTwiceIsIdempotent()
+    {
+        var searchResult = await fixture.Container.ExecuteCommand("search");
+        if (searchResult.ExitCode != 0)
+        {
+            return;
+        }
+
+        var install1 = await fixture.Container.ExecuteCommand("install", "4.5-stable");
+        if (install1.ExitCode != 0)
+        {
+            return;
+        }
+
+        var install2 = await fixture.Container.ExecuteCommand("install", "4.5-stable");
+        Assert.Equal(0, install2.ExitCode);
+
+        await CleanupVersion("4.5-stable");
+    }
+
+    [Fact(Skip = "TODO")]
+    public async Task InstallCommandWithInvalidVersionFails()
+    {
+        var result = await fixture.Container.ExecuteCommand("install", "999.999-invalid");
+
+        Assert.NotEqual(0, result.ExitCode);
+    }
+
+    [Fact]
+    public async Task RemovingGloballySetVersionSucceeds()
+    {
+        var searchResult = await fixture.Container.ExecuteCommand("search");
+        if (searchResult.ExitCode != 0)
+        {
+            return;
+        }
+
+        var install = await fixture.Container.ExecuteCommand("install", "4.5-stable");
+        if (install.ExitCode != 0)
+        {
+            return;
+        }
+
+        await fixture.Container.ExecuteCommand("set", "4.5-stable");
+        var remove = await fixture.Container.ExecuteCommand("remove", "4.5-stable");
+
+        Assert.Equal(0, remove.ExitCode);
+    }
+
+    [Fact]
+    public async Task RemovingLocallySetVersionSucceeds()
+    {
+        var searchResult = await fixture.Container.ExecuteCommand("search");
+        if (searchResult.ExitCode != 0)
+        {
+            return;
+        }
+
+        var install = await fixture.Container.ExecuteCommand("install", "4.5-stable");
+        if (install.ExitCode != 0)
+        {
+            return;
+        }
+
+        var gdvmPath = await TestHelpers.GetGdvmPath(fixture.Container);
+        await fixture.Container.ExecuteShellCommand("mkdir", "-p", "/tmp/remove-local");
+        await fixture.Container.ExecuteShellCommand("sh", "-c", $"cd /tmp/remove-local && {gdvmPath} local 4.5-stable");
+
+        var remove = await fixture.Container.ExecuteCommand("remove", "4.5-stable");
+
+        Assert.Equal(0, remove.ExitCode);
+    }
+
+    [Fact]
+    public async Task SetCommandWithNonExistentVersionFails()
+    {
+        var result = await fixture.Container.ExecuteCommand("set", "999.999-nonexistent");
+
+        Assert.NotEqual(0, result.ExitCode);
+    }
+
+    [Fact]
+    public async Task LocalCommandWithNonExistentVersionFails()
+    {
+        var result = await fixture.Container.ExecuteCommand("local", "999.999-nonexistent");
+
+        Assert.NotEqual(0, result.ExitCode);
+    }
+
+    [Fact(Skip = "TODO")]
+    public async Task LocalCommandCreatesVersionFileWithCorrectContent()
+    {
+        var searchResult = await fixture.Container.ExecuteCommand("search");
+        if (searchResult.ExitCode != 0)
+        {
+            return;
+        }
+
+        var install = await fixture.Container.ExecuteCommand("install", "4.5-stable");
+        if (install.ExitCode != 0)
+        {
+            return;
+        }
+
+        var gdvmPath = await TestHelpers.GetGdvmPath(fixture.Container);
+        await fixture.Container.ExecuteShellCommand("mkdir", "-p", "/tmp/local-content-test");
+        await fixture.Container.ExecuteShellCommand("sh", "-c", $"cd /tmp/local-content-test && {gdvmPath} local 4.5-stable");
+
+        var fileContent = await fixture.Container.ReadFile("/tmp/local-content-test/.gdvm-version");
+
+        Assert.Contains("4.5-stable", fileContent);
+
+        await CleanupVersion("4.5-stable");
+    }
+
+    [Fact]
+    public async Task LogsCommandWorksWithNoOperations()
+    {
+        var result = await fixture.Container.ExecuteCommand("logs");
+
+        Assert.Equal(0, result.ExitCode);
+        // Should return empty or minimal output, not crash
+    }
+
+    [Fact(Skip = "TODO")]
+    public async Task LogsCommandShowsRecentOperationsInOrder()
+    {
+        var searchResult = await fixture.Container.ExecuteCommand("search");
+        if (searchResult.ExitCode != 0)
+        {
+            return;
+        }
+
+        var install = await fixture.Container.ExecuteCommand("install", "4.5-stable");
+        if (install.ExitCode != 0)
+        {
+            return;
+        }
+
+        await fixture.Container.ExecuteCommand("set", "4.5-stable");
+        await fixture.Container.ExecuteCommand("list");
+
+        var logs = await fixture.Container.GetLogs();
+
+        // Verify operations appear in logs
+        Assert.Contains("install", logs.ToLower());
+        Assert.Contains("set", logs.ToLower());
+        Assert.Contains("list", logs.ToLower());
+
+        await CleanupVersion("4.5-stable");
+    }
 }

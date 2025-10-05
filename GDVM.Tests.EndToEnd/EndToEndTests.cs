@@ -141,10 +141,11 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
     [Fact]
     public async Task WhichCommandReadsLocalVersionFile()
     {
+        var gdvmPath = await TestHelpers.GetGdvmPath(fixture.Container);
         await fixture.Container.ExecuteShellCommand("mkdir", "-p", "/tmp/version-test");
         await fixture.Container.ExecuteShellCommand("sh", "-c", "echo '4.5-stable' > /tmp/version-test/.gdvm-version");
 
-        var result = await fixture.Container.ExecuteShellCommand("sh", "-c", "cd /tmp/version-test && /workspace/GDVM.CLI/bin/Release/net9.0/linux-arm64/publish/gdvm which");
+        var result = await fixture.Container.ExecuteShellCommand("sh", "-c", $"cd /tmp/version-test && {gdvmPath} which");
 
         Assert.Equal(0, result.ExitCode);
     }
@@ -152,10 +153,11 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
     [Fact]
     public async Task ReadsVersionFileFromCurrentDirectory()
     {
+        var gdvmPath = await TestHelpers.GetGdvmPath(fixture.Container);
         await fixture.Container.ExecuteShellCommand("mkdir", "-p", "/tmp/project/subdir");
         await fixture.Container.ExecuteShellCommand("sh", "-c", "echo '4.5-rc2' > /tmp/project/subdir/.gdvm-version");
 
-        var result = await fixture.Container.ExecuteShellCommand("sh", "-c", "cd /tmp/project/subdir && /workspace/GDVM.CLI/bin/Release/net9.0/linux-arm64/publish/gdvm which");
+        var result = await fixture.Container.ExecuteShellCommand("sh", "-c", $"cd /tmp/project/subdir && {gdvmPath} which");
 
         Assert.Equal(0, result.ExitCode);
     }
@@ -163,10 +165,11 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
     [Fact]
     public async Task HandlesEmptyVersionFileGracefully()
     {
+        var gdvmPath = await TestHelpers.GetGdvmPath(fixture.Container);
         await fixture.Container.ExecuteShellCommand("mkdir", "-p", "/tmp/empty-version-test");
         await fixture.Container.ExecuteShellCommand("touch", "/tmp/empty-version-test/.gdvm-version");
 
-        var result = await fixture.Container.ExecuteShellCommand("sh", "-c", "cd /tmp/empty-version-test && /workspace/GDVM.CLI/bin/Release/net9.0/linux-arm64/publish/gdvm which");
+        var result = await fixture.Container.ExecuteShellCommand("sh", "-c", $"cd /tmp/empty-version-test && {gdvmPath} which");
 
         Assert.True(result.ExitCode >= 0);
     }
@@ -174,10 +177,11 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
     [Fact]
     public async Task HandlesWhitespaceInVersionFile()
     {
+        var gdvmPath = await TestHelpers.GetGdvmPath(fixture.Container);
         await fixture.Container.ExecuteShellCommand("mkdir", "-p", "/tmp/whitespace-test");
         await fixture.Container.ExecuteShellCommand("sh", "-c", "echo '  4.5-stable  ' > /tmp/whitespace-test/.gdvm-version");
 
-        var result = await fixture.Container.ExecuteShellCommand("sh", "-c", "cd /tmp/whitespace-test && /workspace/GDVM.CLI/bin/Release/net9.0/linux-arm64/publish/gdvm which");
+        var result = await fixture.Container.ExecuteShellCommand("sh", "-c", $"cd /tmp/whitespace-test && {gdvmPath} which");
 
         Assert.Equal(0, result.ExitCode);
     }

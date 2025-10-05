@@ -4,9 +4,29 @@ namespace GDVM.Tests.EndToEnd;
 
 public static class TestHelpers
 {
+    private static string? _cachedGdvmPath;
+
+    public static async Task<string> GetGdvmPath(IContainer container)
+    {
+        if (_cachedGdvmPath != null)
+            return _cachedGdvmPath;
+
+        // Find the gdvm binary - it will be in Debug build output with platform-specific RID
+        var findResult = await container.ExecAsync(["find", "/workspace/GDVM.CLI/bin/Debug/net9.0", "-name", "gdvm", "-type", "f"]);
+        if (findResult.ExitCode != 0 || string.IsNullOrWhiteSpace(findResult.Stdout))
+        {
+            throw new InvalidOperationException("Could not find gdvm binary in container");
+        }
+
+        _cachedGdvmPath = findResult.Stdout.Trim().Split('\n')[0];
+        return _cachedGdvmPath;
+
+    }
+
     public static async Task<ExecResult> ExecuteCommand(this IContainer container, params string[] args)
     {
-        var command = new List<string> { "/workspace/GDVM.CLI/bin/Release/net9.0/linux-arm64/publish/gdvm" };
+        var gdvmPath = await GetGdvmPath(container);
+        var command = new List<string> { gdvmPath };
         command.AddRange(args);
 
         return await container.ExecAsync(command.ToArray());

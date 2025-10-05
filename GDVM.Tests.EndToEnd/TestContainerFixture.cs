@@ -6,7 +6,10 @@ namespace GDVM.Tests.EndToEnd;
 public class TestContainerFixture : IAsyncLifetime
 {
     private IContainer? _container;
+    private string? _rid;
+
     public IContainer Container => _container ?? throw new InvalidOperationException("Container not initialized");
+    public string Rid => _rid ?? throw new InvalidOperationException("RID not initialized");
 
     public async Task InitializeAsync()
     {
@@ -24,7 +27,7 @@ public class TestContainerFixture : IAsyncLifetime
         }
 
         _container = new ContainerBuilder()
-            .WithImage("mcr.microsoft.com/devcontainers/dotnet:1-9.0-bookworm")
+            .WithImage("mcr.microsoft.com/dotnet/sdk:9.0")
             .WithWorkingDirectory("/workspace")
             .WithBindMount(solutionDir, "/workspace")
             .WithCommand("tail", "-f", "/dev/null") // Keep container running
@@ -33,8 +36,23 @@ public class TestContainerFixture : IAsyncLifetime
 
         await _container.StartAsync();
 
-        // Publish the GDVM CLI for Linux natively in the container with AOT (as intended for Release builds)
-        var publishResult = await _container.ExecAsync(["dotnet", "publish", "/workspace/GDVM.CLI/GDVM.CLI.csproj", "-c", "Release"]);
+        // Detect container architecture to determine RID
+        var archResult = await _container.ExecAsync(["uname", "-m"]);
+        if (archResult.ExitCode != 0)
+        {
+            throw new InvalidOperationException("Failed to detect container architecture");
+        }
+
+        var arch = archResult.Stdout.Trim();
+        _rid = arch switch
+        {
+            "x86_64" => "linux-x64",
+            "aarch64" => "linux-arm64",
+            _ => throw new InvalidOperationException($"Unsupported architecture: {arch}")
+        };
+
+        // Publish with Debug config to avoid AOT (which requires native build tools)
+        var publishResult = await _container.ExecAsync(["dotnet", "publish", "/workspace/GDVM.CLI/GDVM.CLI.csproj", "-c", "Debug"]);
         if (publishResult.ExitCode != 0)
         {
             throw new InvalidOperationException(

@@ -1,3 +1,5 @@
+using System.Xml.Linq;
+
 namespace GDVM.Tests.EndToEnd;
 
 public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestContainerFixture>
@@ -15,9 +17,10 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
     [Fact]
     public async Task DisplaysVersionWithVersionFlag()
     {
+        var expected = GetProjectVersion();
         var result = await fixture.Container.ExecuteCommand("--version");
 
-        result.AssertSuccessfulExecution("1.2.5");
+        result.AssertSuccessfulExecution(expected);
     }
 
     [Fact]
@@ -603,5 +606,35 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
         Assert.Contains("list", logs.ToLower());
 
         await CleanupVersion("4.5-stable");
+    }
+
+    public static string GetProjectVersion()
+    {
+        var dir = new DirectoryInfo(AppContext.BaseDirectory);
+
+        FileInfo? slnFile = null;
+        while (dir is not null && (slnFile = dir.GetFiles("*.sln").FirstOrDefault()) is null)
+        {
+            dir = dir.Parent;
+        }
+
+        if (slnFile is null)
+        {
+            throw new InvalidOperationException("Could not locate solution directory.");
+        }
+
+        var csproj = dir?.GetFiles("*.csproj", SearchOption.AllDirectories)
+            .FirstOrDefault(f => f.Name.Equals("GDVM.CLI.csproj", StringComparison.OrdinalIgnoreCase));
+
+        if (csproj is null)
+        {
+            throw new InvalidOperationException("Could not locate project file.");
+        }
+
+        var doc = XDocument.Load(csproj.FullName);
+        var version = doc.Descendants("Version").FirstOrDefault()?.Value
+                      ?? throw new InvalidOperationException("Version element not found.");
+
+        return version;
     }
 }

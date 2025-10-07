@@ -207,7 +207,8 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
     {
         await fixture.Container.ExecuteShellCommand("mkdir", "-p", "/tmp/local-test");
 
-        var result = await fixture.Container.ExecuteShellCommand("sh", "-c", "cd /tmp/local-test && /workspace/GDVM.CLI/bin/Release/net9.0/linux-arm64/publish/gdvm local 4.5-stable");
+        var result = await fixture.Container.ExecuteShellCommand("sh", "-c",
+            "cd /tmp/local-test && /workspace/GDVM.CLI/bin/Release/net9.0/linux-arm64/publish/gdvm local 4.5-stable");
 
         Assert.True(result.ExitCode >= 0);
 
@@ -257,7 +258,8 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
         await fixture.Container.ExecuteShellCommand("mkdir", "-p", "/tmp/comment-test");
         await fixture.Container.ExecuteShellCommand("sh", "-c", "echo '# This is a comment\n4.5-stable' > /tmp/comment-test/.gdvm-version");
 
-        var result = await fixture.Container.ExecuteShellCommand("sh", "-c", "cd /tmp/comment-test && /workspace/GDVM.CLI/bin/Release/net9.0/linux-arm64/publish/gdvm which");
+        var result = await fixture.Container.ExecuteShellCommand("sh", "-c",
+            "cd /tmp/comment-test && /workspace/GDVM.CLI/bin/Release/net9.0/linux-arm64/publish/gdvm which");
 
         Assert.True(result.ExitCode >= 0);
     }
@@ -305,6 +307,7 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
         {
             return;
         }
+
         Assert.Contains("4.5-stable", searchResult.Stdout);
 
         var installResult = await fixture.Container.ExecuteCommand("install", "4.5-stable");
@@ -336,14 +339,17 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
         Assert.Contains("4.5-rc2", newCurrentVersion);
 
         await fixture.Container.ExecuteShellCommand("mkdir", "-p", "/tmp/test-project");
-        var localSetResult = await fixture.Container.ExecuteShellCommand("sh", "-c", "cd /tmp/test-project && /workspace/GDVM.CLI/bin/Release/net9.0/linux-arm64/publish/gdvm local 4.5-stable");
+        var localSetResult = await fixture.Container.ExecuteShellCommand("sh", "-c",
+            "cd /tmp/test-project && /workspace/GDVM.CLI/bin/Release/net9.0/linux-arm64/publish/gdvm local 4.5-stable");
 
         if (localSetResult.ExitCode == 0)
         {
             var versionFileExists = await fixture.Container.FileExists("/tmp/test-project/.gdvm-version");
             Assert.True(versionFileExists, "Expected .gdvm-version file to be created after successful local command");
 
-            var localResult = await fixture.Container.ExecuteShellCommand("sh", "-c", "cd /tmp/test-project && /workspace/GDVM.CLI/bin/Release/net9.0/linux-arm64/publish/gdvm which");
+            var localResult = await fixture.Container.ExecuteShellCommand("sh", "-c",
+                "cd /tmp/test-project && /workspace/GDVM.CLI/bin/Release/net9.0/linux-arm64/publish/gdvm which");
+
             Assert.Contains("4.5-stable", localResult.Stdout);
         }
 
@@ -571,7 +577,7 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
         // Should return empty or minimal output, not crash
     }
 
-    [Fact(Skip = "TODO")]
+    [Fact]
     public async Task LogsCommandShowsRecentOperationsInOrder()
     {
         var searchResult = await fixture.Container.ExecuteCommand("search");

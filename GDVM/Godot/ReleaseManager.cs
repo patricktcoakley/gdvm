@@ -81,13 +81,14 @@ public sealed class ReleaseManager(IHostSystem hostSystem, PlatformStringProvide
             .Where(x => !x.Equals(releaseType, StringComparison.OrdinalIgnoreCase))
             .FirstOrDefault(string.Empty);
 
-        return
-        [
-            .. releaseNames
-                .Where(x => x.StartsWith(possibleVersion, StringComparison.OrdinalIgnoreCase))
-                .Where(x => x.Contains(releaseType, StringComparison.OrdinalIgnoreCase))
-                .OrderByDescending(x => x)
-        ];
+        // Filter and sort using Release.CompareTo for consistent ordering
+        return releaseNames
+            .Where(x => x.StartsWith(possibleVersion, StringComparison.OrdinalIgnoreCase))
+            .Where(x => x.Contains(releaseType, StringComparison.OrdinalIgnoreCase))
+            .Select(name => TryCreateRelease($"{name}-standard"))
+            .OfType<Release>()
+            .OrderByDescending(r => r)
+            .Select(r => r.ReleaseName);
     }
 
     // TODO: Replace with Result<Release, ReleaseCreationError> CreateRelease(string versionString)

@@ -153,4 +153,91 @@ public class QueryTests
         Assert.NotNull(result);
         Assert.Equal("4.5-beta3-standard", result.ReleaseNameWithRuntime);
     }
+
+    [Fact]
+    public void FindReleaseByQuery_4_5_ShouldSelectStableOverHigherPatchRC()
+    {
+        var releaseNames = new[]
+        {
+            "4.6-dev1",
+            "4.5.1-rc1",
+            "4.5-stable",
+            "4.5-rc2",
+            "4.5-rc1",
+            "4.5-dev5"
+        };
+
+        var releaseManager = new ReleaseManagerBuilder().Build();
+
+        var result = releaseManager.TryFindReleaseByQuery(["4.5"], releaseNames);
+
+        Assert.NotNull(result);
+        Assert.Equal("4.5-stable-standard", result.ReleaseNameWithRuntime);
+    }
+
+    [Fact]
+    public void FindReleaseByQuery_4_ShouldSelectHighestStableOverNewerUnstable()
+    {
+        var releaseNames = new[]
+        {
+            "4.5-dev1",
+            "4.4-stable",
+            "4.3-stable",
+            "4.2-rc1",
+            "4.1-beta2"
+        };
+
+        var releaseManager = new ReleaseManagerBuilder().Build();
+
+        var result = releaseManager.TryFindReleaseByQuery(["4"], releaseNames);
+
+        Assert.NotNull(result);
+        // Should pick 4.4-stable, not 4.5-dev1
+        Assert.Equal("4.4-stable-standard", result.ReleaseNameWithRuntime);
+    }
+
+    [Fact]
+    public void SearchReleases_ShouldSortByStabilityFirst()
+    {
+        var releaseNames = new[]
+        {
+            "4.5-dev1",
+            "4.5.1-rc1",
+            "4.5-stable",
+            "4.4-stable",
+            "4.3-beta1"
+        };
+
+        var releaseManager = new ReleaseManagerBuilder().Build();
+
+        var result = releaseManager.FilterReleasesByQuery(["4"], releaseNames).ToArray();
+
+        // Should be ordered: stable releases first, then rc, then beta, then dev
+        Assert.Equal("4.5-stable", result[0]);
+        Assert.Equal("4.4-stable", result[1]);
+        Assert.Equal("4.5.1-rc1", result[2]);
+        Assert.Equal("4.3-beta1", result[3]);
+        Assert.Equal("4.5-dev1", result[4]);
+    }
+
+    [Fact]
+    public void FindReleaseByQuery_WhenOnlyUnstableAvailable_SelectsBestUnstable()
+    {
+        var releaseNames = new[]
+        {
+            "4.5-dev5",
+            "4.5-dev4",
+            "4.5-beta3",
+            "4.5-beta2",
+            "4.5-beta1"
+        };
+
+        var releaseManager = new ReleaseManagerBuilder().Build();
+
+        var result = releaseManager.TryFindReleaseByQuery(["4.5"], releaseNames);
+
+        Assert.NotNull(result);
+        // When no stable exists, pick the most stable type available (beta > dev)
+        Assert.Equal("4.5-beta3-standard", result.ReleaseNameWithRuntime);
+    }
 }

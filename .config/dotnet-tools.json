@@ -8,6 +8,20 @@
         "versionize"
       ],
       "rollForward": false
+    },
+    "coverlet.console": {
+      "version": "6.0.4",
+      "commands": [
+        "coverlet"
+      ],
+      "rollForward": false
+    },
+    "dotnet-reportgenerator-globaltool": {
+      "version": "5.4.17",
+      "commands": [
+        "reportgenerator"
+      ],
+      "rollForward": false
     }
   }
 }

@@ -250,16 +250,22 @@ public class InstallationService(
                 .ListReleases(cancellationToken);
         }
 
-        var releaseNamesArray = releaseNames.ToArray();
+        // Always sort releases using Release.CompareTo for consistent ordering
+        var sortedReleases = releaseNames
+            .Select(name => releaseManager.TryCreateRelease($"{name}-standard"))
+            .OfType<Release>()
+            .OrderByDescending(r => r)
+            .Select(r => r.ReleaseName)
+            .ToArray();
 
-        if (releaseNamesArray.Length == 0)
+        if (sortedReleases.Length == 0)
         {
             logger.LogError("Unable to fetch remote releases");
             return [];
         }
 
-        await File.WriteAllLinesAsync(pathService.ReleasesPath, releaseNamesArray, cancellationToken);
-        return releaseNamesArray;
+        await File.WriteAllLinesAsync(pathService.ReleasesPath, sortedReleases, cancellationToken);
+        return sortedReleases;
     }
 
     private static async Task<string> CalculateChecksum(MemoryStream memStream, CancellationToken cancellationToken)

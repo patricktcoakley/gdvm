@@ -25,10 +25,15 @@ public static class ZipArchiveExtensions
 
             var split = entry.FullName.Split('/');
             var flattenedPath = string.Join(Path.DirectorySeparatorChar, split.Skip(1));
+            var destFullPath = Path.GetFullPath(Path.Combine(extractPath, flattenedPath));
+            var extractFullPath = Path.GetFullPath(extractPath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + Path.DirectorySeparatorChar);
+            if (!destFullPath.StartsWith(extractFullPath, StringComparison.Ordinal))
+            {
+                throw new InvalidOperationException($"Entry is outside the target dir: {destFullPath}");
+            }
 
-            var dest = Path.Combine(extractPath, flattenedPath);
-            Directory.CreateDirectory(Path.GetDirectoryName(dest)!);
-            entry.ExtractToFile(dest, overwrite);
+            Directory.CreateDirectory(Path.GetDirectoryName(destFullPath)!);
+            entry.ExtractToFile(destFullPath, overwrite);
         }
     }
 

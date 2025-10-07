@@ -10,7 +10,7 @@
         <Authors>Patrick T Coakley</Authors>
         <PackageProjectUrl>https://github.com/patricktcoakley/gdvm</PackageProjectUrl>
         <PackageLicenseUrl>https://github.com/patricktcoakley/GDVM/blob/main/LICENSE</PackageLicenseUrl>
-        <Version>1.2.5</Version>
+        <Version>1.2.6</Version>
         <RootNamespace>GDVM</RootNamespace>
     </PropertyGroup>
 

@@ -1,5 +1,16 @@
 # Changelog
 
+<a name="1.2.6"></a>
+## [1.2.6](https://github.com/patricktcoakley/gdvm/releases/tag/v1.2.6) (2025-10-07)
+
+### 🐛 Bug Fixes
+
+* Standardize ordering on other commands; update Zip extensions for path vulnerability; update tests. ([e30e1be](https://github.com/patricktcoakley/gdvm/commit/e30e1be5fec86458ff7a73f39c20b9465d367210))
+
+### ⚡ Performance Improvements
+
+* Minor changes to signficantly improve startup speed; bump dependencies. ([0eab40e](https://github.com/patricktcoakley/gdvm/commit/0eab40e83e98bc7426fbe88072c3f2c89b0c2086))
+
 <a name="1.2.4"></a>
 ## [1.2.4](https://github.com/patricktcoakley/gdvm/releases/tag/v1.2.4) (2025-08-27)
 

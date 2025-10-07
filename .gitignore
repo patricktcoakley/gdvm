@@ -88,3 +88,6 @@ bin
 TestResults/
 coverage.cobertura.xml
 *.coverage
+lcov.info
+coverage/
+coverage.json

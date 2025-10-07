@@ -26,7 +26,7 @@ public static class TestData
 
         data.Add([], TestReleases.ToArray());
         data.Add(["5"], []);
-        data.Add(["4"], ["4.4-dev5", "4.2-stable", "4.1-rc2", "4.0-beta3"]);
+        data.Add(["4"], ["4.2-stable", "4.1-rc2", "4.0-beta3", "4.4-dev5"]);
         data.Add(["4", "rc"], ["4.1-rc2"]);
         data.Add(["rc", "4.1"], ["4.1-rc2"]);
         data.Add(["stable"], ["4.2-stable", "3.5-stable", "2.0.1-stable", "2.0-stable", "1.1-stable"]);

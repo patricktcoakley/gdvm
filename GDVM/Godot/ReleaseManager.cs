@@ -1,4 +1,5 @@
 using GDVM.Environment;
+using GDVM.Types;
 
 namespace GDVM.Godot;
 
@@ -91,7 +92,6 @@ public sealed class ReleaseManager(IHostSystem hostSystem, PlatformStringProvide
             .Select(r => r.ReleaseName);
     }
 
-    // TODO: Replace with Result<Release, ReleaseCreationError> CreateRelease(string versionString)
     public Release? TryCreateRelease(string versionString)
     {
         var release = Release.TryParse(versionString);
@@ -100,11 +100,16 @@ public sealed class ReleaseManager(IHostSystem hostSystem, PlatformStringProvide
             return null;
         }
 
-        var platformString = platformStringProvider.GetPlatformString(release);
-        return release with
+        var platformStringResult = platformStringProvider.GetPlatformString(release);
+
+        return platformStringResult switch
         {
-            OS = hostSystem.SystemInfo.CurrentOS,
-            PlatformString = platformString
+            Result<string, PlatformError>.Success(var platformString) => release with
+            {
+                OS = hostSystem.SystemInfo.CurrentOS,
+                PlatformString = platformString
+            },
+            _ => null
         };
     }
 

@@ -1,4 +1,5 @@
 using GDVM.Godot;
+using GDVM.Types;
 using System.Runtime.InteropServices;
 using RuntimeEnvironment = GDVM.Godot.RuntimeEnvironment;
 
@@ -11,20 +12,22 @@ public sealed class PlatformStringProvider(SystemInfo systemInfo)
     ///     their release assets, so there are minor differences you have to account for, such as `osx` vs `macos` vs `osx.64` and the lack
     ///     of parity between platform support. At this point only a few are tested on actual hardware but they "should work" in theory.
     /// </summary>
-    /// <exception cref="ArgumentException"></exception>
-    // TODO: Replace with Result<string, PlatformError> GetPlatformString(Release release)
-    public string GetPlatformString(Release release)
+    public Result<string, PlatformError> GetPlatformString(Release release)
     {
-        return systemInfo switch
+        var platformString = systemInfo.CurrentOS switch
         {
-            { CurrentOS: OS.MacOS } => GetMacOSPlatformString(release, systemInfo.CurrentArch),
-            { CurrentOS: OS.Linux } => GetLinuxPlatformString(release, systemInfo.CurrentArch),
-            { CurrentOS: OS.Windows } => GetWindowsPlatformString(release, systemInfo.CurrentArch),
-            _ => throw new ArgumentException($"{systemInfo.CurrentOS} is not supported.")
+            OS.MacOS => GetMacOSPlatformString(release, systemInfo.CurrentArch),
+            OS.Linux => GetLinuxPlatformString(release, systemInfo.CurrentArch),
+            OS.Windows => GetWindowsPlatformString(release, systemInfo.CurrentArch),
+            _ => null
         };
+
+        return platformString != null
+            ? new Result<string, PlatformError>.Success(platformString)
+            : new Result<string, PlatformError>.Failure(new PlatformError.Unsupported(release, systemInfo.CurrentOS, systemInfo.CurrentArch));
     }
 
-    private static string GetMacOSPlatformString(Release release, Architecture arch)
+    private static string? GetMacOSPlatformString(Release release, Architecture arch)
     {
         return (release.RuntimeEnvironment, release.Major, arch) switch
         {
@@ -43,11 +46,11 @@ public sealed class PlatformStringProvider(SystemInfo systemInfo)
 
             (RuntimeEnvironment.Mono, 4, Architecture.Arm64 or Architecture.X64) => "mono_macos.universal",
             (RuntimeEnvironment.Standard, 4, Architecture.Arm64 or Architecture.X64) => "macos.universal",
-            _ => throw new ArgumentOutOfRangeException(nameof(arch), $"Architecture `{arch}` is not supported on {release.ReleaseNameWithRuntime} for macOS.")
+            _ => null
         };
     }
 
-    private static string GetLinuxPlatformString(Release release, Architecture arch)
+    private static string? GetLinuxPlatformString(Release release, Architecture arch)
     {
         return (release.RuntimeEnvironment, release.Major, arch) switch
         {
@@ -69,11 +72,11 @@ public sealed class PlatformStringProvider(SystemInfo systemInfo)
             (RuntimeEnvironment.Standard, 4, Architecture.Arm) => "linux.arm32",
             (RuntimeEnvironment.Standard, 4, Architecture.Arm64) => "linux.arm64",
 
-            _ => throw new ArgumentOutOfRangeException(nameof(arch), $"{arch} is not supported on {release.ReleaseName} for Linux.")
+            _ => null
         };
     }
 
-    private static string GetWindowsPlatformString(Release release, Architecture arch)
+    private static string? GetWindowsPlatformString(Release release, Architecture arch)
     {
         return (release.RuntimeEnvironment, arch) switch
         {
@@ -85,7 +88,7 @@ public sealed class PlatformStringProvider(SystemInfo systemInfo)
             (RuntimeEnvironment.Standard, Architecture.X86) => "win32.exe",
             (RuntimeEnvironment.Standard, Architecture.Arm64) when release is { Major: 4, Minor: >= 3 } => "windows_arm64.exe",
 
-            _ => throw new ArgumentOutOfRangeException(nameof(arch), $"{arch} is not supported on {release.ReleaseName} for Windows.")
+            _ => null
         };
     }
 }

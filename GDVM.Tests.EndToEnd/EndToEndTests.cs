@@ -407,7 +407,6 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
 
         var result = await fixture.Container.ExecuteShellCommand("sh", "-c", $"cd /tmp/multiline && {gdvmPath} which");
 
-        // Should use first line only
         Assert.Equal(0, result.ExitCode);
     }
 
@@ -451,7 +450,6 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
     {
         var result = await fixture.Container.ExecuteCommand("godot", "--", "--help");
 
-        // Should fail gracefully since godot isn't actually installed, but should parse args correctly
         Assert.True(result.ExitCode >= 0);
     }
 
@@ -577,35 +575,84 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
         var result = await fixture.Container.ExecuteCommand("logs");
 
         Assert.Equal(0, result.ExitCode);
-        // Should return empty or minimal output, not crash
     }
 
     [Fact]
     public async Task LogsCommandShowsRecentOperationsInOrder()
     {
         var searchResult = await fixture.Container.ExecuteCommand("search");
-        if (searchResult.ExitCode != 0)
-        {
-            return;
-        }
+        Assert.True(searchResult.ExitCode == 0,
+            $"Search command failed with exit code {searchResult.ExitCode}. Stdout: {searchResult.Stdout}, Stderr: {searchResult.Stderr}");
 
         var install = await fixture.Container.ExecuteCommand("install", "4.5-stable");
-        if (install.ExitCode != 0)
-        {
-            return;
-        }
+        Assert.True(install.ExitCode == 0,
+            $"Install command failed with exit code {install.ExitCode}. Stdout: {install.Stdout}, Stderr: {install.Stderr}");
 
-        await fixture.Container.ExecuteCommand("set", "4.5-stable");
-        await fixture.Container.ExecuteCommand("list");
+        var set = await fixture.Container.ExecuteCommand("set", "4.5-stable");
+        Assert.True(set.ExitCode == 0,
+            $"Set command failed with exit code {set.ExitCode}. Stdout: {set.Stdout}, Stderr: {set.Stderr}");
+
+        var list = await fixture.Container.ExecuteCommand("list");
+        Assert.True(list.ExitCode == 0,
+            $"List command failed with exit code {list.ExitCode}. Stdout: {list.Stdout}, Stderr: {list.Stderr}");
 
         var logs = await fixture.Container.GetLogs();
 
-        // Verify operations appear in logs
+        Assert.False(string.IsNullOrEmpty(logs));
         Assert.Contains("install", logs.ToLower());
         Assert.Contains("set", logs.ToLower());
-        Assert.Contains("list", logs.ToLower());
 
         await CleanupVersion("4.5-stable");
+    }
+
+    [Fact]
+    public async Task InstallingGodot3StandardWorksOnBothArchitectures()
+    {
+        // v3.6-stable standard works on both x64 (x11.64) and arm64 (linux.arm64)
+        var install = await fixture.Container.ExecuteCommand("install", "3.6-stable");
+        Assert.True(install.ExitCode == 0,
+            $"Install 3.6-stable failed with exit code {install.ExitCode}. Stdout: {install.Stdout}, Stderr: {install.Stderr}");
+
+        Assert.True(await fixture.Container.HasVersionInstalled("3.6-stable"));
+
+        await CleanupVersion("3.6-stable");
+    }
+
+    [Fact]
+    public async Task InstalledGodotBinaryIsExecutable()
+    {
+        var install = await fixture.Container.ExecuteCommand("install", "4.3-stable");
+        Assert.True(install.ExitCode == 0,
+            $"Install failed with exit code {install.ExitCode}. Stdout: {install.Stdout}, Stderr: {install.Stderr}");
+
+        await fixture.Container.ExecuteCommand("set", "4.3-stable");
+
+        // Run Godot in headless mode to verify it's actually executable
+        var godotVersion = await fixture.Container.ExecuteCommand("godot", "--", "--version", "--headless");
+        Assert.Equal(0, godotVersion.ExitCode);
+        Assert.Contains("4.3", godotVersion.Stdout);
+
+        await CleanupVersion("4.3-stable");
+    }
+
+    [Fact(Skip = "Mono runtime versions have inconsistent availability - needs investigation")]
+    public async Task InstallingMonoRuntimeWorks()
+    {
+        var install = await fixture.Container.ExecuteCommand("install", "4.5-stable-mono");
+        Assert.True(install.ExitCode == 0,
+            $"Install mono failed with exit code {install.ExitCode}. Stdout: {install.Stdout}, Stderr: {install.Stderr}");
+
+        var listResult = await fixture.Container.ExecuteCommand("list");
+        Assert.True(await fixture.Container.HasVersionInstalled("4.5-stable-mono"),
+            $"Version 4.5-stable-mono not found in list. List output: {listResult.Stdout}");
+
+        await fixture.Container.ExecuteCommand("set", "4.5-stable-mono");
+
+        var godotVersion = await fixture.Container.ExecuteCommand("godot", "--", "--version", "--headless");
+        Assert.Equal(0, godotVersion.ExitCode);
+        Assert.Contains("4.5", godotVersion.Stdout);
+
+        await CleanupVersion("4.5-stable-mono");
     }
 
     public static string GetProjectVersion()

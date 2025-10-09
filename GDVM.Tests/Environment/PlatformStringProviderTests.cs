@@ -1,5 +1,6 @@
 using GDVM.Environment;
 using GDVM.Godot;
+using GDVM.Types;
 using System.Runtime.InteropServices;
 using RuntimeEnvironment = GDVM.Godot.RuntimeEnvironment;
 
@@ -16,7 +17,7 @@ public class PlatformStringProviderTests
     [InlineData(RuntimeEnvironment.Mono, 3, Architecture.X64, "mono_osx64", 0)]
     [InlineData(RuntimeEnvironment.Mono, 3, Architecture.X64, "mono_osx.64", 2)]
     [InlineData(RuntimeEnvironment.Mono, 3, Architecture.Arm64, "mono_osx.universal", 5)]
-    [InlineData(RuntimeEnvironment.Mono, 3, Architecture.Arm, null)] // Should throw
+    [InlineData(RuntimeEnvironment.Mono, 3, Architecture.Arm, null)] // Should return Failure
     [InlineData(RuntimeEnvironment.Mono, 4, Architecture.Arm64, "mono_macos.universal")]
     [InlineData(RuntimeEnvironment.Standard, 4, Architecture.Arm64, "macos.universal")]
     public void MacOS_ShouldReturnCorrectPlatformString(
@@ -32,21 +33,27 @@ public class PlatformStringProviderTests
 
         if (expected is null)
         {
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
-                platformStringProvider.GetPlatformString(release));
-
+            var result = platformStringProvider.GetPlatformString(release);
+            Assert.IsType<Result<string, PlatformError>.Failure>(result);
+            var failure = (Result<string, PlatformError>.Failure)result;
+            Assert.IsType<PlatformError.Unsupported>(failure.Error);
+            var unsupported = (PlatformError.Unsupported)failure.Error;
+            Assert.Equal(OS.MacOS, unsupported.OS);
+            Assert.Equal(arch, unsupported.Architecture);
             return;
         }
 
-        var result = platformStringProvider.GetPlatformString(release);
-        Assert.Equal(expected, result);
+        var successResult = platformStringProvider.GetPlatformString(release);
+        Assert.IsType<Result<string, PlatformError>.Success>(successResult);
+        var success = (Result<string, PlatformError>.Success)successResult;
+        Assert.Equal(expected, success.Value);
     }
 
     [Theory]
     [InlineData(RuntimeEnvironment.Mono, 3, Architecture.X64, "mono_x11_64")]
     [InlineData(RuntimeEnvironment.Mono, 3, Architecture.X86, "mono_x11_32")]
-    [InlineData(RuntimeEnvironment.Mono, 3, Architecture.Arm, null)] // Should throw
-    [InlineData(RuntimeEnvironment.Mono, 3, Architecture.Arm64, null)] // Should throw
+    [InlineData(RuntimeEnvironment.Mono, 3, Architecture.Arm, null)] // Should return Failure
+    [InlineData(RuntimeEnvironment.Mono, 3, Architecture.Arm64, null)] // Should return Failure
     [InlineData(RuntimeEnvironment.Standard, 3, Architecture.X64, "x11.64")]
     [InlineData(RuntimeEnvironment.Standard, 3, Architecture.Arm, "linux.arm32")]
     [InlineData(RuntimeEnvironment.Standard, 3, Architecture.Arm64, "linux.arm64")]
@@ -65,14 +72,20 @@ public class PlatformStringProviderTests
 
         if (expected is null)
         {
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
-                platformStringProvider.GetPlatformString(release));
-
+            var result = platformStringProvider.GetPlatformString(release);
+            Assert.IsType<Result<string, PlatformError>.Failure>(result);
+            var failure = (Result<string, PlatformError>.Failure)result;
+            Assert.IsType<PlatformError.Unsupported>(failure.Error);
+            var unsupported = (PlatformError.Unsupported)failure.Error;
+            Assert.Equal(OS.Linux, unsupported.OS);
+            Assert.Equal(arch, unsupported.Architecture);
             return;
         }
 
-        var result = platformStringProvider.GetPlatformString(release);
-        Assert.Equal(expected, result);
+        var successResult = platformStringProvider.GetPlatformString(release);
+        Assert.IsType<Result<string, PlatformError>.Success>(successResult);
+        var success = (Result<string, PlatformError>.Success)successResult;
+        Assert.Equal(expected, success.Value);
     }
 
     [Theory]
@@ -98,23 +111,35 @@ public class PlatformStringProviderTests
 
         if (expected is null)
         {
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
-                platformStringProvider.GetPlatformString(release));
-
+            var result = platformStringProvider.GetPlatformString(release);
+            Assert.IsType<Result<string, PlatformError>.Failure>(result);
+            var failure = (Result<string, PlatformError>.Failure)result;
+            Assert.IsType<PlatformError.Unsupported>(failure.Error);
+            var unsupported = (PlatformError.Unsupported)failure.Error;
+            Assert.Equal(OS.Windows, unsupported.OS);
+            Assert.Equal(arch, unsupported.Architecture);
             return;
         }
 
-        var result = platformStringProvider.GetPlatformString(release);
-        Assert.Equal(expected, result);
+        var successResult = platformStringProvider.GetPlatformString(release);
+        Assert.IsType<Result<string, PlatformError>.Success>(successResult);
+        var success = (Result<string, PlatformError>.Success)successResult;
+        Assert.Equal(expected, success.Value);
     }
 
     [Theory]
     [InlineData(OS.Unknown)]
     [InlineData(OS.FreeBSD)]
-    public void UnsupportedOS_ShouldThrowNotSupportedException(OS os)
+    public void UnsupportedOS_ShouldReturnFailure(OS os)
     {
         var platformStringProvider = new PlatformStringProvider(new SystemInfo(os, Architecture.X64));
         var release = new Release(4, 3);
-        Assert.Throws<ArgumentException>(() => platformStringProvider.GetPlatformString(release));
+        var result = platformStringProvider.GetPlatformString(release);
+        Assert.IsType<Result<string, PlatformError>.Failure>(result);
+        var failure = (Result<string, PlatformError>.Failure)result;
+        Assert.IsType<PlatformError.Unsupported>(failure.Error);
+        var unsupported = (PlatformError.Unsupported)failure.Error;
+        Assert.Equal(os, unsupported.OS);
+        Assert.Equal(Architecture.X64, unsupported.Architecture);
     }
 }

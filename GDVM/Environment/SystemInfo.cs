@@ -2,6 +2,9 @@ using System.Runtime.InteropServices;
 
 namespace GDVM.Environment;
 
+/// <summary>
+/// A logical representation of information about the system's operating system and architecture.
+/// </summary>
 public sealed class SystemInfo(OS currentOS, Architecture currentArch)
 {
     public SystemInfo() : this(DetermineOS(), RuntimeInformation.ProcessArchitecture)

@@ -403,7 +403,7 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
     {
         var gdvmPath = await TestHelpers.GetGdvmPath(fixture.Container);
         await fixture.Container.ExecuteShellCommand("mkdir", "-p", "/tmp/multiline");
-        await fixture.Container.ExecuteShellCommand("sh", "-c", "echo -e '4.5-stable\\n4.3-stable\\n4.0-stable' > /tmp/multiline/.gdvm-version");
+        await fixture.Container.ExecuteShellCommand("sh", "-c", @"echo -e '4.5-stable\n4.3-stable\n4.0-stable' > /tmp/multiline/.gdvm-version");
 
         var result = await fixture.Container.ExecuteShellCommand("sh", "-c", $"cd /tmp/multiline && {gdvmPath} which");
 
@@ -415,14 +415,14 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
     {
         var gdvmPath = await TestHelpers.GetGdvmPath(fixture.Container);
         await fixture.Container.ExecuteShellCommand("mkdir", "-p", "/tmp/comments");
-        await fixture.Container.ExecuteShellCommand("sh", "-c", "echo -e '# Comment\\n\\n4.5-stable\\n' > /tmp/comments/.gdvm-version");
+        await fixture.Container.ExecuteShellCommand("sh", "-c", @"echo -e '# Comment\n\n4.5-stable\n' > /tmp/comments/.gdvm-version");
 
         var result = await fixture.Container.ExecuteShellCommand("sh", "-c", $"cd /tmp/comments && {gdvmPath} which");
 
         Assert.Equal(0, result.ExitCode);
     }
 
-    [Fact(Skip = "TODO")]
+    [Fact(Skip = "TODO: Exit code handling needs investigation")]
     public async Task GodotCommandFailsWhenNoVersionSet()
     {
         var gdvmPath = await TestHelpers.GetGdvmPath(fixture.Container);
@@ -433,7 +433,7 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
         Assert.NotEqual(0, result.ExitCode);
     }
 
-    [Fact(Skip = "TODO")]
+    [Fact(Skip = "TODO: Exit code handling needs investigation")]
     public async Task GodotCommandFailsWhenVersionSetButNotInstalled()
     {
         var gdvmPath = await TestHelpers.GetGdvmPath(fixture.Container);
@@ -474,7 +474,7 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
         await CleanupVersion("4.5-stable");
     }
 
-    [Fact(Skip = "TODO")]
+    [Fact(Skip = "TODO: Exit code handling needs investigation")]
     public async Task InstallCommandWithInvalidVersionFails()
     {
         var result = await fixture.Container.ExecuteCommand("install", "999.999-invalid");
@@ -655,7 +655,7 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
         await CleanupVersion("4.5-stable-mono");
     }
 
-    public static string GetProjectVersion()
+    private static string GetProjectVersion()
     {
         var dir = new DirectoryInfo(AppContext.BaseDirectory);
 

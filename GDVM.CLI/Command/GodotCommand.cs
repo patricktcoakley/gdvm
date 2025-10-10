@@ -38,7 +38,7 @@ public sealed class GodotCommand(
         {
             try
             {
-                if (process.HasExited == false)
+                if (!process.HasExited)
                 {
                     process.Kill();
                 }
@@ -86,14 +86,14 @@ public sealed class GodotCommand(
             {
                 var errorMessage = failure.Error switch
                 {
-                    VersionResolutionError.NotFound notFound => Messages.VersionResolutionNotFound(notFound.Version),
+                    VersionResolutionError.NotFound notFound => Messages.VersionResolutionNotFound(notFound.Version, versionManagementService.HostSystem),
                     VersionResolutionError.Failed failed => Messages.VersionResolutionFailed(failed.Reason),
                     VersionResolutionError.InvalidVersion invalid => Messages.InvalidVersion(invalid.Version),
                     _ => Messages.UnknownResolutionError
                 };
 
                 console.MarkupLine(errorMessage);
-                return;
+                throw new InvalidOperationException(errorMessage);
             }
 
             // Extract success result

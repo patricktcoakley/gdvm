@@ -1,6 +1,14 @@
 namespace GDVM.Types;
 
 /// <summary>
+///     Represents a unit type for operations that don't return a value.
+/// </summary>
+public readonly record struct Unit
+{
+    public static readonly Unit Value = new();
+}
+
+/// <summary>
 ///     Represents the result of an operation that can either succeed or fail.
 /// </summary>
 /// <typeparam name="T">The type of the success value</typeparam>

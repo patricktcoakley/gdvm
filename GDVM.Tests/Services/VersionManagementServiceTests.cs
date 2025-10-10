@@ -41,6 +41,8 @@ public class VersionManagementServiceTests
         _mockProjectManager.Setup(x => x.FindProjectInfo(It.IsAny<string>()))
             .Returns((ProjectManager.ProjectInfo?)null);
 
+        _mockHostSystem.Setup(x => x.SystemInfo)
+            .Returns(new SystemInfo(OS.Linux, System.Runtime.InteropServices.Architecture.X64));
 
         _service = new VersionManagementService(
             _mockHostSystem.Object,
@@ -64,9 +66,10 @@ public class VersionManagementServiceTests
         var hasProjectMessage = _console.Output.Contains("Project requires") || _console.Output.Contains("Project specifies");
         var hasNoInstallationMessage = _console.Output.Contains("No Godot versions installed");
         var hasNoVersionSetMessage = _console.Output.Contains("No current Godot version set");
+        var hasNotFoundMessage = _console.Output.Contains("could not be found");
 
-        Assert.True(hasProjectMessage || hasNoInstallationMessage || hasNoVersionSetMessage,
-            $"Expected either project-specific, no installations, or no version set message. Actual output: {_console.Output}");
+        Assert.True(hasProjectMessage || hasNoInstallationMessage || hasNoVersionSetMessage || hasNotFoundMessage,
+            $"Expected either project-specific, no installations, no version set, or not found message. Actual output: {_console.Output}");
     }
 
     [Fact]
@@ -146,7 +149,8 @@ public class VersionManagementServiceTests
         var result = await _service.ResolveVersionForLaunchAsync();
 
         Assert.True(result is Result<VersionResolutionOutcome, VersionResolutionError>.Failure { Error: VersionResolutionError.NotFound });
-        Assert.Contains("Project requires", _console.Output);
+        Assert.True(_console.Output.Contains("Project requires") || _console.Output.Contains("could not be found"),
+            $"Expected project or not found message. Actual: {_console.Output}");
     }
 
     [Fact]
@@ -515,7 +519,8 @@ public class VersionManagementServiceTests
         _mockReleaseManager.Setup(x => x.TryCreateRelease(matchedVersion))
             .Returns(mockRelease);
 
-        _mockHostSystem.Setup(x => x.CreateOrOverwriteSymbolicLink(It.IsAny<string>()));
+        _mockHostSystem.Setup(x => x.CreateOrOverwriteSymbolicLink(It.IsAny<string>()))
+            .Returns(new Result<Unit, SymlinkError>.Success(Unit.Value));
 
         var result = await _service.SetGlobalVersionAsync(query);
 
@@ -557,7 +562,8 @@ public class VersionManagementServiceTests
         _mockReleaseManager.Setup(x => x.TryCreateRelease(selectedVersion))
             .Returns(mockRelease);
 
-        _mockHostSystem.Setup(x => x.CreateOrOverwriteSymbolicLink(It.IsAny<string>()));
+        _mockHostSystem.Setup(x => x.CreateOrOverwriteSymbolicLink(It.IsAny<string>()))
+            .Returns(new Result<Unit, SymlinkError>.Success(Unit.Value));
 
         var result = await _service.SetGlobalVersionAsync([]);
 

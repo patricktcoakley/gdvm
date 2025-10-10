@@ -10,7 +10,7 @@ namespace GDVM.Environment;
 public interface IHostSystem
 {
     SystemInfo SystemInfo { get; }
-    void CreateOrOverwriteSymbolicLink(string symlinkTargetPath);
+    Result<Unit, SymlinkError> CreateOrOverwriteSymbolicLink(string symlinkTargetPath);
     void RemoveSymbolicLinks();
     Result<SymlinkInfo, SymlinkError> ResolveCurrentSymlinks();
     IEnumerable<string> ListInstallations();
@@ -23,8 +23,7 @@ public sealed class HostSystem(SystemInfo systemInfo, IPathService pathService, 
 {
     public SystemInfo SystemInfo { get; } = systemInfo;
 
-    // TODO: Replace with Result<Unit, SystemError> CreateOrOverwriteSymbolicLink(string symlinkTargetPath)
-    public void CreateOrOverwriteSymbolicLink(string symlinkTargetPath)
+    public Result<Unit, SymlinkError> CreateOrOverwriteSymbolicLink(string symlinkTargetPath)
     {
         RemoveSymbolicLinks();
 
@@ -59,18 +58,24 @@ public sealed class HostSystem(SystemInfo systemInfo, IPathService pathService, 
             case OS.FreeBSD:
             case OS.Unknown:
             default:
-                throw new InvalidEnumArgumentException($"{SystemInfo.CurrentOS} is unsupported at this time.");
+                logger.LogError("Unsupported OS: {OS}", SystemInfo.CurrentOS);
+                return new Result<Unit, SymlinkError>.Failure(
+                    new SymlinkError.InvalidSymlink(pathService.SymlinkPath, "Unsupported OS"));
         }
 
         if (SystemInfo.CurrentOS == OS.MacOS && !IsSymbolicLinkValid(pathService.MacAppSymlinkPath))
         {
-            throw new InvalidSymlinkException("Symlink was created but appears to be invalid.", pathService.MacAppSymlinkPath);
+            return new Result<Unit, SymlinkError>.Failure(
+                new SymlinkError.InvalidSymlink(pathService.MacAppSymlinkPath, "Symlink created but appears invalid"));
         }
 
         if (!IsSymbolicLinkValid(pathService.SymlinkPath))
         {
-            throw new InvalidSymlinkException("Symlink was created but appears to be invalid.", pathService.SymlinkPath);
+            return new Result<Unit, SymlinkError>.Failure(
+                new SymlinkError.InvalidSymlink(pathService.SymlinkPath, "Symlink created but appears invalid"));
         }
+
+        return new Result<Unit, SymlinkError>.Success(Unit.Value);
     }
 
     public void RemoveSymbolicLinks()

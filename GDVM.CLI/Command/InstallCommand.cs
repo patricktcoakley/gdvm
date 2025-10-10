@@ -126,20 +126,21 @@ public sealed class InstallCommand(
                 }
             }
 
-            var msg = installationResult switch
+            switch (installationResult)
             {
-                Result<InstallationOutcome, InstallationError>.Success(InstallationOutcome.NewInstallation(var release)) =>
-                    GetInstallationSuccessMessage(new InstallationOutcome.NewInstallation(release), setAsDefault, wasAutoSetAsDefault),
-                Result<InstallationOutcome, InstallationError>.Success(InstallationOutcome.AlreadyInstalled(var release)) =>
-                    Messages.AlreadyInstalled(release),
-                Result<InstallationOutcome, InstallationError>.Failure(InstallationError.NotFound notFound) =>
-                    Messages.InstallationNotFound(notFound.Version),
-                Result<InstallationOutcome, InstallationError>.Failure(InstallationError.Failed failed) =>
-                    Messages.InstallationFailed(failed.Reason),
-                _ => throw new Exception(Messages.UnknownInstallationResultType)
-            };
-
-            console.MarkupLine(msg);
+                case Result<InstallationOutcome, InstallationError>.Success(InstallationOutcome.NewInstallation(var release)):
+                    console.MarkupLine(GetInstallationSuccessMessage(release, setAsDefault, wasAutoSetAsDefault));
+                    break;
+                case Result<InstallationOutcome, InstallationError>.Success(InstallationOutcome.AlreadyInstalled(var release)):
+                    console.MarkupLine(Messages.AlreadyInstalled(release));
+                    break;
+                case Result<InstallationOutcome, InstallationError>.Failure(InstallationError.NotFound notFound):
+                    throw new InvalidOperationException(Messages.InstallationNotFound(notFound.Version, hostSystem));
+                case Result<InstallationOutcome, InstallationError>.Failure(InstallationError.Failed failed):
+                    throw new InvalidOperationException(Messages.InstallationFailed(failed.Reason));
+                default:
+                    throw new Exception(Messages.UnknownInstallationResultType);
+            }
         }
         catch (TaskCanceledException)
         {
@@ -167,15 +168,8 @@ public sealed class InstallCommand(
         }
     }
 
-    private static string GetInstallationSuccessMessage(InstallationOutcome outcome, bool setAsDefault, bool wasAutoSetAsDefault)
+    private static string GetInstallationSuccessMessage(string releaseNameWithRuntime, bool setAsDefault, bool wasAutoSetAsDefault)
     {
-        var releaseNameWithRuntime = outcome switch
-        {
-            InstallationOutcome.NewInstallation(var name) => name,
-            InstallationOutcome.AlreadyInstalled(var name) => name,
-            _ => throw new ArgumentException($"Unknown installation outcome type: {outcome.GetType()}")
-        };
-
         var baseMessage = Messages.InstallationSuccessBase(releaseNameWithRuntime);
 
         if (wasAutoSetAsDefault)

@@ -16,6 +16,11 @@ namespace GDVM.Services;
 public interface IVersionManagementService
 {
     /// <summary>
+    ///     Gets the host system for accessing system information
+    /// </summary>
+    IHostSystem HostSystem { get; }
+
+    /// <summary>
     ///     Resolves the appropriate Godot version for launching in the current directory.
     ///     Handles project-specific version detection, compatibility checking, and automatic installation prompts.
     /// </summary>
@@ -91,6 +96,11 @@ public class VersionManagementService(
     IAnsiConsole console,
     ILogger<VersionManagementService> logger) : IVersionManagementService
 {
+    /// <summary>
+    ///     Gets the host system for accessing system information
+    /// </summary>
+    public IHostSystem HostSystem => hostSystem;
+
     /// <summary>
     ///     Resolves the appropriate Godot version for launching in the current directory.
     ///     Handles project-specific version detection, compatibility checking, and automatic installation prompts.
@@ -199,7 +209,17 @@ public class VersionManagementService(
 
             var symlinkTargetPath = Path.Combine(pathService.RootPath, godotRelease.ReleaseNameWithRuntime);
             symlinkTargetPath = Path.Combine(symlinkTargetPath, godotRelease.ExecName);
-            hostSystem.CreateOrOverwriteSymbolicLink(symlinkTargetPath);
+            var symlinkResult = hostSystem.CreateOrOverwriteSymbolicLink(symlinkTargetPath);
+
+            if (symlinkResult is Result<Unit, SymlinkError>.Failure failure)
+            {
+                logger.ZLogError($"Failed to create symlink: {failure.Error}");
+
+                if (failure.Error is SymlinkError.InvalidSymlink(var path, var target))
+                {
+                    throw new InvalidSymlinkException(target, path);
+                }
+            }
 
             logger.ZLogInformation($"Successfully set version to {godotRelease.ReleaseNameWithRuntime}.");
             console.MarkupLine(Messages.SuccessfullySetVersion(godotRelease.ReleaseNameWithRuntime));

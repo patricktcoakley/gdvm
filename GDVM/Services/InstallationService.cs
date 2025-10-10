@@ -164,7 +164,18 @@ public class InstallationService(
             {
                 progress.Report(new OperationProgress<InstallationStage>(InstallationStage.SettingDefault, "Setting as default version..."));
                 var symlinkTargetPath = Path.Combine(extractPath, godotRelease.ExecName);
-                hostSystem.CreateOrOverwriteSymbolicLink(symlinkTargetPath);
+                var symlinkResult = hostSystem.CreateOrOverwriteSymbolicLink(symlinkTargetPath);
+
+                if (symlinkResult is Result<Unit, SymlinkError>.Failure failure)
+                {
+                    logger.LogError("Failed to create symlink: {Error}", failure.Error);
+                    hostSystem.RemoveSymbolicLinks();
+
+                    if (failure.Error is SymlinkError.InvalidSymlink(var path, var target))
+                    {
+                        throw new InvalidSymlinkException(target, path);
+                    }
+                }
             }
 
             logger.LogInformation("Successfully installed {ReleaseNameWithRuntime}", godotRelease.ReleaseNameWithRuntime);
@@ -174,12 +185,6 @@ public class InstallationService(
         catch (TaskCanceledException)
         {
             logger.LogError("User cancelled installation");
-            throw;
-        }
-        catch (InvalidSymlinkException e)
-        {
-            logger.LogError("Symlink created but appears invalid: {SymlinkPath}", e.SymlinkPath);
-            hostSystem.RemoveSymbolicLinks();
             throw;
         }
         catch (Exception e)
@@ -216,7 +221,8 @@ public class InstallationService(
             godotRelease ??= releaseManager.TryFindReleaseByQuery(query, await FetchReleaseNames(cancellationToken, true));
 
             return godotRelease == null
-                ? new Result<InstallationOutcome, InstallationError>.Failure(new InstallationError.NotFound(string.Join(" ", query)))
+                ? new Result<InstallationOutcome, InstallationError>.Failure(
+                    new InstallationError.NotFound(string.Join(" ", query)))
                 : await InstallReleaseAsync(godotRelease, progress, setAsDefault, cancellationToken);
         }
         catch (Exception e)

@@ -6,7 +6,7 @@ namespace GDVM.Types;
 public readonly record struct SymlinkInfo(string SymlinkPath, string? MacAppSymlinkPath = null);
 
 /// <summary>
-///     Represents the possible errors that can occur when resolving current symlinks.
+///     Represents the possible errors that can occur with symlink operations.
 /// </summary>
 public abstract record SymlinkError
 {

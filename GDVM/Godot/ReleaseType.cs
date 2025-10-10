@@ -43,7 +43,7 @@ public sealed record ReleaseType : IComparable<ReleaseType>
             ("dev", "dev") => Nullable.Compare(Version, other.Version), // Higher dev numbers are greater
             ("dev", _) => -1, // dev is less than everything else
             (_, "dev") => 1, // everything else is greater than dev
-            _ => throw new InvalidOperationException("Unknown release type")
+            _ => 0 // Should never happen due to private constructor and factory methods
         };
     }
 

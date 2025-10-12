@@ -11,7 +11,6 @@ namespace GDVM.Command;
 
 public sealed class SearchCommand(
     IReleaseManager releaseManager,
-    IInstallationService installationService,
     IPathService pathService,
     IAnsiConsole console,
     ILogger<SearchCommand> logger)
@@ -25,25 +24,12 @@ public sealed class SearchCommand(
     {
         try
         {
-            Panel panel;
-            if (query.Length == 0)
-            {
-                var releaseNames = await installationService.FetchReleaseNames(cancellationToken);
-                panel = new Panel(string.Join("\n", releaseNames))
-                {
-                    Header = new PanelHeader(Messages.AvailableVersionsHeader),
-                    Width = 40
-                };
-
-                console.Write(panel);
-                return;
-            }
-
+            // Use SearchRemoteReleases for both empty and non-empty queries to get chronological sorting
             var filteredReleaseNames = await releaseManager.SearchRemoteReleases(query, cancellationToken);
 
-            panel = new Panel(string.Join("\n", filteredReleaseNames))
+            var panel = new Panel(string.Join("\n", filteredReleaseNames))
             {
-                Header = new PanelHeader("[green]List Of Available Versions[/]"),
+                Header = new PanelHeader(query.Length == 0 ? Messages.AvailableVersionsHeader : "[green]List Of Available Versions[/]"),
                 Width = 40
             };
 

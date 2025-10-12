@@ -1,4 +1,5 @@
 using DotNet.Testcontainers.Containers;
+using GDVM.Error;
 
 namespace GDVM.Tests.EndToEnd;
 
@@ -13,7 +14,7 @@ public static class TestHelpers
 
         // Find the gdvm binary - it will be in Debug build output with platform-specific RID
         var findResult = await container.ExecAsync(["find", "/workspace/GDVM.CLI/bin/Debug/net9.0", "-name", "gdvm", "-type", "f"]);
-        if (findResult.ExitCode != 0 || string.IsNullOrWhiteSpace(findResult.Stdout))
+        if (findResult.ExitCode != ExitCodes.Success || string.IsNullOrWhiteSpace(findResult.Stdout))
         {
             throw new InvalidOperationException("Could not find gdvm binary in container");
         }
@@ -43,19 +44,19 @@ public static class TestHelpers
     public static async Task<bool> DirectoryExists(this IContainer container, string path)
     {
         var result = await container.ExecAsync(["test", "-d", path]);
-        return result.ExitCode == 0;
+        return result.ExitCode == ExitCodes.Success;
     }
 
     public static async Task<bool> FileExists(this IContainer container, string path)
     {
         var result = await container.ExecAsync(["test", "-f", path]);
-        return result.ExitCode == 0;
+        return result.ExitCode == ExitCodes.Success;
     }
 
     public static async Task<string> ReadFile(this IContainer container, string path)
     {
         var result = await container.ExecAsync(["cat", path]);
-        if (result.ExitCode != 0)
+        if (result.ExitCode != ExitCodes.Success)
         {
             throw new InvalidOperationException($"Failed to read file {path}: {result.Stderr}");
         }
@@ -66,7 +67,7 @@ public static class TestHelpers
     public static async Task<string[]> ListDirectory(this IContainer container, string path)
     {
         var result = await container.ExecAsync(["ls", "-1", path]);
-        if (result.ExitCode != 0)
+        if (result.ExitCode != ExitCodes.Success)
         {
             throw new InvalidOperationException($"Failed to list directory {path}: {result.Stderr}");
         }
@@ -76,7 +77,7 @@ public static class TestHelpers
 
     public static void AssertSuccessfulExecution(this ExecResult result, string? expectedOutput = null)
     {
-        Assert.Equal(0, result.ExitCode);
+        Assert.Equal(ExitCodes.Success, result.ExitCode);
 
         if (expectedOutput != null)
         {
@@ -86,7 +87,7 @@ public static class TestHelpers
 
     public static void AssertFailedExecution(this ExecResult result, string? expectedError = null)
     {
-        Assert.NotEqual(0, result.ExitCode);
+        Assert.NotEqual(ExitCodes.Success, result.ExitCode);
 
         if (expectedError != null)
         {
@@ -115,12 +116,12 @@ public static class TestHelpers
     public static async Task<bool> HasVersionInstalled(this IContainer container, string version)
     {
         var result = await container.ExecuteCommand("list");
-        return result.ExitCode == 0 && result.Stdout.Contains(version, StringComparison.OrdinalIgnoreCase);
+        return result.ExitCode == ExitCodes.Success && result.Stdout.Contains(version, StringComparison.OrdinalIgnoreCase);
     }
 
     public static async Task<string> GetCurrentVersion(this IContainer container)
     {
         var result = await container.ExecuteCommand("which");
-        return result.ExitCode == 0 ? result.Stdout.Trim() : string.Empty;
+        return result.ExitCode == ExitCodes.Success ? result.Stdout.Trim() : string.Empty;
     }
 }

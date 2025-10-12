@@ -197,7 +197,7 @@ public class QueryTests
     }
 
     [Fact]
-    public void SearchReleases_ShouldSortByStabilityFirst()
+    public async Task SearchReleases_ShouldSortByStabilityFirst()
     {
         var releaseNames = new[]
         {
@@ -208,16 +208,31 @@ public class QueryTests
             "4.3-beta1"
         };
 
-        var releaseManager = new ReleaseManagerBuilder().Build();
+        var releaseManager = new ReleaseManagerBuilder()
+            .WithReleases(releaseNames)
+            .Build();
 
-        var result = releaseManager.FilterReleasesByQuery(["4"], releaseNames).ToArray();
+        // Test chronological ordering (for search/display)
+        var chronologicalResult = await releaseManager.SearchRemoteReleases(["4"], CancellationToken.None);
+        var chronologicalArray = chronologicalResult.ToArray();
+
+        // Should be ordered: major > minor > stability > patch
+        // So within 4.5: stable before rc (regardless of patch), then dev
+        Assert.Equal("4.5-stable", chronologicalArray[0]);
+        Assert.Equal("4.5.1-rc1", chronologicalArray[1]);
+        Assert.Equal("4.5-dev1", chronologicalArray[2]);
+        Assert.Equal("4.4-stable", chronologicalArray[3]);
+        Assert.Equal("4.3-beta1", chronologicalArray[4]);
+
+        // Test stability-first ordering (for selection)
+        var stabilityResult = releaseManager.FilterReleasesByQuery(["4"], releaseNames, chronological: false).ToArray();
 
         // Should be ordered: stable releases first, then rc, then beta, then dev
-        Assert.Equal("4.5-stable", result[0]);
-        Assert.Equal("4.4-stable", result[1]);
-        Assert.Equal("4.5.1-rc1", result[2]);
-        Assert.Equal("4.3-beta1", result[3]);
-        Assert.Equal("4.5-dev1", result[4]);
+        Assert.Equal("4.5-stable", stabilityResult[0]);
+        Assert.Equal("4.4-stable", stabilityResult[1]);
+        Assert.Equal("4.5.1-rc1", stabilityResult[2]);
+        Assert.Equal("4.3-beta1", stabilityResult[3]);
+        Assert.Equal("4.5-dev1", stabilityResult[4]);
     }
 
     [Fact]

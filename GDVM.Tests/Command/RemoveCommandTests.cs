@@ -56,7 +56,7 @@ public class RemoveCommandTests
         var query = new[] { "5.0" };
 
         _mockHostSystem.Setup(x => x.ListInstallations()).Returns(installedVersions);
-        _mockReleaseManager.Setup(x => x.FilterReleasesByQuery(query, installedVersions))
+        _mockReleaseManager.Setup(x => x.FilterReleasesByQuery(query, installedVersions, false))
             .Returns([]);
 
         await _removeCommand.Remove(CancellationToken.None, query);
@@ -73,7 +73,7 @@ public class RemoveCommandTests
         var filteredVersions = new[] { "4.3.0-stable" };
 
         _mockHostSystem.Setup(x => x.ListInstallations()).Returns(installedVersions);
-        _mockReleaseManager.Setup(x => x.FilterReleasesByQuery(query, installedVersions))
+        _mockReleaseManager.Setup(x => x.FilterReleasesByQuery(query, installedVersions, false))
             .Returns(filteredVersions);
 
         // Setup remaining installations after removal
@@ -93,7 +93,7 @@ public class RemoveCommandTests
         var filteredVersions = new[] { "4.3.0-stable" };
 
         _mockHostSystem.Setup(x => x.ListInstallations()).Returns(installedVersions);
-        _mockReleaseManager.Setup(x => x.FilterReleasesByQuery(query, installedVersions))
+        _mockReleaseManager.Setup(x => x.FilterReleasesByQuery(query, installedVersions, false))
             .Returns(filteredVersions);
 
         // Setup empty installations after removal
@@ -115,7 +115,7 @@ public class RemoveCommandTests
         var filteredVersions = new[] { "4.3.0-stable", "4.3.0-mono" };
 
         _mockHostSystem.Setup(x => x.ListInstallations()).Returns(installedVersions);
-        _mockReleaseManager.Setup(x => x.FilterReleasesByQuery(query, installedVersions))
+        _mockReleaseManager.Setup(x => x.FilterReleasesByQuery(query, installedVersions, false))
             .Returns(filteredVersions);
 
         // Setup for remaining installations after removal
@@ -146,7 +146,7 @@ public class RemoveCommandTests
         var emptyQuery = Array.Empty<string>();
 
         _mockHostSystem.Setup(x => x.ListInstallations()).Returns(installedVersions);
-        _mockReleaseManager.Setup(x => x.FilterReleasesByQuery(emptyQuery, installedVersions))
+        _mockReleaseManager.Setup(x => x.FilterReleasesByQuery(emptyQuery, installedVersions, false))
             .Returns(installedVersions); // Empty query should return all
 
         // Setup for remaining installations after removal
@@ -179,7 +179,7 @@ public class RemoveCommandTests
         var filteredVersions = new[] { "4.3.0-stable", "4.3.0-mono" };
 
         _mockHostSystem.Setup(x => x.ListInstallations()).Returns(installedVersions);
-        _mockReleaseManager.Setup(x => x.FilterReleasesByQuery(query, installedVersions))
+        _mockReleaseManager.Setup(x => x.FilterReleasesByQuery(query, installedVersions, false))
             .Returns(filteredVersions);
 
         // Setup for remaining installations after removal
@@ -213,7 +213,7 @@ public class RemoveCommandTests
         var filteredVersions = new[] { "4.3.0-stable", "4.3.0-mono" };
 
         _mockHostSystem.Setup(x => x.ListInstallations()).Returns(installedVersions);
-        _mockReleaseManager.Setup(x => x.FilterReleasesByQuery(query, installedVersions))
+        _mockReleaseManager.Setup(x => x.FilterReleasesByQuery(query, installedVersions, false))
             .Returns(filteredVersions);
 
         // Use a cancelled cancellation token to simulate user cancellation
@@ -231,7 +231,7 @@ public class RemoveCommandTests
         var filteredVersions = new[] { "4.3.0-stable" }; // Single match to test cancellation handling
 
         _mockHostSystem.Setup(x => x.ListInstallations()).Returns(installedVersions);
-        _mockReleaseManager.Setup(x => x.FilterReleasesByQuery(query, installedVersions))
+        _mockReleaseManager.Setup(x => x.FilterReleasesByQuery(query, installedVersions, false))
             .Returns(filteredVersions);
 
         var cancellationToken = new CancellationToken(true);
@@ -247,7 +247,7 @@ public class RemoveCommandTests
         var query = Array.Empty<string>();
 
         _mockHostSystem.Setup(x => x.ListInstallations()).Returns(installedVersions);
-        _mockReleaseManager.Setup(x => x.FilterReleasesByQuery(query, installedVersions))
+        _mockReleaseManager.Setup(x => x.FilterReleasesByQuery(query, installedVersions, false))
             .Returns(installedVersions); // Empty query returns all
 
         // Setup empty installations after removal
@@ -280,7 +280,7 @@ public class RemoveCommandTests
         var query = new[] { "4.3.0" };
 
         _mockHostSystem.Setup(x => x.ListInstallations()).Returns(installedVersions);
-        _mockReleaseManager.Setup(x => x.FilterReleasesByQuery(query, installedVersions))
+        _mockReleaseManager.Setup(x => x.FilterReleasesByQuery(query, installedVersions, false))
             .Throws(new InvalidOperationException("Test exception"));
 
         await Assert.ThrowsAsync<InvalidOperationException>(() =>

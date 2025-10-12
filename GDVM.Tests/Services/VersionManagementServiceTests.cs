@@ -512,7 +512,7 @@ public class VersionManagementServiceTests
         var installedVersions = new[] { matchedVersion, "4.2.0-stable" };
 
         _mockHostSystem.Setup(x => x.ListInstallations()).Returns(installedVersions);
-        _mockReleaseManager.Setup(x => x.FilterReleasesByQuery(query, installedVersions))
+        _mockReleaseManager.Setup(x => x.FilterReleasesByQuery(query, installedVersions, false))
             .Returns([matchedVersion]);
 
         var mockRelease = CreateMockRelease(matchedVersion);
@@ -539,7 +539,7 @@ public class VersionManagementServiceTests
         var installedVersions = new[] { "4.3.0-stable", "4.2.0-stable" };
 
         _mockHostSystem.Setup(x => x.ListInstallations()).Returns(installedVersions);
-        _mockReleaseManager.Setup(x => x.FilterReleasesByQuery(query, installedVersions))
+        _mockReleaseManager.Setup(x => x.FilterReleasesByQuery(query, installedVersions, false))
             .Returns([]);
 
         await Assert.ThrowsAsync<InvalidOperationException>(() => _service.SetGlobalVersionAsync(query));
@@ -582,7 +582,7 @@ public class VersionManagementServiceTests
         var installedVersions = new[] { "4.3.0-stable" };
 
         _mockHostSystem.Setup(x => x.ListInstallations()).Returns(installedVersions);
-        _mockReleaseManager.Setup(x => x.FilterReleasesByQuery(query, installedVersions))
+        _mockReleaseManager.Setup(x => x.FilterReleasesByQuery(query, installedVersions, false))
             .Returns([invalidVersion]);
 
         _mockReleaseManager.Setup(x => x.TryCreateRelease(invalidVersion))

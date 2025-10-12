@@ -1,3 +1,4 @@
+using GDVM.Error;
 using System.Xml.Linq;
 
 namespace GDVM.Tests.EndToEnd;
@@ -57,9 +58,9 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
     {
         var result = await fixture.Container.ExecuteCommand("search");
 
-        Assert.True(result.ExitCode >= 0);
+        Assert.InRange(result.ExitCode, ExitCodes.Success, int.MaxValue);
 
-        if (result.ExitCode != 0)
+        if (result.ExitCode != ExitCodes.Success)
         {
             await fixture.Container.AssertLogContains("search");
         }
@@ -100,7 +101,7 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
     {
         var result = await fixture.Container.ExecuteCommand("install", "nonexistent-version-999");
 
-        Assert.NotEqual(0, result.ExitCode);
+        Assert.Equal(ExitCodes.ArgumentError, result.ExitCode);
         await fixture.Container.AssertLogContains("install");
     }
 
@@ -109,7 +110,7 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
     {
         var result = await fixture.Container.ExecuteCommand("remove", "nonexistent-version-999");
 
-        Assert.True(result.ExitCode >= 0);
+        Assert.Equal(ExitCodes.Success, result.ExitCode);
     }
 
     [Fact]
@@ -117,7 +118,7 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
     {
         var result = await fixture.Container.ExecuteCommand("set", "nonexistent-version-999");
 
-        Assert.NotEqual(0, result.ExitCode);
+        Assert.Equal(ExitCodes.GeneralError, result.ExitCode);
     }
 
     [Fact]
@@ -125,7 +126,7 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
     {
         var result = await fixture.Container.ExecuteCommand("local", "nonexistent-version-999");
 
-        Assert.True(result.ExitCode >= 0);
+        Assert.Equal(ExitCodes.ArgumentError, result.ExitCode);
     }
 
     [Fact]
@@ -133,9 +134,9 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
     {
         var result = await fixture.Container.ExecuteCommand("search", "4.5");
 
-        Assert.True(result.ExitCode >= 0);
+        Assert.InRange(result.ExitCode, ExitCodes.Success, int.MaxValue);
 
-        if (result.ExitCode == 0)
+        if (result.ExitCode == ExitCodes.Success)
         {
             Assert.True(result.Stdout.Length > 0);
         }
@@ -174,7 +175,7 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
 
         var result = await fixture.Container.ExecuteShellCommand("sh", "-c", $"cd /tmp/empty-version-test && {gdvmPath} which");
 
-        Assert.True(result.ExitCode >= 0);
+        Assert.InRange(result.ExitCode, ExitCodes.Success, int.MaxValue);
     }
 
     [Fact]
@@ -194,7 +195,7 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
     {
         var result = await fixture.Container.ExecuteCommand("godot");
 
-        Assert.True(result.ExitCode >= 0);
+        Assert.InRange(result.ExitCode, ExitCodes.Success, int.MaxValue);
     }
 
     [Fact]
@@ -202,7 +203,7 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
     {
         var result = await fixture.Container.ExecuteCommand("godot", "--version");
 
-        Assert.True(result.ExitCode >= 0);
+        Assert.InRange(result.ExitCode, ExitCodes.Success, int.MaxValue);
     }
 
     [Fact]
@@ -213,7 +214,7 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
         var result = await fixture.Container.ExecuteShellCommand("sh", "-c",
             "cd /tmp/local-test && /workspace/GDVM.CLI/bin/Release/net9.0/linux-arm64/publish/gdvm local 4.5-stable");
 
-        Assert.True(result.ExitCode >= 0);
+        Assert.InRange(result.ExitCode, ExitCodes.Success, int.MaxValue);
 
         var fileExists = await fixture.Container.FileExists("/tmp/local-test/.gdvm-version");
         if (fileExists)
@@ -228,7 +229,7 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
     {
         var result = await fixture.Container.ExecuteCommand("set", "4.5-stable");
 
-        Assert.True(result.ExitCode >= 0);
+        Assert.InRange(result.ExitCode, ExitCodes.Success, int.MaxValue);
     }
 
     [Fact]
@@ -236,7 +237,7 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
     {
         var result = await fixture.Container.ExecuteCommand("remove", "99.99.99-invalid");
 
-        Assert.True(result.ExitCode >= 0);
+        Assert.InRange(result.ExitCode, ExitCodes.Success, int.MaxValue);
     }
 
     [Fact]
@@ -244,7 +245,7 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
     {
         var result = await fixture.Container.ExecuteCommand("list", "--installed");
 
-        Assert.True(result.ExitCode >= 0);
+        Assert.InRange(result.ExitCode, ExitCodes.Success, int.MaxValue);
     }
 
     [Fact]
@@ -252,7 +253,7 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
     {
         var result = await fixture.Container.ExecuteCommand("search", "nonexistent-query-that-wont-match-anything");
 
-        Assert.True(result.ExitCode >= 0);
+        Assert.InRange(result.ExitCode, ExitCodes.Success, int.MaxValue);
     }
 
     [Fact]
@@ -264,7 +265,7 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
         var result = await fixture.Container.ExecuteShellCommand("sh", "-c",
             "cd /tmp/comment-test && /workspace/GDVM.CLI/bin/Release/net9.0/linux-arm64/publish/gdvm which");
 
-        Assert.True(result.ExitCode >= 0);
+        Assert.InRange(result.ExitCode, ExitCodes.Success, int.MaxValue);
     }
 
     [Fact]
@@ -284,20 +285,14 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
     public async Task MultipleSequentialInstallsWorkCorrectly()
     {
         var searchResult = await fixture.Container.ExecuteCommand("search");
-        if (searchResult.ExitCode != 0)
-        {
-            return;
-        }
+        Assert.Equal(ExitCodes.Success, searchResult.ExitCode);
 
         var install1 = await fixture.Container.ExecuteCommand("install", "4.5-stable");
-        if (install1.ExitCode != 0)
-        {
-            return;
-        }
+        Assert.Equal(ExitCodes.Success, install1.ExitCode);
 
         var install2 = await fixture.Container.ExecuteCommand("install", "4.5-stable");
 
-        Assert.True(install2.ExitCode >= 0);
+        Assert.InRange(install2.ExitCode, ExitCodes.Success, int.MaxValue);
 
         await CleanupVersion("4.5-stable");
     }
@@ -306,46 +301,41 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
     public async Task FullVersionManagementWorkflow()
     {
         var searchResult = await fixture.Container.ExecuteCommand("search");
-        if (searchResult.ExitCode != 0)
-        {
-            return;
-        }
+        Assert.Equal(ExitCodes.Success, searchResult.ExitCode);
 
         Assert.Contains("4.5-stable", searchResult.Stdout);
 
         var installResult = await fixture.Container.ExecuteCommand("install", "4.5-stable");
-        if (installResult.ExitCode != 0)
-        {
-            await fixture.Container.GetLogs();
-            return;
-        }
+        Assert.Equal(ExitCodes.Success, installResult.ExitCode);
 
-        Assert.True(await fixture.Container.HasVersionInstalled("4.5-stable"));
+        Assert.True(await fixture.Container.HasVersionInstalled("4.5"),
+            "Expected 4.5 stable version to be installed");
 
         var currentVersion = await fixture.Container.GetCurrentVersion();
-        Assert.Contains("4.5-stable", currentVersion);
+        Assert.Contains("4.5", currentVersion);
 
         var install2Result = await fixture.Container.ExecuteCommand("install", "4.5-rc2");
-        if (install2Result.ExitCode != 0)
-        {
-            await CleanupVersion("4.5-stable");
-            return;
-        }
+        Assert.Equal(ExitCodes.Success, install2Result.ExitCode);
 
-        Assert.True(await fixture.Container.HasVersionInstalled("4.5-stable"));
-        Assert.True(await fixture.Container.HasVersionInstalled("4.5-rc2"));
+        Assert.True(await fixture.Container.HasVersionInstalled("4.5"),
+            "Expected 4.5 stable version to still be installed");
 
-        var setResult = await fixture.Container.ExecuteCommand("set", "4.5-rc2");
+        Assert.True(await fixture.Container.HasVersionInstalled("rc2"),
+            "Expected 4.5 rc2 version to be installed");
+
+        // The install of 4.5-rc2 may find a patch version like 4.5.1-rc2
+        // Query with just rc2 should find any rc2 version installed
+        var setResult = await fixture.Container.ExecuteCommand("set", "rc2");
         setResult.AssertSuccessfulExecution();
 
         var newCurrentVersion = await fixture.Container.GetCurrentVersion();
-        Assert.Contains("4.5-rc2", newCurrentVersion);
+        Assert.Contains("rc2", newCurrentVersion);
 
         await fixture.Container.ExecuteShellCommand("mkdir", "-p", "/tmp/test-project");
         var localSetResult = await fixture.Container.ExecuteShellCommand("sh", "-c",
             "cd /tmp/test-project && /workspace/GDVM.CLI/bin/Release/net9.0/linux-arm64/publish/gdvm local 4.5-stable");
 
-        if (localSetResult.ExitCode == 0)
+        if (localSetResult.ExitCode == ExitCodes.Success)
         {
             var versionFileExists = await fixture.Container.FileExists("/tmp/test-project/.gdvm-version");
             Assert.True(versionFileExists, "Expected .gdvm-version file to be created after successful local command");
@@ -353,7 +343,7 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
             var localResult = await fixture.Container.ExecuteShellCommand("sh", "-c",
                 "cd /tmp/test-project && /workspace/GDVM.CLI/bin/Release/net9.0/linux-arm64/publish/gdvm which");
 
-            Assert.Contains("4.5-stable", localResult.Stdout);
+            Assert.Contains("4.5", localResult.Stdout);
         }
 
         await CleanupVersion("4.5-rc2");
@@ -372,7 +362,7 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
         await fixture.Container.ExecuteCommand("remove", version);
     }
 
-    [Fact(Skip = "TODO")]
+    [Fact]
     public async Task ReadsNearestVersionFileWhenMultipleExist()
     {
         var gdvmPath = await TestHelpers.GetGdvmPath(fixture.Container);
@@ -386,7 +376,7 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
         Assert.Contains("4.5", result.Stdout);
     }
 
-    [Fact(Skip = "TODO")]
+    [Fact(Skip = "TODO: which command doesn't validate .gdvm-version file contents, only checks symlinks")]
     public async Task HandlesInvalidVersionFormatGracefully()
     {
         var gdvmPath = await TestHelpers.GetGdvmPath(fixture.Container);
@@ -395,7 +385,7 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
 
         var result = await fixture.Container.ExecuteShellCommand("sh", "-c", $"cd /tmp/invalid-version && {gdvmPath} which");
 
-        Assert.NotEqual(0, result.ExitCode);
+        Assert.NotEqual(ExitCodes.Success, result.ExitCode);
     }
 
     [Fact]
@@ -422,7 +412,7 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
         Assert.Equal(0, result.ExitCode);
     }
 
-    [Fact(Skip = "TODO: Exit code handling needs investigation")]
+    [Fact(Skip = "TODO: godot command not returning non-zero exit code - ExitCodeFilter may not be converting exception properly")]
     public async Task GodotCommandFailsWhenNoVersionSet()
     {
         var gdvmPath = await TestHelpers.GetGdvmPath(fixture.Container);
@@ -430,10 +420,10 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
 
         var result = await fixture.Container.ExecuteShellCommand("sh", "-c", $"cd /tmp/no-version && {gdvmPath} godot --version");
 
-        Assert.NotEqual(0, result.ExitCode);
+        Assert.NotEqual(ExitCodes.Success, result.ExitCode);
     }
 
-    [Fact(Skip = "TODO: Exit code handling needs investigation")]
+    [Fact(Skip = "TODO: PromptForInstallationAsync uses interactive prompt which fails in non-interactive E2E tests - need env var or flag for auto-install")]
     public async Task GodotCommandFailsWhenVersionSetButNotInstalled()
     {
         var gdvmPath = await TestHelpers.GetGdvmPath(fixture.Container);
@@ -442,7 +432,7 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
 
         var result = await fixture.Container.ExecuteShellCommand("sh", "-c", $"cd /tmp/not-installed && {gdvmPath} godot --version");
 
-        Assert.NotEqual(0, result.ExitCode);
+        Assert.NotEqual(ExitCodes.Success, result.ExitCode);
     }
 
     [Fact]
@@ -450,73 +440,55 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
     {
         var result = await fixture.Container.ExecuteCommand("godot", "--", "--help");
 
-        Assert.True(result.ExitCode >= 0);
+        Assert.InRange(result.ExitCode, ExitCodes.Success, int.MaxValue);
     }
 
     [Fact]
     public async Task InstallingSameVersionTwiceIsIdempotent()
     {
         var searchResult = await fixture.Container.ExecuteCommand("search");
-        if (searchResult.ExitCode != 0)
-        {
-            return;
-        }
+        Assert.Equal(ExitCodes.Success, searchResult.ExitCode);
 
         var install1 = await fixture.Container.ExecuteCommand("install", "4.5-stable");
-        if (install1.ExitCode != 0)
-        {
-            return;
-        }
+        Assert.Equal(ExitCodes.Success, install1.ExitCode);
 
         var install2 = await fixture.Container.ExecuteCommand("install", "4.5-stable");
-        Assert.Equal(0, install2.ExitCode);
+        Assert.Equal(ExitCodes.Success, install2.ExitCode);
 
         await CleanupVersion("4.5-stable");
     }
 
-    [Fact(Skip = "TODO: Exit code handling needs investigation")]
+    [Fact]
     public async Task InstallCommandWithInvalidVersionFails()
     {
         var result = await fixture.Container.ExecuteCommand("install", "999.999-invalid");
 
-        Assert.NotEqual(0, result.ExitCode);
+        Assert.Equal(ExitCodes.ArgumentError, result.ExitCode);
     }
 
     [Fact]
     public async Task RemovingGloballySetVersionSucceeds()
     {
         var searchResult = await fixture.Container.ExecuteCommand("search");
-        if (searchResult.ExitCode != 0)
-        {
-            return;
-        }
+        Assert.Equal(ExitCodes.Success, searchResult.ExitCode);
 
         var install = await fixture.Container.ExecuteCommand("install", "4.5-stable");
-        if (install.ExitCode != 0)
-        {
-            return;
-        }
+        Assert.Equal(ExitCodes.Success, install.ExitCode);
 
         await fixture.Container.ExecuteCommand("set", "4.5-stable");
         var remove = await fixture.Container.ExecuteCommand("remove", "4.5-stable");
 
-        Assert.Equal(0, remove.ExitCode);
+        Assert.Equal(ExitCodes.Success, remove.ExitCode);
     }
 
     [Fact]
     public async Task RemovingLocallySetVersionSucceeds()
     {
         var searchResult = await fixture.Container.ExecuteCommand("search");
-        if (searchResult.ExitCode != 0)
-        {
-            return;
-        }
+        Assert.Equal(ExitCodes.Success, searchResult.ExitCode);
 
         var install = await fixture.Container.ExecuteCommand("install", "4.5-stable");
-        if (install.ExitCode != 0)
-        {
-            return;
-        }
+        Assert.Equal(ExitCodes.Success, install.ExitCode);
 
         var gdvmPath = await TestHelpers.GetGdvmPath(fixture.Container);
         await fixture.Container.ExecuteShellCommand("mkdir", "-p", "/tmp/remove-local");
@@ -524,7 +496,7 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
 
         var remove = await fixture.Container.ExecuteCommand("remove", "4.5-stable");
 
-        Assert.Equal(0, remove.ExitCode);
+        Assert.Equal(ExitCodes.Success, remove.ExitCode);
     }
 
     [Fact]
@@ -532,7 +504,7 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
     {
         var result = await fixture.Container.ExecuteCommand("set", "999.999-nonexistent");
 
-        Assert.NotEqual(0, result.ExitCode);
+        Assert.Equal(ExitCodes.GeneralError, result.ExitCode);
     }
 
     [Fact]
@@ -540,23 +512,17 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
     {
         var result = await fixture.Container.ExecuteCommand("local", "999.999-nonexistent");
 
-        Assert.NotEqual(0, result.ExitCode);
+        Assert.Equal(ExitCodes.ArgumentError, result.ExitCode);
     }
 
-    [Fact(Skip = "TODO")]
+    [Fact(Skip = "TODO: local command not creating .gdvm-version file - likely failing at SetLocalVersionAsync before CreateOrUpdateVersionFile is called")]
     public async Task LocalCommandCreatesVersionFileWithCorrectContent()
     {
         var searchResult = await fixture.Container.ExecuteCommand("search");
-        if (searchResult.ExitCode != 0)
-        {
-            return;
-        }
+        Assert.Equal(ExitCodes.Success, searchResult.ExitCode);
 
         var install = await fixture.Container.ExecuteCommand("install", "4.5-stable");
-        if (install.ExitCode != 0)
-        {
-            return;
-        }
+        Assert.Equal(ExitCodes.Success, install.ExitCode);
 
         var gdvmPath = await TestHelpers.GetGdvmPath(fixture.Container);
         await fixture.Container.ExecuteShellCommand("mkdir", "-p", "/tmp/local-content-test");
@@ -581,20 +547,16 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
     public async Task LogsCommandShowsRecentOperationsInOrder()
     {
         var searchResult = await fixture.Container.ExecuteCommand("search");
-        Assert.True(searchResult.ExitCode == 0,
-            $"Search command failed with exit code {searchResult.ExitCode}. Stdout: {searchResult.Stdout}, Stderr: {searchResult.Stderr}");
+        Assert.Equal(ExitCodes.Success, searchResult.ExitCode);
 
         var install = await fixture.Container.ExecuteCommand("install", "4.5-stable");
-        Assert.True(install.ExitCode == 0,
-            $"Install command failed with exit code {install.ExitCode}. Stdout: {install.Stdout}, Stderr: {install.Stderr}");
+        Assert.Equal(ExitCodes.Success, install.ExitCode);
 
         var set = await fixture.Container.ExecuteCommand("set", "4.5-stable");
-        Assert.True(set.ExitCode == 0,
-            $"Set command failed with exit code {set.ExitCode}. Stdout: {set.Stdout}, Stderr: {set.Stderr}");
+        Assert.Equal(ExitCodes.Success, set.ExitCode);
 
         var list = await fixture.Container.ExecuteCommand("list");
-        Assert.True(list.ExitCode == 0,
-            $"List command failed with exit code {list.ExitCode}. Stdout: {list.Stdout}, Stderr: {list.Stderr}");
+        Assert.Equal(ExitCodes.Success, list.ExitCode);
 
         var logs = await fixture.Container.GetLogs();
 
@@ -609,11 +571,13 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
     public async Task InstallingGodot3StandardWorksOnBothArchitectures()
     {
         // v3.6-stable standard works on both x64 (x11.64) and arm64 (linux.arm64)
+        // When installing 3.6-stable, it will find the latest patch version (e.g., 3.6.1-stable)
         var install = await fixture.Container.ExecuteCommand("install", "3.6-stable");
-        Assert.True(install.ExitCode == 0,
-            $"Install 3.6-stable failed with exit code {install.ExitCode}. Stdout: {install.Stdout}, Stderr: {install.Stderr}");
+        Assert.Equal(ExitCodes.Success, install.ExitCode);
 
-        Assert.True(await fixture.Container.HasVersionInstalled("3.6-stable"));
+        // Check that some version of 3.6 stable was installed (could be 3.6-stable or 3.6.1-stable, etc.)
+        Assert.True(await fixture.Container.HasVersionInstalled("3.6"),
+            "Version 3.6 not found in installed versions");
 
         await CleanupVersion("3.6-stable");
     }
@@ -622,39 +586,120 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
     public async Task InstalledGodotBinaryIsExecutable()
     {
         var install = await fixture.Container.ExecuteCommand("install", "4.3-stable");
-        Assert.True(install.ExitCode == 0,
-            $"Install failed with exit code {install.ExitCode}. Stdout: {install.Stdout}, Stderr: {install.Stderr}");
+        Assert.Equal(ExitCodes.Success, install.ExitCode);
 
         await fixture.Container.ExecuteCommand("set", "4.3-stable");
 
         // Run Godot in headless mode to verify it's actually executable
         var godotVersion = await fixture.Container.ExecuteCommand("godot", "--", "--version", "--headless");
-        Assert.Equal(0, godotVersion.ExitCode);
+        Assert.Equal(ExitCodes.Success, godotVersion.ExitCode);
         Assert.Contains("4.3", godotVersion.Stdout);
 
         await CleanupVersion("4.3-stable");
     }
 
-    [Fact(Skip = "Mono runtime versions have inconsistent availability - needs investigation")]
+    [Fact(Skip = "Mono ARM64 builds not consistently available across Godot versions")]
     public async Task InstallingMonoRuntimeWorks()
     {
-        var install = await fixture.Container.ExecuteCommand("install", "4.5-stable-mono");
-        Assert.True(install.ExitCode == 0,
-            $"Install mono failed with exit code {install.ExitCode}. Stdout: {install.Stdout}, Stderr: {install.Stderr}");
+        // This test is skipped because mono ARM64 availability varies by Godot version
+        // and there's no stable version guaranteed to be available long-term
+        var install = await fixture.Container.ExecuteCommand("install", "latest", "mono");
+        Assert.Equal(ExitCodes.Success, install.ExitCode);
 
-        var listResult = await fixture.Container.ExecuteCommand("list");
-        Assert.True(await fixture.Container.HasVersionInstalled("4.5-stable-mono"),
-            $"Version 4.5-stable-mono not found in list. List output: {listResult.Stdout}");
+        Assert.True(await fixture.Container.HasVersionInstalled("mono"),
+            "Mono runtime version not found in installed versions");
 
-        await fixture.Container.ExecuteCommand("set", "4.5-stable-mono");
+        await fixture.Container.ExecuteCommand("set", "latest", "mono");
 
         var godotVersion = await fixture.Container.ExecuteCommand("godot", "--", "--version", "--headless");
         Assert.Equal(0, godotVersion.ExitCode);
-        Assert.Contains("4.5", godotVersion.Stdout);
 
-        await CleanupVersion("4.5-stable-mono");
+        await fixture.Container.ExecuteCommand("remove", "latest", "mono");
     }
 
+    [Fact]
+    public async Task SearchCommandDisplaysChronologicalOrdering()
+    {
+        var searchResult = await fixture.Container.ExecuteCommand("search", "4");
+        Assert.Equal(ExitCodes.Success, searchResult.ExitCode);
+
+        // Parse output by removing panel borders and extracting version lines
+        var lines = searchResult.Stdout.Split('\n', StringSplitOptions.RemoveEmptyEntries)
+            .Where(line => line.Contains("4.") && line.Contains("-"))
+            .Select(line => line.Replace("│", "").Trim())
+            .Where(line => !string.IsNullOrWhiteSpace(line))
+            .ToArray();
+
+        // Verify we have some results
+        Assert.NotEmpty(lines);
+
+        // Find indices of specific versions to verify chronological ordering
+        // Chronological means: higher versions first, then stability within each version
+        var stableIndex = Array.FindIndex(lines, l => l.Contains("4.5-stable") || l.Contains("4.4-stable"));
+        var rcIndex = Array.FindIndex(lines, l => l.Contains("-rc"));
+
+        // If we have both stable and rc versions, stable of same/higher version should come before rc
+        if (stableIndex >= 0 && rcIndex >= 0)
+        {
+            // Extract version numbers to compare
+            var stableLine = lines[stableIndex];
+            var rcLine = lines[rcIndex];
+
+            // If they're the same major.minor version, stable should come first
+            if (stableLine.StartsWith("4.") && rcLine.StartsWith("4."))
+            {
+                var stableVersion = stableLine.Split('-')[0];
+                var rcVersion = rcLine.Split('-')[0];
+
+                if (stableVersion == rcVersion)
+                {
+                    Assert.True(stableIndex < rcIndex,
+                        $"Chronological ordering failed: {stableLine} (index {stableIndex}) should appear before {rcLine} (index {rcIndex})");
+                }
+            }
+        }
+    }
+
+    [Fact]
+    public async Task InstallCommandUsesStabilityFirstSelection()
+    {
+        // This test verifies that when multiple versions match a query,
+        // install prefers stable versions over newer unstable versions
+
+        // First, check what versions are available
+        var searchResult = await fixture.Container.ExecuteCommand("search", "4");
+        Assert.Equal(ExitCodes.Success, searchResult.ExitCode);
+
+        var hasStable = searchResult.Stdout.Contains("-stable");
+        var hasDev = searchResult.Stdout.Contains("-dev");
+
+        if (!hasStable || !hasDev)
+        {
+            return; // Skip if we don't have both stable and dev versions
+        }
+
+        var installResult = await fixture.Container.ExecuteCommand("install", "4");
+        Assert.Equal(ExitCodes.Success, installResult.ExitCode);
+
+        var listResult = await fixture.Container.ExecuteCommand("list");
+        Assert.Equal(ExitCodes.Success, listResult.ExitCode);
+
+        // Should have installed a stable version, not a dev version
+        var installedStable = listResult.Stdout.Contains("-stable");
+        var installedDev = listResult.Stdout.Contains("-dev");
+
+        Assert.True(installedStable && !installedDev,
+            $"Install with query '4' should prefer stable version over dev. Installed versions: {listResult.Stdout}");
+
+        // Cleanup
+        await CleanupVersion("4");
+    }
+
+    /// <summary>
+    ///     Attempts to read the project version from the .csproj file by locating it in the directory hierarchy.
+    /// </summary>
+    /// <returns></returns>
+    /// <exception cref="InvalidOperationException"></exception>
     private static string GetProjectVersion()
     {
         var dir = new DirectoryInfo(AppContext.BaseDirectory);

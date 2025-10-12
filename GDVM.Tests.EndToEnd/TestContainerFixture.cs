@@ -1,5 +1,6 @@
 using DotNet.Testcontainers.Builders;
 using DotNet.Testcontainers.Containers;
+using GDVM.Error;
 
 namespace GDVM.Tests.EndToEnd;
 
@@ -38,7 +39,7 @@ public class TestContainerFixture : IAsyncLifetime
 
         // Detect container architecture to determine RID
         var archResult = await _container.ExecAsync(["uname", "-m"]);
-        if (archResult.ExitCode != 0)
+        if (archResult.ExitCode != ExitCodes.Success)
         {
             throw new InvalidOperationException("Failed to detect container architecture");
         }
@@ -53,7 +54,7 @@ public class TestContainerFixture : IAsyncLifetime
 
         // Publish with Debug config to avoid AOT (which requires native build tools)
         var publishResult = await _container.ExecAsync(["dotnet", "publish", "/workspace/GDVM.CLI/GDVM.CLI.csproj", "-c", "Debug"]);
-        if (publishResult.ExitCode != 0)
+        if (publishResult.ExitCode != ExitCodes.Success)
         {
             throw new InvalidOperationException(
                 $"Failed to publish GDVM. Exit code: {publishResult.ExitCode}\nStdout: {publishResult.Stdout}\nStderr: {publishResult.Stderr}");

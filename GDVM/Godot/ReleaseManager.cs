@@ -11,7 +11,7 @@ public interface IReleaseManager
     Task<HttpResponseMessage> GetZipFile(string filename, Release release, CancellationToken cancellationToken);
 
     Release? TryFindReleaseByQuery(string[] query, string[] releaseNames);
-    IEnumerable<string> FilterReleasesByQuery(string[] query, string[] releaseNames);
+    IEnumerable<string> FilterReleasesByQuery(string[] query, string[] releaseNames, bool chronological = false);
     string? FindCompatibleVersion(string projectVersion, bool isDotNet, IEnumerable<string> installedVersions);
 
     Release? TryCreateRelease(string versionString);
@@ -25,7 +25,7 @@ public sealed class ReleaseManager(IHostSystem hostSystem, PlatformStringProvide
     public async Task<IEnumerable<string>> SearchRemoteReleases(string[] query, CancellationToken cancellationToken)
     {
         var releaseNames = await ListReleases(cancellationToken);
-        return FilterReleasesByQuery(query, releaseNames.ToArray());
+        return FilterReleasesByQuery(query, releaseNames.ToArray(), true);
     }
 
     public async Task<string> GetSha512(Release release, CancellationToken cancellationToken) =>
@@ -64,32 +64,36 @@ public sealed class ReleaseManager(IHostSystem hostSystem, PlatformStringProvide
         };
     }
 
-    public IEnumerable<string> FilterReleasesByQuery(string[] query, string[] releaseNames)
+    public IEnumerable<string> FilterReleasesByQuery(string[] query, string[] releaseNames, bool chronological = false)
     {
-        // No filters
-        if (query.Length == 0)
-        {
-            return releaseNames;
-        }
-
         // Default to no version filter
-        var releaseType = query
-            .FirstOrDefault(x => ReleaseType.Prefixes
-                .Any(prefix => x.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)), string.Empty);
+        var releaseType = query.Length > 0
+            ? query.FirstOrDefault(x => ReleaseType.Prefixes
+                .Any(prefix => x.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)), string.Empty)
+            : string.Empty;
 
         // Default to no type filter
-        var possibleVersion = query
-            .Where(x => !x.Equals(releaseType, StringComparison.OrdinalIgnoreCase))
-            .FirstOrDefault(string.Empty);
+        var possibleVersion = query.Length > 0
+            ? query.Where(x => !x.Equals(releaseType, StringComparison.OrdinalIgnoreCase))
+                .FirstOrDefault(string.Empty)
+            : string.Empty;
 
-        // Filter and sort using Release.CompareTo for consistent ordering
-        return releaseNames
-            .Where(x => x.StartsWith(possibleVersion, StringComparison.OrdinalIgnoreCase))
-            .Where(x => x.Contains(releaseType, StringComparison.OrdinalIgnoreCase))
+        var filtered = releaseNames
+            .Where(x => string.IsNullOrEmpty(possibleVersion) || x.StartsWith(possibleVersion, StringComparison.OrdinalIgnoreCase))
+            .Where(x => string.IsNullOrEmpty(releaseType) || x.Contains(releaseType, StringComparison.OrdinalIgnoreCase))
             .Select(name => TryCreateRelease($"{name}-standard"))
-            .OfType<Release>()
-            .OrderByDescending(r => r)
-            .Select(r => r.ReleaseName);
+            .OfType<Release>();
+
+        // Sort chronologically for display (version-first) or by stability for selection (stability-first)
+        var sorted = chronological
+            ? filtered
+                .OrderByDescending(r => r.Major)
+                .ThenByDescending(r => r.Minor)
+                .ThenByDescending(r => r.Type) // Stability within same minor version
+                .ThenByDescending(r => r.Patch) // Then patch number
+            : filtered.OrderByDescending(r => r);
+
+        return sorted.Select(r => r.ReleaseName);
     }
 
     public Release? TryCreateRelease(string versionString)
@@ -178,6 +182,12 @@ public sealed class ReleaseManager(IHostSystem hostSystem, PlatformStringProvide
 
     private Release? TryFilterRelease(string[] query, string[] releaseNames)
     {
+        // Split on single arguments to for exact version queries like `4.2-stable-mono` or `4.3-beta2`
+        if (query.Length == 1)
+        {
+            query = query[0].Split('-', StringSplitOptions.RemoveEmptyEntries);
+        }
+
         var invalidArgs = ArgumentValidator.GetInvalidArguments(query);
         if (invalidArgs.Count > 0)
         {
@@ -190,7 +200,7 @@ public sealed class ReleaseManager(IHostSystem hostSystem, PlatformStringProvide
             ? RuntimeEnvironment.Mono
             : RuntimeEnvironment.Standard;
 
-        // Default to stable when release type isn't provided
+        // Default to `stable` when release type isn't provided
         var releaseType = query
                               .FirstOrDefault(x => ReleaseType.Prefixes
                                   .Any(prefix => x.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)))

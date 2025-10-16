@@ -43,6 +43,44 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
     }
 
     [Fact]
+    public async Task UsesGdvmHomeEnvironmentVariableForRootPath()
+    {
+        const string customHome = "/tmp/gdvm-env-test";
+        var gdvmRoot = $"{customHome}/gdvm";
+        var gdvmPath = TestHelpers.GetGdvmPath(fixture.Rid);
+
+        await fixture.ExecuteShellCommand("rm", "-rf", customHome);
+
+        var result = await fixture.ExecuteShellCommand("sh", "-c", $"GDVM_HOME={customHome} {gdvmPath} list");
+        result.AssertSuccessfulExecution();
+
+        var directoryExists = await fixture.DirectoryExists(gdvmRoot);
+        Assert.True(directoryExists, $"Expected GDVM root to be created at '{gdvmRoot}' when GDVM_HOME is set.");
+
+        await fixture.ExecuteShellCommand("rm", "-rf", customHome);
+    }
+
+    [Fact]
+    public async Task DoesNotCreateDefaultRootWhenGdvmHomeIsSet()
+    {
+        const string customHome = "/tmp/gdvm-env-test-no-default";
+        var defaultRoot = "/root/gdvm";
+        var gdvmPath = TestHelpers.GetGdvmPath(fixture.Rid);
+
+        await fixture.ExecuteShellCommand("rm", "-rf", defaultRoot);
+        await fixture.ExecuteShellCommand("rm", "-rf", customHome);
+
+        var result = await fixture.ExecuteShellCommand("sh", "-c", $"GDVM_HOME={customHome} {gdvmPath} list");
+        result.AssertSuccessfulExecution();
+
+        var defaultExists = await fixture.DirectoryExists(defaultRoot);
+        Assert.False(defaultExists, $"Default root '{defaultRoot}' should not be recreated when GDVM_HOME is provided.");
+
+        await fixture.ExecuteShellCommand("rm", "-rf", defaultRoot);
+        await fixture.ExecuteShellCommand("rm", "-rf", customHome);
+    }
+
+    [Fact]
     public async Task DisplaysHelpForUnrecognizedCommands()
     {
         var result = await fixture.ExecuteCommand("nonexistent-command");

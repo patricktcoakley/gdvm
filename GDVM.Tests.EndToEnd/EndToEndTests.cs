@@ -696,6 +696,55 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
         await CleanupVersion("4.3-stable");
     }
 
+    [Fact]
+    public async Task GodotCommandUsesDetachedModeWhenProjectPathContainsFlagLikeSubstrings()
+    {
+        // Install and set a version once
+        var install = await fixture.ExecuteCommand("install", "4.4-stable");
+        AssertSuccess(install, "install");
+        await fixture.ExecuteCommand("set", "4.4");
+
+        // Test multiple project names that contain flag-like substrings
+        var projectNames = new[]
+        {
+            "red-devil",       // Contains -d
+            "my-dev-project",  // Contains -dev
+            "app-v2",          // Contains -v
+            "game-server",     // Contains -s
+            "super-quest",     // Contains -q
+            "hero-helper"      // Contains -h
+        };
+
+        foreach (var projectName in projectNames)
+        {
+            // Create project with name containing flag-like substrings
+            var projectPath = $"/tmp/{projectName}";
+            await fixture.ExecuteShellCommand("mkdir", "-p", projectPath);
+
+            var projectContent = $"""
+                ; Engine configuration file.
+                config_version=5
+
+                [application]
+                config/name="{projectName}"
+                config/features=PackedStringArray("4.4", "Forward Plus")
+                """;
+
+            await fixture.ExecuteShellCommand("sh", "-c",
+                $"cat > {projectPath}/project.godot << 'EOF'\n{projectContent}\nEOF");
+
+            // Run gdvm godot in that directory
+            var result = await fixture.ExecuteCommandInDirectory(projectPath, "godot");
+
+            // Should use DETACHED mode, not attached
+            Assert.DoesNotContain("attached mode", result.Stdout.ToLower());
+            Assert.Contains("detached mode", result.Stdout.ToLower());
+        }
+
+        // Cleanup once
+        await CleanupVersion("4.4-stable");
+    }
+
     /// <summary>
     ///     Assert that command executed successfully, showing stdout/stderr on failure
     /// </summary>

@@ -43,8 +43,11 @@ public interface IPathService
 
 public sealed class PathService : IPathService
 {
+    private static string? _gdvmHomeEnvVar => System.Environment.GetEnvironmentVariable("GDVM_HOME");
     public string RootPath =>
-        Path.GetFullPath("gdvm", System.Environment.GetFolderPath(System.Environment.SpecialFolder.UserProfile));
+        _gdvmHomeEnvVar is not null
+            ? Path.GetFullPath("gdvm", _gdvmHomeEnvVar)
+            : Path.GetFullPath("gdvm", System.Environment.GetFolderPath(System.Environment.SpecialFolder.UserProfile));
     public string ConfigPath => Path.Combine(RootPath, "gdvm.ini");
     public string ReleasesPath => Path.Combine(RootPath, ".releases");
     public string BinPath => Path.Combine(RootPath, "bin");

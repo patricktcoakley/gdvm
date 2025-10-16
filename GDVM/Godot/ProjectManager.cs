@@ -8,11 +8,11 @@ namespace GDVM.Godot;
 public interface IProjectManager
 {
     /// <summary>
-    ///     Finds project information including version and runtime environment.
+    ///     Finds project release information including version and runtime environment.
     /// </summary>
     /// <param name="directory">The directory to search in. If null, uses current working directory.</param>
-    /// <returns>ProjectInfo if found, null otherwise.</returns>
-    ProjectManager.ProjectInfo? FindProjectInfo(string? directory = null);
+    /// <returns>Release if found, null otherwise.</returns>
+    Release? FindProjectInfo(string? directory = null);
 
 
     /// <summary>
@@ -30,25 +30,25 @@ public interface IProjectManager
     void CreateVersionFile(string version, string? directory = null);
 
     /// <summary>
-    ///     Finds project info from `.gdvm-version` file
+    ///     Finds project release info from `.gdvm-version` file only
     /// </summary>
     /// <param name="directory">The directory to search in. If null, uses current working directory.</param>
-    /// <returns>ProjectInfo if .gdvm-version file found, null otherwise.</returns>
-    ProjectManager.ProjectInfo? FindExplicitProjectInfo(string? directory = null);
+    /// <returns>Release if .gdvm-version file found, null otherwise.</returns>
+    Release? FindExplicitProjectInfo(string? directory = null);
 }
 
-public partial class ProjectManager : IProjectManager
+public partial class ProjectManager(IReleaseManager releaseManager) : IProjectManager
 {
     private const string VersionFile = ".gdvm-version";
     private const string ProjectFile = "project.godot";
 
     /// <summary>
-    ///     Finds project information including version and .NET status.
+    ///     Finds project release information including version and .NET status.
     /// </summary>
     /// <param name="directory">The directory to search in. If null, uses current working directory.</param>
-    /// <returns>ProjectInfo if found, null otherwise.</returns>
-    // TODO: Replace with Result<ProjectInfo, ProjectError> FindProjectInfo(string? directory = null)
-    public ProjectInfo? FindProjectInfo(string? directory = null)
+    /// <returns>Release if found and parseable, null otherwise.</returns>
+    // TODO: Replace with Result<Release, ProjectError> FindProjectInfo(string? directory = null)
+    public Release? FindProjectInfo(string? directory = null)
     {
         var targetDir = directory ?? Directory.GetCurrentDirectory();
 
@@ -59,16 +59,11 @@ public partial class ProjectManager : IProjectManager
             var content = File.ReadAllText(versionFile).Trim();
             if (!string.IsNullOrEmpty(content))
             {
-                // Determine runtime from version string
-                var runtime = content.Contains("mono", StringComparison.OrdinalIgnoreCase)
-                    ? RuntimeEnvironment.Mono
-                    : RuntimeEnvironment.Standard;
-
-                return new ProjectInfo(content, runtime);
+                return releaseManager.TryCreateRelease(content);
             }
         }
 
-        // Check `project.godot` file for automatic detection
+        // 2. Check `project.godot` file for automatic detection
         var projectFile = Path.Combine(targetDir, ProjectFile);
         return File.Exists(projectFile) ? ParseProjectGodot(projectFile) : null;
     }
@@ -94,12 +89,12 @@ public partial class ProjectManager : IProjectManager
     }
 
     /// <summary>
-    ///     Finds project info from `.gdvm-version` file
+    ///     Finds project release info from `.gdvm-version` file only
     /// </summary>
     /// <param name="directory">The directory to search in. If null, uses current working directory.</param>
-    /// <returns>ProjectInfo if .gdvm-version file found, null otherwise.</returns>
-    // TODO: Replace with Result<ProjectInfo, ProjectError> FindExplicitProjectInfo(string? directory = null)
-    public ProjectInfo? FindExplicitProjectInfo(string? directory = null)
+    /// <returns>Release if .gdvm-version file found and parseable, null otherwise.</returns>
+    // TODO: Replace with Result<Release, ProjectError> FindExplicitProjectInfo(string? directory = null)
+    public Release? FindExplicitProjectInfo(string? directory = null)
     {
         var targetDir = directory ?? Directory.GetCurrentDirectory();
 
@@ -116,12 +111,7 @@ public partial class ProjectManager : IProjectManager
             return null;
         }
 
-        // Determine runtime from version string
-        var runtime = content.Contains("mono", StringComparison.OrdinalIgnoreCase)
-            ? RuntimeEnvironment.Mono
-            : RuntimeEnvironment.Standard;
-
-        return new ProjectInfo(content, runtime);
+        return releaseManager.TryCreateRelease(content);
     }
 
     /// <summary>
@@ -134,17 +124,17 @@ public partial class ProjectManager : IProjectManager
     // TODO: Replace with Result<string, ProjectError> FindProjectVersion(string? directory = null)
     public string? FindProjectVersion(string? directory = null)
     {
-        var projectInfo = FindProjectInfo(directory);
-        return projectInfo?.Version;
+        var release = FindProjectInfo(directory);
+        return release?.ReleaseNameWithRuntime;
     }
 
     /// <summary>
-    ///     Parses a project.godot file to extract version and .NET information.
+    ///     Parses a project.godot file to extract version and .NET information, then creates a Release.
     /// </summary>
     /// <param name="projectFilePath">Path to the project.godot file.</param>
-    /// <returns>ProjectInfo if parsing succeeds, null otherwise.</returns>
-    // TODO: Replace with Result<ProjectInfo, ProjectError> ParseProjectGodot(string projectFilePath)
-    private static ProjectInfo? ParseProjectGodot(string projectFilePath)
+    /// <returns>Release if parsing and creation succeeds, null otherwise.</returns>
+    // TODO: Replace with Result<Release, ProjectError> ParseProjectGodot(string projectFilePath)
+    private Release? ParseProjectGodot(string projectFilePath)
     {
         try
         {
@@ -173,7 +163,13 @@ public partial class ProjectManager : IProjectManager
 
             if (version != null)
             {
-                return new ProjectInfo(version, runtime);
+                // For project.godot versions (like "4.3"), we need to append "-stable" and runtime
+                // to create a valid release name
+                var versionWithType = version.Contains('-') ? version : $"{version}-stable";
+                var runtimeSuffix = runtime == RuntimeEnvironment.Mono ? "-mono" : "-standard";
+                var fullVersion = $"{versionWithType}{runtimeSuffix}";
+
+                return releaseManager.TryCreateRelease(fullVersion);
             }
         }
         catch (Exception)
@@ -212,17 +208,4 @@ public partial class ProjectManager : IProjectManager
 
     [GeneratedRegex(@"^\d+\.\d+(\.\d+)?$")]
     private static partial Regex VersionRegex();
-
-    public record ProjectInfo(string Version, RuntimeEnvironment Runtime)
-    {
-        /// <summary>
-        ///     Gets the runtime display suffix for the project (e.g., " [.NET]" or empty string)
-        /// </summary>
-        public string RuntimeDisplaySuffix => Runtime == RuntimeEnvironment.Mono ? " [[.NET]]" : "";
-
-        /// <summary>
-        ///     Gets whether this project uses .NET runtime (true for Mono, false for Standard)
-        /// </summary>
-        public bool IsDotNet => Runtime == RuntimeEnvironment.Mono;
-    }
 }

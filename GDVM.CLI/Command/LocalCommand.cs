@@ -15,10 +15,10 @@ public sealed class LocalCommand(IVersionManagementService versionManagementServ
     ///     If arguments are provided, it will find the best matching version and install it if necessary.
     ///     Use --interactive to select from already installed versions.
     /// </summary>
-    /// <param name="interactive">-i, Creates a prompt to select from installed versions for the local project.</param>
     /// <param name="query">Version query arguments</param>
+    /// <param name="interactive">-i, Creates a prompt to select from installed versions for the local project.</param>
     /// <param name="cancellationToken">Cancellation token</param>
-    public async Task Local(bool interactive = false, [Argument] string[]? query = null, CancellationToken cancellationToken = default)
+    public async Task Local([Argument] string[]? query = null, bool interactive = false, CancellationToken cancellationToken = default)
     {
         // Warn if both query and interactive are provided, then default to interactive
         if (query is { Length: > 0 } && interactive)

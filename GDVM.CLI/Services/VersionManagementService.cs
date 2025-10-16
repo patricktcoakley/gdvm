@@ -295,23 +295,20 @@ public class VersionManagementService(
 
             console.MarkupLine(Messages.InstallingAutoDetected(projectVersion, isDotNet ? " (.NET)" : ""));
 
-            // Build the query for installation
-            // Parse the project version to extract base version (remove runtime suffix)
-            var baseVersion = projectVersion;
-            if (baseVersion.EndsWith("-mono"))
+            // Build the query for installation - strip any existing runtime suffix and use isDotNet to determine correct runtime
+            var baseVersion = projectVersion switch
             {
-                baseVersion = baseVersion.Replace("-mono", "");
-            }
-            else if (baseVersion.EndsWith("-standard"))
-            {
-                baseVersion = baseVersion.Replace("-standard", "");
-            }
+                _ when projectVersion.EndsWith("-mono") => projectVersion[..^5],
+                _ when projectVersion.EndsWith("-standard") => projectVersion[..^9],
+                _ => projectVersion
+            };
 
             var installQuery = isDotNet
                 ? new[] { baseVersion, "mono" }
                 : new[] { baseVersion };
 
-            var installedRelease = await installationService.InstallByQueryAsync(installQuery, new Progress<OperationProgress<InstallationStage>>(), cancellationToken: cancellationToken);
+            var installedRelease =
+                await installationService.InstallByQueryAsync(installQuery, new Progress<OperationProgress<InstallationStage>>(), cancellationToken: cancellationToken);
 
             if (installedRelease is not Result<InstallationOutcome, InstallationError>.Success installSuccess)
             {
@@ -371,44 +368,44 @@ public class VersionManagementService(
             new VersionResolutionOutcome.Found(execPath, workingDirectory, selection, false));
     }
 
-    private async Task<Result<VersionResolutionOutcome, VersionResolutionError>> ResolveProjectVersionAsync(ProjectManager.ProjectInfo projectInfo,
+    private async Task<Result<VersionResolutionOutcome, VersionResolutionError>> ResolveProjectVersionAsync(Release projectRelease,
         List<string> installed,
         CancellationToken cancellationToken)
     {
-        var projectVersion = projectInfo.Version;
+        var projectVersion = projectRelease.ReleaseNameWithRuntime;
 
         // Try to find a compatible installed version
-        var compatibleVersion = releaseManager.FindCompatibleVersion(projectVersion, projectInfo.IsDotNet, installed);
+        var compatibleVersion = releaseManager.FindCompatibleVersion(projectVersion, projectRelease.IsDotNet, installed);
 
         if (compatibleVersion is not null)
         {
-            return CreateVersionResolutionResult(compatibleVersion, projectInfo, projectVersion, true);
+            return CreateVersionResolutionResult(compatibleVersion, projectRelease, projectVersion, true);
         }
 
         logger.ZLogWarning($"Project version {projectVersion} is not installed.");
 
         // Prompt user for automatic installation
-        if (!await PromptForInstallationAsync(projectVersion, projectInfo.IsDotNet, cancellationToken))
+        if (!await PromptForInstallationAsync(projectVersion, projectRelease.IsDotNet, cancellationToken))
         {
-            console.MarkupLine(Messages.ProjectVersionNotInstalled(projectVersion, projectInfo.RuntimeDisplaySuffix));
-            console.MarkupLine(Messages.InstallationInstructions(projectVersion, projectInfo.IsDotNet));
+            console.MarkupLine(Messages.ProjectVersionNotInstalled(projectVersion, projectRelease.RuntimeDisplaySuffix));
+            console.MarkupLine(Messages.InstallationInstructions(projectVersion, projectRelease.IsDotNet));
 
             return new Result<VersionResolutionOutcome, VersionResolutionError>.Failure(
                 new VersionResolutionError.NotFound(projectVersion));
         }
 
-        var compatibleInstalled = await FindOrInstallCompatibleVersionAsync(projectVersion, projectInfo.IsDotNet, false, cancellationToken);
+        var compatibleInstalled = await FindOrInstallCompatibleVersionAsync(projectVersion, projectRelease.IsDotNet, false, cancellationToken);
         if (compatibleInstalled is null)
         {
-            console.MarkupLine(Messages.FailedToInstallProjectVersion(projectVersion, projectInfo.RuntimeDisplaySuffix));
-            console.MarkupLine(Messages.ManualInstallInstructions(projectVersion, projectInfo.IsDotNet));
+            console.MarkupLine(Messages.FailedToInstallProjectVersion(projectVersion, projectRelease.RuntimeDisplaySuffix));
+            console.MarkupLine(Messages.ManualInstallInstructions(projectVersion, projectRelease.IsDotNet));
             return new Result<VersionResolutionOutcome, VersionResolutionError>.Failure(
-                new VersionResolutionError.Failed($"Failed to install {projectVersion}{projectInfo.RuntimeDisplaySuffix}"));
+                new VersionResolutionError.Failed($"Failed to install {projectVersion}{projectRelease.RuntimeDisplaySuffix}"));
         }
 
         // Re-get installed versions and resolve again
         var updatedInstalled = hostSystem.ListInstallations().ToList();
-        var newCompatibleVersion = releaseManager.FindCompatibleVersion(projectVersion, projectInfo.IsDotNet, updatedInstalled);
+        var newCompatibleVersion = releaseManager.FindCompatibleVersion(projectVersion, projectRelease.IsDotNet, updatedInstalled);
 
         if (newCompatibleVersion is null || releaseManager.TryCreateRelease(newCompatibleVersion) is not { } newProjectGodotRelease)
         {
@@ -419,7 +416,7 @@ public class VersionManagementService(
 
         var (execPath, workingDirectory) = GetExecutionPaths(newProjectGodotRelease);
 
-        console.MarkupLine(Messages.SuccessfullyInstalledAndUsing(projectVersion, projectInfo.RuntimeDisplaySuffix, newCompatibleVersion));
+        console.MarkupLine(Messages.SuccessfullyInstalledAndUsing(projectVersion, projectRelease.RuntimeDisplaySuffix, newCompatibleVersion));
 
         return new Result<VersionResolutionOutcome, VersionResolutionError>.Success(
             new VersionResolutionOutcome.Found(execPath, workingDirectory, newCompatibleVersion, true));
@@ -472,7 +469,7 @@ public class VersionManagementService(
             new VersionResolutionOutcome.Found(execPath, workingDirectory, versionName, false));
     }
 
-    private Result<VersionResolutionOutcome, VersionResolutionError> CreateVersionResolutionResult(string compatibleVersion, ProjectManager.ProjectInfo projectInfo,
+    private Result<VersionResolutionOutcome, VersionResolutionError> CreateVersionResolutionResult(string compatibleVersion, Release projectRelease,
         string projectVersion,
         bool isProjectVersion = false)
     {
@@ -486,7 +483,7 @@ public class VersionManagementService(
 
         var (execPath, workingDirectory) = GetExecutionPaths(projectGodotRelease);
 
-        console.MarkupLine(Messages.UsingProjectVersion(projectVersion, projectInfo.RuntimeDisplaySuffix, compatibleVersion));
+        console.MarkupLine(Messages.UsingProjectVersion(projectVersion, projectRelease.RuntimeDisplaySuffix, compatibleVersion));
         return new Result<VersionResolutionOutcome, VersionResolutionError>.Success(
             new VersionResolutionOutcome.Found(execPath, workingDirectory, compatibleVersion, isProjectVersion));
     }
@@ -535,10 +532,10 @@ public class VersionManagementService(
         return await Set.ShowSetVersionPrompt(installed, console, cancellationToken);
     }
 
-    private async Task<string> HandleProjectInfoAsync(ProjectManager.ProjectInfo projectInfo, string[] installed, bool forceInteractive,
+    private async Task<string> HandleProjectInfoAsync(Release projectRelease, string[] installed, bool forceInteractive,
         CancellationToken cancellationToken)
     {
-        var projectVersion = projectInfo.Version;
+        var projectVersion = projectRelease.ReleaseNameWithRuntime;
 
         // If interactive mode is forced, show selection regardless of compatible versions
         if (forceInteractive)
@@ -548,13 +545,13 @@ public class VersionManagementService(
                 throw new InvalidOperationException(Messages.NoVersionsInstalledPrompt);
             }
 
-            console.MarkupLine(Messages.ProjectSpecifiesVersion(projectVersion, projectInfo.RuntimeDisplaySuffix));
+            console.MarkupLine(Messages.ProjectSpecifiesVersion(projectVersion, projectRelease.RuntimeDisplaySuffix));
             console.MarkupLine(Messages.ChooseFromInstalled);
             return await Set.ShowSetVersionPrompt(installed, console, cancellationToken);
         }
 
         // Try to find a compatible installed version
-        var compatibleVersion = releaseManager.FindCompatibleVersion(projectVersion, projectInfo.IsDotNet, installed);
+        var compatibleVersion = releaseManager.FindCompatibleVersion(projectVersion, projectRelease.IsDotNet, installed);
 
         if (compatibleVersion is not null)
         {
@@ -564,29 +561,19 @@ public class VersionManagementService(
 
         // Not installed, auto-install
         logger.ZLogInformation($"Project version {projectVersion} is not installed, automatically installing it.");
-        console.MarkupLine(Messages.ProjectVersionNotInstalled(projectVersion, projectInfo.RuntimeDisplaySuffix));
-        console.MarkupLine(Messages.InstallingProjectVersion(projectVersion, projectInfo.RuntimeDisplaySuffix));
+        console.MarkupLine(Messages.ProjectVersionNotInstalled(projectVersion, projectRelease.RuntimeDisplaySuffix));
 
-        // Build the query for installation
-        // Parse the project version to extract base version (remove runtime suffix)
-        var baseVersion = projectVersion;
-        if (baseVersion.EndsWith("-mono"))
-        {
-            baseVersion = baseVersion.Replace("-mono", "");
-        }
-        else if (baseVersion.EndsWith("-standard"))
-        {
-            baseVersion = baseVersion.Replace("-standard", "");
-        }
+        // We already have projectRelease validated, no need to revalidate
+        console.MarkupLine(Messages.InstallingProjectVersion(projectVersion, projectRelease.RuntimeDisplaySuffix));
 
-        var installQuery = projectInfo.IsDotNet
-            ? new[] { baseVersion, "mono" }
-            : new[] { baseVersion };
+        // Use the exact version with runtime as the install query
+        string[] installQuery = [projectRelease.ReleaseNameWithRuntime];
+        var installedRelease =
+            await installationService.InstallByQueryAsync(installQuery, new Progress<OperationProgress<InstallationStage>>(), cancellationToken: cancellationToken);
 
-        var installedRelease = await installationService.InstallByQueryAsync(installQuery, new Progress<OperationProgress<InstallationStage>>(), cancellationToken: cancellationToken);
         if (installedRelease is not Result<InstallationOutcome, InstallationError>.Success installSuccess)
         {
-            console.MarkupLine(Messages.FailedToInstallProjectVersion(projectVersion, projectInfo.RuntimeDisplaySuffix));
+            console.MarkupLine(Messages.FailedToInstallProjectVersion(projectVersion, projectRelease.RuntimeDisplaySuffix));
 
             if (installed.Length <= 0)
             {
@@ -623,7 +610,9 @@ public class VersionManagementService(
         console.MarkupLine(Messages.Installing(string.Join(" ", query)));
 
         // Try to install
-        var installedRelease = await installationService.InstallByQueryAsync(query, new Progress<OperationProgress<InstallationStage>>(), cancellationToken: cancellationToken);
+        var installedRelease =
+            await installationService.InstallByQueryAsync(query, new Progress<OperationProgress<InstallationStage>>(), cancellationToken: cancellationToken);
+
         if (installedRelease is not Result<InstallationOutcome, InstallationError>.Success installSuccess)
         {
             console.MarkupLine(Messages.FailedToInstallMatching(string.Join(" ", query)));

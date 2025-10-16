@@ -1,5 +1,21 @@
 # Changelog
 
+<a name="1.3.0"></a>
+## [1.3.0](https://github.com/patricktcoakley/gdvm/releases/tag/v1.3.0) (2025-10-16)
+
+### ✨ Features
+
+* Add chronological ordering to search results while keeping the release type ordering for other commands. ([6738471](https://github.com/patricktcoakley/gdvm/commit/6738471576e9829b9ae220d43022d94a984cbb30))
+
+### 🐛 Bug Fixes
+
+* Standardize ordering on other commands; update Zip extensions for path vulnerability; update tests. ([e30e1be](https://github.com/patricktcoakley/gdvm/commit/e30e1be5fec86458ff7a73f39c20b9465d367210))
+* **gdvm:** gdvm command should now handle arguments and projects with argument-like names better. ([b285cfd](https://github.com/patricktcoakley/gdvm/commit/b285cfda712d5903c1a0e1a9cc30f92a0379c074))
+
+### ⚡ Performance Improvements
+
+* Minor changes to signficantly improve startup speed; bump dependencies. ([0eab40e](https://github.com/patricktcoakley/gdvm/commit/0eab40e83e98bc7426fbe88072c3f2c89b0c2086))
+
 <a name="1.2.5"></a>
 ## [1.2.5](https://www.github.com//patricktcoakley/gdvm/releases/tag/v1.2.5) (2025-09-22)
 

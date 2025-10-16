@@ -5,57 +5,54 @@ namespace GDVM.Tests.EndToEnd;
 
 public static class TestHelpers
 {
-    private static string? _cachedGdvmPath;
-
-    public static async Task<string> GetGdvmPath(IContainer container)
+    public static string GetGdvmPath(string rid)
     {
-        if (_cachedGdvmPath != null)
-            return _cachedGdvmPath;
-
-        // Find the gdvm binary - it will be in Debug build output with platform-specific RID
-        var findResult = await container.ExecAsync(["find", "/workspace/GDVM.CLI/bin/Debug/net9.0", "-name", "gdvm", "-type", "f"]);
-        if (findResult.ExitCode != ExitCodes.Success || string.IsNullOrWhiteSpace(findResult.Stdout))
-        {
-            throw new InvalidOperationException("Could not find gdvm binary in container");
-        }
-
-        _cachedGdvmPath = findResult.Stdout.Trim().Split('\n')[0];
-        return _cachedGdvmPath;
-
+        return $"/workspace/GDVM.CLI/bin/Debug/net9.0/{rid}/publish/gdvm";
     }
 
-    public static async Task<ExecResult> ExecuteCommand(this IContainer container, params string[] args)
+    public static async Task<ExecResult> ExecuteCommand(this TestContainerFixture fixture, params string[] args)
     {
-        var gdvmPath = await GetGdvmPath(container);
+        var gdvmPath = GetGdvmPath(fixture.Rid);
         var command = new List<string> { gdvmPath };
         command.AddRange(args);
 
-        return await container.ExecAsync(command.ToArray());
+        return await fixture.Container.ExecAsync(command.ToArray());
     }
 
-    public static async Task<ExecResult> ExecuteShellCommand(this IContainer container, string command, params string[] args)
+    public static async Task<ExecResult> ExecuteCommandInDirectory(this TestContainerFixture fixture, string workingDirectory, params string[] args)
+    {
+        var gdvmPath = GetGdvmPath(fixture.Rid);
+
+        // Build the command with properly escaped arguments
+        var escapedArgs = args.Select(arg => $"\"{arg}\"");
+        var commandString = $"cd {workingDirectory} && {gdvmPath} {string.Join(" ", escapedArgs)}";
+
+        return await fixture.Container.ExecAsync(["sh", "-c", commandString]);
+    }
+
+    public static async Task<ExecResult> ExecuteShellCommand(this TestContainerFixture fixture, string command, params string[] args)
     {
         var fullCommand = new List<string> { command };
         fullCommand.AddRange(args);
 
-        return await container.ExecAsync(fullCommand.ToArray());
+        return await fixture.Container.ExecAsync(fullCommand.ToArray());
     }
 
-    public static async Task<bool> DirectoryExists(this IContainer container, string path)
+    public static async Task<bool> DirectoryExists(this TestContainerFixture fixture, string path)
     {
-        var result = await container.ExecAsync(["test", "-d", path]);
+        var result = await fixture.Container.ExecAsync(["test", "-d", path]);
         return result.ExitCode == ExitCodes.Success;
     }
 
-    public static async Task<bool> FileExists(this IContainer container, string path)
+    public static async Task<bool> FileExists(this TestContainerFixture fixture, string path)
     {
-        var result = await container.ExecAsync(["test", "-f", path]);
+        var result = await fixture.Container.ExecAsync(["test", "-f", path]);
         return result.ExitCode == ExitCodes.Success;
     }
 
-    public static async Task<string> ReadFile(this IContainer container, string path)
+    public static async Task<string> ReadFile(this TestContainerFixture fixture, string path)
     {
-        var result = await container.ExecAsync(["cat", path]);
+        var result = await fixture.Container.ExecAsync(["cat", path]);
         if (result.ExitCode != ExitCodes.Success)
         {
             throw new InvalidOperationException($"Failed to read file {path}: {result.Stderr}");
@@ -64,9 +61,9 @@ public static class TestHelpers
         return result.Stdout;
     }
 
-    public static async Task<string[]> ListDirectory(this IContainer container, string path)
+    public static async Task<string[]> ListDirectory(this TestContainerFixture fixture, string path)
     {
-        var result = await container.ExecAsync(["ls", "-1", path]);
+        var result = await fixture.Container.ExecAsync(["ls", "-1", path]);
         if (result.ExitCode != ExitCodes.Success)
         {
             throw new InvalidOperationException($"Failed to list directory {path}: {result.Stderr}");
@@ -95,33 +92,27 @@ public static class TestHelpers
         }
     }
 
-    public static async Task<string> GetLogs(this IContainer container)
+    public static async Task<string> GetLogs(this TestContainerFixture fixture)
     {
-        var result = await container.ExecuteCommand("logs");
+        var result = await fixture.ExecuteCommand("logs");
         return result.Stdout;
     }
 
-    public static async Task<bool> LogContains(this IContainer container, string expectedText)
+    public static async Task AssertLogContains(this TestContainerFixture fixture, string expectedText)
     {
-        var logs = await container.GetLogs();
-        return logs.Contains(expectedText, StringComparison.OrdinalIgnoreCase);
-    }
-
-    public static async Task AssertLogContains(this IContainer container, string expectedText)
-    {
-        var logs = await container.GetLogs();
+        var logs = await fixture.GetLogs();
         Assert.Contains(expectedText, logs, StringComparison.OrdinalIgnoreCase);
     }
 
-    public static async Task<bool> HasVersionInstalled(this IContainer container, string version)
+    public static async Task<bool> HasVersionInstalled(this TestContainerFixture fixture, string version)
     {
-        var result = await container.ExecuteCommand("list");
+        var result = await fixture.ExecuteCommand("list");
         return result.ExitCode == ExitCodes.Success && result.Stdout.Contains(version, StringComparison.OrdinalIgnoreCase);
     }
 
-    public static async Task<string> GetCurrentVersion(this IContainer container)
+    public static async Task<string> GetCurrentVersion(this TestContainerFixture fixture)
     {
-        var result = await container.ExecuteCommand("which");
+        var result = await fixture.ExecuteCommand("which");
         return result.ExitCode == ExitCodes.Success ? result.Stdout.Trim() : string.Empty;
     }
 }

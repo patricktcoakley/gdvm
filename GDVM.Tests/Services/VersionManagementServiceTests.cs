@@ -39,7 +39,7 @@ public class VersionManagementServiceTests
 
         // Default mock setup - tests can override this
         _mockProjectManager.Setup(x => x.FindProjectInfo(It.IsAny<string>()))
-            .Returns((ProjectManager.ProjectInfo?)null);
+            .Returns((Release?)null);
 
         _mockHostSystem.Setup(x => x.SystemInfo)
             .Returns(new SystemInfo(OS.Linux, System.Runtime.InteropServices.Architecture.X64));
@@ -94,12 +94,12 @@ public class VersionManagementServiceTests
                 var installedVersions = new[] { compatibleVersion };
 
                 // Mock project info for this test
-                var projectInfo = new ProjectManager.ProjectInfo(projectVersion, RuntimeEnvironment.Standard);
+                var projectRelease = Release.TryParse($"{projectVersion}-stable-standard")!;
                 _mockProjectManager.Setup(x => x.FindProjectInfo(It.IsAny<string>()))
-                    .Returns(projectInfo);
+                    .Returns(projectRelease);
 
                 _mockHostSystem.Setup(x => x.ListInstallations()).Returns(installedVersions);
-                _mockReleaseManager.Setup(x => x.FindCompatibleVersion(projectVersion, false, installedVersions))
+                _mockReleaseManager.Setup(x => x.FindCompatibleVersion(projectRelease.ReleaseNameWithRuntime, false, installedVersions))
                     .Returns(compatibleVersion);
 
                 var mockRelease = CreateMockRelease(compatibleVersion);
@@ -138,12 +138,12 @@ public class VersionManagementServiceTests
         var installedVersions = Array.Empty<string>();
 
         // Mock project info for this test
-        var projectInfo = new ProjectManager.ProjectInfo(projectVersion, RuntimeEnvironment.Standard);
+        var projectRelease = Release.TryParse($"{projectVersion}-stable-standard")!;
         _mockProjectManager.Setup(x => x.FindProjectInfo(It.IsAny<string>()))
-            .Returns(projectInfo);
+            .Returns(projectRelease);
 
         _mockHostSystem.Setup(x => x.ListInstallations()).Returns(installedVersions);
-        _mockReleaseManager.Setup(x => x.FindCompatibleVersion(projectVersion, false, installedVersions))
+        _mockReleaseManager.Setup(x => x.FindCompatibleVersion(projectRelease.ReleaseNameWithRuntime, false, installedVersions))
             .Returns((string?)null);
 
         var result = await _service.ResolveVersionForLaunchAsync();
@@ -193,12 +193,12 @@ public class VersionManagementServiceTests
                 var installedVersions = new[] { compatibleVersion };
 
                 // Mock project info for this test
-                var projectInfo = new ProjectManager.ProjectInfo(projectVersion, RuntimeEnvironment.Standard);
+                var projectRelease = Release.TryParse($"{projectVersion}-stable-standard")!;
                 _mockProjectManager.Setup(x => x.FindProjectInfo(It.IsAny<string>()))
-                    .Returns(projectInfo);
+                    .Returns(projectRelease);
 
                 _mockHostSystem.Setup(x => x.ListInstallations()).Returns(installedVersions);
-                _mockReleaseManager.Setup(x => x.FindCompatibleVersion(projectVersion, false, installedVersions))
+                _mockReleaseManager.Setup(x => x.FindCompatibleVersion(projectRelease.ReleaseNameWithRuntime, false, installedVersions))
                     .Returns(compatibleVersion);
 
                 var mockRelease = CreateMockRelease(compatibleVersion, execName);
@@ -764,7 +764,7 @@ public class VersionManagementServiceTests
 
         // Mock ProjectManager to return null (no project info found)
         _mockProjectManager.Setup(x => x.FindProjectInfo(It.IsAny<string>()))
-            .Returns((ProjectManager.ProjectInfo?)null);
+            .Returns((Release?)null);
 
         _console.Interactive();
         _console.Input.PushKey(ConsoleKey.Enter);

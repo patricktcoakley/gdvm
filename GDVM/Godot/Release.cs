@@ -79,6 +79,12 @@ public sealed record Release : IComparable<Release>
     /// <summary>The release name with a runtime suffix, i.e., `4.3-stable-mono`</summary>
     public string ReleaseNameWithRuntime { get; }
 
+    /// <summary>Gets the runtime display suffix for logging (e.g., " [.NET]" for Mono, empty for Standard)</summary>
+    public string RuntimeDisplaySuffix => RuntimeEnvironment == RuntimeEnvironment.Mono ? " [[.NET]]" : "";
+
+    /// <summary>Gets whether this release uses .NET runtime (true for Mono, false for Standard)</summary>
+    public bool IsDotNet => RuntimeEnvironment == RuntimeEnvironment.Mono;
+
     public int CompareTo(Release? other)
     {
         if (ReferenceEquals(this, other))

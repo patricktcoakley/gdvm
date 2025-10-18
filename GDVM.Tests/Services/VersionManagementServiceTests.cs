@@ -6,6 +6,8 @@ using GDVM.Types;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Spectre.Console.Testing;
+using System.Runtime.InteropServices;
+using RuntimeEnvironment = GDVM.Godot.RuntimeEnvironment;
 
 namespace GDVM.Test.Services;
 
@@ -42,7 +44,7 @@ public class VersionManagementServiceTests
             .Returns((Release?)null);
 
         _mockHostSystem.Setup(x => x.SystemInfo)
-            .Returns(new SystemInfo(OS.Linux, System.Runtime.InteropServices.Architecture.X64));
+            .Returns(new SystemInfo(OS.Linux, Architecture.X64));
 
         _service = new VersionManagementService(
             _mockHostSystem.Object,
@@ -350,7 +352,8 @@ public class VersionManagementServiceTests
         var installationResult = new Result<InstallationOutcome, InstallationError>.Success(
             new InstallationOutcome.NewInstallation(mockRelease.ReleaseNameWithRuntime));
 
-        _mockInstallationService.Setup(x => x.InstallByQueryAsync(query, It.IsAny<IProgress<OperationProgress<InstallationStage>>>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+        _mockInstallationService.Setup(x =>
+                x.InstallByQueryAsync(query, It.IsAny<IProgress<OperationProgress<InstallationStage>>>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(installationResult);
 
         _mockReleaseManager.Setup(x => x.TryFindReleaseByQuery(query, new[] { newVersion }))
@@ -362,7 +365,8 @@ public class VersionManagementServiceTests
         var result = await _service.SetLocalVersionAsync(query);
 
         Assert.Equal(mockRelease, result);
-        _mockInstallationService.Verify(x => x.InstallByQueryAsync(query, It.IsAny<IProgress<OperationProgress<InstallationStage>>>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()),
+        _mockInstallationService.Verify(
+            x => x.InstallByQueryAsync(query, It.IsAny<IProgress<OperationProgress<InstallationStage>>>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()),
             Times.Once);
 
         Assert.Contains("No installed version found matching", _console.Output);
@@ -424,7 +428,8 @@ public class VersionManagementServiceTests
             new InstallationOutcome.NewInstallation(mockRelease.ReleaseNameWithRuntime));
 
         _mockInstallationService.Setup(x =>
-                x.InstallByQueryAsync(new[] { projectVersion }, It.IsAny<IProgress<OperationProgress<InstallationStage>>>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+                x.InstallByQueryAsync(new[] { projectVersion }, It.IsAny<IProgress<OperationProgress<InstallationStage>>>(), It.IsAny<bool>(),
+                    It.IsAny<CancellationToken>()))
             .ReturnsAsync(installationResult);
 
         _console.Interactive();
@@ -434,7 +439,8 @@ public class VersionManagementServiceTests
 
         Assert.Equal(compatibleVersion, result);
         _mockInstallationService.Verify(
-            x => x.InstallByQueryAsync(new[] { projectVersion }, It.IsAny<IProgress<OperationProgress<InstallationStage>>>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()),
+            x => x.InstallByQueryAsync(new[] { projectVersion }, It.IsAny<IProgress<OperationProgress<InstallationStage>>>(), It.IsAny<bool>(),
+                It.IsAny<CancellationToken>()),
             Times.Once);
     }
 
@@ -479,14 +485,16 @@ public class VersionManagementServiceTests
             new InstallationOutcome.NewInstallation(mockRelease.ReleaseNameWithRuntime));
 
         _mockInstallationService.Setup(x =>
-                x.InstallByQueryAsync(new[] { projectVersion }, It.IsAny<IProgress<OperationProgress<InstallationStage>>>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+                x.InstallByQueryAsync(new[] { projectVersion }, It.IsAny<IProgress<OperationProgress<InstallationStage>>>(), It.IsAny<bool>(),
+                    It.IsAny<CancellationToken>()))
             .ReturnsAsync(installationResult);
 
         var result = await _service.FindOrInstallCompatibleVersionAsync(projectVersion, false);
 
         Assert.Equal(compatibleVersion, result);
         _mockInstallationService.Verify(
-            x => x.InstallByQueryAsync(new[] { projectVersion }, It.IsAny<IProgress<OperationProgress<InstallationStage>>>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()),
+            x => x.InstallByQueryAsync(new[] { projectVersion }, It.IsAny<IProgress<OperationProgress<InstallationStage>>>(), It.IsAny<bool>(),
+                It.IsAny<CancellationToken>()),
             Times.Once);
 
         Assert.Contains("Project requires", _console.Output);
@@ -741,7 +749,8 @@ public class VersionManagementServiceTests
         _mockReleaseManager.Setup(x => x.TryFindReleaseByQuery(query, Array.Empty<string>()))
             .Returns((Release?)null);
 
-        _mockInstallationService.Setup(x => x.InstallByQueryAsync(query, It.IsAny<IProgress<OperationProgress<InstallationStage>>>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+        _mockInstallationService.Setup(x =>
+                x.InstallByQueryAsync(query, It.IsAny<IProgress<OperationProgress<InstallationStage>>>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new InvalidOperationException(errorMessage));
 
         var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>

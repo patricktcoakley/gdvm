@@ -4,23 +4,29 @@ using Microsoft.Extensions.Logging;
 using Spectre.Console;
 using System.Globalization;
 using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using ZLogger;
 
 namespace GDVM.Command;
 
-public sealed class LogsCommand(IPathService pathService, IAnsiConsole console, ILogger<LogsCommand> logger)
+public sealed class LogsCommand(
+    IPathService pathService,
+    IAnsiConsole console,
+    ILogger<LogsCommand> logger
+)
 {
     private const string DateTimeFormat = "yyyy-MM-dd HH:mm:ss.fff";
     private static readonly string[] LogLevels = ["DEFAULT", "DEBUG", "INFORMATION", "WARNING", "ERROR", "CRITICAL"];
 
-
     /// <summary>
     ///     Outputs the contents of the log file, with optional filters `-l|--level` for level and `-m|--message` for messages.
     /// </summary>
+    /// <param name="json">Output logs to JSON.</param>
     /// <param name="level">-l, Level to filter by.</param>
     /// <param name="message">-m, Message text to filter by.</param>
     /// <param name="cancellationToken"></param>
-    public async Task Logs(string level = "", string message = "", CancellationToken cancellationToken = default)
+    public async Task Logs(bool json = false, string level = "", string message = "", CancellationToken cancellationToken = default)
     {
         try
         {
@@ -44,39 +50,26 @@ public sealed class LogsCommand(IPathService pathService, IAnsiConsole console, 
 
             using var reader = new StreamReader(stream, Encoding.UTF8);
 
+            var entries = new List<LogEntry>();
+            var malformed = new List<string>();
 
             while (await reader.ReadLineAsync(cancellationToken) is { } line)
             {
-                var parts = line.Split('|');
-                if (parts.Length < 4)
+                var parsed = TryParseLogLine(line, logger);
+                if (parsed is { } entry)
                 {
-                    continue;
+                    if (MatchesFilter(entry, level, message))
+                    {
+                        entries.Add(entry);
+                    }
                 }
-
-                if (!DateTime.TryParseExact(parts[0], DateTimeFormat,
-                        CultureInfo.InvariantCulture,
-                        DateTimeStyles.None,
-                        out var timestamp))
+                else
                 {
-                    logger.ZLogWarning($"Could not parse timestamp: {parts[0]}");
-                    continue;
-                }
-
-                var logEntry = new LogEntry
-                {
-                    Timestamp = timestamp,
-                    LogLevel = parts[1],
-                    Message = parts[2],
-                    Category = parts[3]
-                };
-
-                if (string.IsNullOrEmpty(level) && string.IsNullOrEmpty(message) ||
-                    logEntry.LogLevel.Contains(level, StringComparison.OrdinalIgnoreCase) &&
-                    logEntry.Message.Contains(message, StringComparison.OrdinalIgnoreCase))
-                {
-                    console.WriteLine(logEntry.ToString());
+                    malformed.Add(line);
                 }
             }
+
+            console.WriteLine(json ? entries.ToJson() : entries.ToSlog(malformed));
         }
         catch (TaskCanceledException)
         {
@@ -95,15 +88,105 @@ public sealed class LogsCommand(IPathService pathService, IAnsiConsole console, 
             throw;
         }
     }
+
+    private static LogEntry? TryParseLogLine(string line, ILogger logger)
+    {
+        if (string.IsNullOrWhiteSpace(line))
+        {
+            return null;
+        }
+
+        var parts = line.Split('|', 4);
+        if (parts.Length < 4)
+        {
+            logger.ZLogWarning($"Malformed log entry (expected 4 segments): {line}");
+            return null;
+        }
+
+        if (!DateTime.TryParseExact(parts[0], DateTimeFormat,
+                CultureInfo.InvariantCulture,
+                DateTimeStyles.None,
+                out var timestamp))
+        {
+            logger.ZLogWarning($"Could not parse timestamp '{parts[0]}' in log entry: {line}");
+            return null;
+        }
+
+        var levelPart = parts[1].Trim();
+        var messagePart = parts[2].Trim();
+        var categoryPart = parts[3].Trim();
+        // Handle the old log category format
+        if (categoryPart.Length >= 2 && categoryPart.StartsWith('(') && categoryPart.EndsWith(')'))
+        {
+            categoryPart = categoryPart[1..^1].Trim();
+        }
+
+        return new LogEntry(timestamp, levelPart, messagePart, categoryPart);
+    }
+
+    private static bool MatchesFilter(LogEntry entry, string levelFilter, string messageFilter)
+    {
+        if (!string.IsNullOrEmpty(levelFilter) &&
+            !entry.Level.Contains(levelFilter, StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        if (!string.IsNullOrEmpty(messageFilter) &&
+            !entry.Message.Contains(messageFilter, StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        return true;
+    }
 }
 
-public class LogEntry
+public readonly record struct LogEntry(
+    [property: JsonPropertyName("timestamp")]
+    DateTime Timestamp,
+    [property: JsonPropertyName("level")] string Level,
+    [property: JsonPropertyName("message")]
+    string Message,
+    [property: JsonPropertyName("category")]
+    string Category)
 {
-    public required DateTime Timestamp { get; init; }
-    public required string LogLevel { get; init; }
-    public required string Message { get; init; }
-    public required string Category { get; init; }
-
     public override string ToString() =>
-        $"{nameof(Timestamp)}: {Timestamp}, {nameof(LogLevel)}: {LogLevel}, {nameof(Message)}: {Message}, {nameof(Category)}: {Category}";
+        $"Timestamp: {Timestamp.ToString("yyyy-MM-dd HH:mm:ss.fff", CultureInfo.InvariantCulture)}, LogLevel: {Level}, Message: {Message}, Category: {Category}";
+}
+
+public static class LogEntryExtensions
+{
+    private static readonly JsonSerializerOptions JsonSerializerOptions = new(JsonSerializerDefaults.Web)
+    {
+        WriteIndented = true
+    };
+
+    public static string ToJson(this IReadOnlyList<LogEntry> entries) =>
+        JsonSerializer.Serialize(entries, JsonSerializerOptions);
+
+    public static string ToSlog(this IReadOnlyList<LogEntry> entries, IReadOnlyList<string> malformed)
+    {
+        var builder = new StringBuilder();
+
+        if (entries.Count > 0)
+        {
+            foreach (var entry in entries)
+            {
+                builder.AppendLine(entry.ToString());
+            }
+        }
+
+        if (malformed.Count > 0)
+        {
+            builder.AppendLine($"Skipped {malformed.Count} malformed log entries.");
+        }
+
+        if (entries.Count == 0 && malformed.Count == 0)
+        {
+            builder.AppendLine("No log entries found.");
+        }
+
+        return builder.ToString().TrimEnd();
+    }
 }

@@ -80,8 +80,10 @@ public static class Messages
     // Installation
     public static string NewInstallation(string releaseNameWithRuntime) => $"[green]Successfully installed {releaseNameWithRuntime}[/]";
     public static string AlreadyInstalled(string releaseNameWithRuntime) => $"[yellow]{releaseNameWithRuntime} is already installed[/]";
+
     public static string InstallationNotFound(string version, IHostSystem hostSystem) =>
         $"[red]Version {version} could not be found for {hostSystem.SystemInfo.CurrentOS.ToDisplayString()} {hostSystem.SystemInfo.CurrentArch.ToDisplayString()}[/]";
+
     public static string InstallationFailed(string reason) => $"[red]Installation failed: {reason}[/]";
     public static string InstallationSuccessBase(string releaseNameWithRuntime) => $"Finished installing {releaseNameWithRuntime}! :party_popper:";
     public static string SuccessfullyInstalled(string releaseNameWithRuntime) => $"[green]Successfully installed {releaseNameWithRuntime}.[/]";
@@ -89,6 +91,7 @@ public static class Messages
     // Version resolution
     public static string VersionResolutionNotFound(string version, IHostSystem hostSystem) =>
         $"[red]Version {version} could not be found for {hostSystem.SystemInfo.CurrentOS.ToDisplayString()} {hostSystem.SystemInfo.CurrentArch.ToDisplayString()}[/]";
+
     public static string VersionResolutionFailed(string reason) => $"[red]Version resolution failed: {reason}[/]";
     public static string InvalidVersion(string version) => $"[red]The version '{version}' is invalid[/]";
     public static string InvalidProjectVersion(string compatibleVersion) => $"[red]Invalid project version: {compatibleVersion}[/]";

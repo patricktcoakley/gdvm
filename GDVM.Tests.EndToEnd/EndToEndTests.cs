@@ -1,5 +1,6 @@
 using DotNet.Testcontainers.Containers;
 using GDVM.Error;
+using System.Text.Json;
 using System.Xml.Linq;
 
 namespace GDVM.Tests.EndToEnd;
@@ -285,6 +286,23 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
 
         result.AssertSuccessfulExecution();
         Assert.True(result.Stdout.Length > 0);
+    }
+
+    [Fact]
+    public async Task LogsCommandSupportsJsonOutput()
+    {
+        await fixture.ExecuteCommand("list");
+
+        var result = await fixture.ExecuteCommand("logs", "--json");
+
+        result.AssertSuccessfulExecution();
+        Assert.False(string.IsNullOrWhiteSpace(result.Stdout));
+
+        var json = result.Stdout.Trim();
+        using var document = JsonDocument.Parse(json);
+
+        Assert.Equal(JsonValueKind.Array, document.RootElement.ValueKind);
+        Assert.DoesNotContain('(', json);
     }
 
     [Fact]
@@ -707,10 +725,10 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
         await fixture.ExecuteShellCommand("mkdir", "-p", "/tmp/godot-project");
 
         var projectContent = """
-            [application]
-            config/name="Test Project"
-            config/features=PackedStringArray("4.3", "Forward Plus")
-            """;
+                             [application]
+                             config/name="Test Project"
+                             config/features=PackedStringArray("4.3", "Forward Plus")
+                             """;
 
         await fixture.ExecuteShellCommand("sh", "-c", $"cat > /tmp/godot-project/project.godot << 'EOF'\n{projectContent}\nEOF");
 
@@ -745,12 +763,12 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
         // Test multiple project names that contain flag-like substrings
         var projectNames = new[]
         {
-            "red-devil",       // Contains -d
-            "my-dev-project",  // Contains -dev
-            "app-v2",          // Contains -v
-            "game-server",     // Contains -s
-            "super-quest",     // Contains -q
-            "hero-helper"      // Contains -h
+            "red-devil", // Contains -d
+            "my-dev-project", // Contains -dev
+            "app-v2", // Contains -v
+            "game-server", // Contains -s
+            "super-quest", // Contains -q
+            "hero-helper" // Contains -h
         };
 
         foreach (var projectName in projectNames)
@@ -760,13 +778,13 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
             await fixture.ExecuteShellCommand("mkdir", "-p", projectPath);
 
             var projectContent = $"""
-                ; Engine configuration file.
-                config_version=5
+                                  ; Engine configuration file.
+                                  config_version=5
 
-                [application]
-                config/name="{projectName}"
-                config/features=PackedStringArray("4.4", "Forward Plus")
-                """;
+                                  [application]
+                                  config/name="{projectName}"
+                                  config/features=PackedStringArray("4.4", "Forward Plus")
+                                  """;
 
             await fixture.ExecuteShellCommand("sh", "-c",
                 $"cat > {projectPath}/project.godot << 'EOF'\n{projectContent}\nEOF");

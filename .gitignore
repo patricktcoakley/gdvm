@@ -91,3 +91,4 @@ coverage.cobertura.xml
 lcov.info
 coverage/
 coverage.json
+.gdvm-publish/

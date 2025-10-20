@@ -1,6 +1,7 @@
 using DotNet.Testcontainers.Builders;
 using DotNet.Testcontainers.Containers;
 using GDVM.Error;
+using System.IO;
 
 namespace GDVM.Tests.EndToEnd;
 
@@ -8,9 +9,12 @@ public class TestContainerFixture : IAsyncLifetime
 {
     private IContainer? _container;
     private string? _rid;
+    private string? _publishContainerPath;
+    private string? _publishHostPath;
 
     public IContainer Container => _container ?? throw new InvalidOperationException("Container not initialized");
     public string Rid => _rid ?? throw new InvalidOperationException("RID not initialized");
+    public string GdvmPath => Path.Combine(_publishContainerPath ?? throw new InvalidOperationException("GDVM publish path not initialized"), "gdvm");
 
     public async Task InitializeAsync()
     {
@@ -52,8 +56,12 @@ public class TestContainerFixture : IAsyncLifetime
             _ => throw new InvalidOperationException($"Unsupported architecture: {arch}")
         };
 
-        // Publish with Debug config to avoid AOT (which requires native build tools)
-        var publishResult = await _container.ExecAsync(["dotnet", "publish", "/workspace/GDVM.CLI/GDVM.CLI.csproj", "-c", "Debug"]);
+        var publishDirName = Guid.NewGuid().ToString("N");
+        _publishHostPath = Path.Combine(solutionDir, ".gdvm-publish", publishDirName);
+        _publishContainerPath = $"/workspace/.gdvm-publish/{publishDirName}";
+        Directory.CreateDirectory(_publishHostPath);
+
+        var publishResult = await _container.ExecAsync(["dotnet", "publish", "/workspace/GDVM.CLI/GDVM.CLI.csproj", "-c", "Debug", "-r", _rid, "-o", _publishContainerPath]);
         if (publishResult.ExitCode != ExitCodes.Success)
         {
             throw new InvalidOperationException(
@@ -66,6 +74,12 @@ public class TestContainerFixture : IAsyncLifetime
         if (_container != null)
         {
             await _container.DisposeAsync();
+        }
+
+        if (_publishHostPath is not null)
+        {
+            Directory.CreateDirectory(_publishHostPath);
+            Directory.Delete(_publishHostPath, recursive: true);
         }
     }
 }

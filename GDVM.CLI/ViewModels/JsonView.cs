@@ -25,9 +25,9 @@ internal static class JsonViewExtensions
 {
     public static string ToJson<TView>(this TView value)
         where TView : struct, IJsonView<TView> =>
-        JsonSerializer.Serialize(value, IJsonView<TView>.JsonOptions);
+        JsonSerializer.Serialize(value, typeof(TView), JsonViewSerializerContext.Default);
 
     public static string ToJson<TView>(this IReadOnlyList<TView> values)
         where TView : struct, IJsonView<TView> =>
-        JsonSerializer.Serialize(values, IJsonView<TView>.JsonOptions);
+        JsonSerializer.Serialize(values, values.GetType(), JsonViewSerializerContext.Default);
 }

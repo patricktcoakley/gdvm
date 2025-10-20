@@ -1,3 +1,6 @@
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
 using DotNet.Testcontainers.Containers;
 using GDVM.Error;
 
@@ -7,15 +10,9 @@ public static class TestHelpers
 {
     private static readonly HashSet<string> InstalledVersionsCache = new(StringComparer.OrdinalIgnoreCase);
 
-    public static string GetGdvmPath(string rid)
-    {
-        return $"/workspace/GDVM.CLI/bin/Debug/net9.0/{rid}/publish/gdvm";
-    }
-
     public static async Task<ExecResult> ExecuteCommand(this TestContainerFixture fixture, params string[] args)
     {
-        var gdvmPath = GetGdvmPath(fixture.Rid);
-        var command = new List<string> { gdvmPath };
+        var command = new List<string> { fixture.GdvmPath };
         command.AddRange(args);
 
         return await fixture.Container.ExecAsync(command.ToArray());
@@ -31,7 +28,7 @@ public static class TestHelpers
         if (!await fixture.HasVersionInstalled(version))
         {
             var installResult = await fixture.ExecuteCommand("install", version);
-            installResult.AssertSuccessfulExecution();
+            await fixture.AssertSuccessfulExecutionAsync(installResult, "install");
         }
 
         InstalledVersionsCache.Add(version);
@@ -42,11 +39,9 @@ public static class TestHelpers
 
     public static async Task<ExecResult> ExecuteCommandInDirectory(this TestContainerFixture fixture, string workingDirectory, params string[] args)
     {
-        var gdvmPath = GetGdvmPath(fixture.Rid);
-
         // Build the command with properly escaped arguments
         var escapedArgs = args.Select(arg => $"\"{arg}\"");
-        var commandString = $"cd {workingDirectory} && {gdvmPath} {string.Join(" ", escapedArgs)}";
+        var commandString = $"cd {workingDirectory} && {fixture.GdvmPath} {string.Join(" ", escapedArgs)}";
 
         return await fixture.Container.ExecAsync(["sh", "-c", commandString]);
     }
@@ -93,14 +88,32 @@ public static class TestHelpers
         return result.Stdout.Split('\n', StringSplitOptions.RemoveEmptyEntries);
     }
 
-    public static void AssertSuccessfulExecution(this ExecResult result, string? expectedOutput = null)
+    public static void AssertSuccessfulExecution(this ExecResult result, string? expectedOutput = null, params string[] additionalContext)
     {
-        Assert.Equal(ExitCodes.Success, result.ExitCode);
-
-        if (expectedOutput != null)
+        if (result.ExitCode != ExitCodes.Success)
         {
-            Assert.Contains(expectedOutput, result.Stdout, StringComparison.OrdinalIgnoreCase);
+            var builder = new StringBuilder();
+            if (!string.IsNullOrEmpty(expectedOutput))
+            {
+                builder.AppendLine($"Context: {expectedOutput}");
+            }
+
+            builder.AppendLine($"Exit Code: {result.ExitCode}");
+            builder.AppendLine("STDOUT:");
+            builder.AppendLine(result.Stdout);
+            builder.AppendLine("STDERR:");
+            builder.AppendLine(result.Stderr);
+
+            foreach (var context in additionalContext)
+            {
+                builder.AppendLine("Additional Context:");
+                builder.AppendLine(context);
+            }
+
+            Assert.Fail(builder.ToString());
         }
+
+        Assert.Equal(ExitCodes.Success, result.ExitCode);
     }
 
     public static void AssertFailedExecution(this ExecResult result, string? expectedError = null)
@@ -117,6 +130,19 @@ public static class TestHelpers
     {
         var result = await fixture.ExecuteCommand("logs");
         return result.Stdout;
+    }
+
+    public static async Task AssertSuccessfulExecutionAsync(this TestContainerFixture fixture, ExecResult result, string? expectedOutput = null)
+    {
+        if (result.ExitCode != ExitCodes.Success)
+        {
+            var logs = await fixture.GetLogs();
+            result.AssertSuccessfulExecution(expectedOutput, logs);
+        }
+        else
+        {
+            result.AssertSuccessfulExecution(expectedOutput);
+        }
     }
 
     public static async Task AssertLogContains(this TestContainerFixture fixture, string expectedText)

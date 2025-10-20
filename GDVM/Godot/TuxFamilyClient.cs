@@ -28,7 +28,8 @@ public class TuxFamilyClient(HttpClient httpClient, ILogger<TuxFamilyClient> log
                 return await response.Content.ReadAsStringAsync(cancellationToken);
             }
 
-            logger.LogError("{Url} returned {StatusCode}", url, response.StatusCode);
+            var body = await response.Content.ReadAsStringAsync(cancellationToken);
+            logger.LogError("{Url} returned {StatusCode}. Body: {Body}", url, response.StatusCode, body);
             throw new HttpRequestException($"TuxFamily SHA512 request failed: {response.StatusCode}");
         }
         catch (Exception ex)
@@ -52,7 +53,8 @@ public class TuxFamilyClient(HttpClient httpClient, ILogger<TuxFamilyClient> log
                 return response;
             }
 
-            logger.LogError("{Url} returned {StatusCode}", url, response.StatusCode);
+            var body = await response.Content.ReadAsStringAsync(cancellationToken);
+            logger.LogError("{Url} returned {StatusCode}. Body: {Body}", url, response.StatusCode, body);
             throw new HttpRequestException($"TuxFamily zip file request failed: {response.StatusCode}");
         }
         catch (Exception ex)

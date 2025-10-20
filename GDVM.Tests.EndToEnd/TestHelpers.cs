@@ -5,6 +5,8 @@ namespace GDVM.Tests.EndToEnd;
 
 public static class TestHelpers
 {
+    private static readonly HashSet<string> InstalledVersionsCache = new(StringComparer.OrdinalIgnoreCase);
+
     public static string GetGdvmPath(string rid)
     {
         return $"/workspace/GDVM.CLI/bin/Debug/net9.0/{rid}/publish/gdvm";
@@ -18,6 +20,25 @@ public static class TestHelpers
 
         return await fixture.Container.ExecAsync(command.ToArray());
     }
+
+    public static async Task EnsureVersionInstalled(this TestContainerFixture fixture, string version)
+    {
+        if (InstalledVersionsCache.Contains(version))
+        {
+            return;
+        }
+
+        if (!await fixture.HasVersionInstalled(version))
+        {
+            var installResult = await fixture.ExecuteCommand("install", version);
+            installResult.AssertSuccessfulExecution();
+        }
+
+        InstalledVersionsCache.Add(version);
+    }
+
+    public static void MarkVersionUninstalled(string version) =>
+        InstalledVersionsCache.Remove(version);
 
     public static async Task<ExecResult> ExecuteCommandInDirectory(this TestContainerFixture fixture, string workingDirectory, params string[] args)
     {

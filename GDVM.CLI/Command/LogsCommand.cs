@@ -1,10 +1,10 @@
 using GDVM.Environment;
 using GDVM.Error;
+using GDVM.ViewModels;
 using Microsoft.Extensions.Logging;
 using Spectre.Console;
 using System.Globalization;
 using System.Text;
-using System.Text.Json;
 using System.Text.Json.Serialization;
 using ZLogger;
 
@@ -50,7 +50,7 @@ public sealed class LogsCommand(
 
             using var reader = new StreamReader(stream, Encoding.UTF8);
 
-            var entries = new List<LogEntry>();
+            var entries = new List<LogEntryView>();
             var malformed = new List<string>();
 
             while (await reader.ReadLineAsync(cancellationToken) is { } line)
@@ -89,7 +89,7 @@ public sealed class LogsCommand(
         }
     }
 
-    private static LogEntry? TryParseLogLine(string line, ILogger logger)
+    private static LogEntryView? TryParseLogLine(string line, ILogger logger)
     {
         if (string.IsNullOrWhiteSpace(line))
         {
@@ -115,16 +115,18 @@ public sealed class LogsCommand(
         var levelPart = parts[1].Trim();
         var messagePart = parts[2].Trim();
         var categoryPart = parts[3].Trim();
+
+        // TODO: eventually remove this but keep for backward compatibility
         // Handle the old log category format
         if (categoryPart.Length >= 2 && categoryPart.StartsWith('(') && categoryPart.EndsWith(')'))
         {
             categoryPart = categoryPart[1..^1].Trim();
         }
 
-        return new LogEntry(timestamp, levelPart, messagePart, categoryPart);
+        return new LogEntryView(timestamp, levelPart, messagePart, categoryPart);
     }
 
-    private static bool MatchesFilter(LogEntry entry, string levelFilter, string messageFilter)
+    private static bool MatchesFilter(LogEntryView entry, string levelFilter, string messageFilter)
     {
         if (!string.IsNullOrEmpty(levelFilter) &&
             !entry.Level.Contains(levelFilter, StringComparison.OrdinalIgnoreCase))
@@ -142,30 +144,25 @@ public sealed class LogsCommand(
     }
 }
 
-public readonly record struct LogEntry(
+public readonly record struct LogEntryView(
     [property: JsonPropertyName("timestamp")]
     DateTime Timestamp,
     [property: JsonPropertyName("level")] string Level,
     [property: JsonPropertyName("message")]
     string Message,
     [property: JsonPropertyName("category")]
-    string Category)
+    string Category) : IJsonView<LogEntryView>
 {
     public override string ToString() =>
         $"Timestamp: {Timestamp.ToString("yyyy-MM-dd HH:mm:ss.fff", CultureInfo.InvariantCulture)}, LogLevel: {Level}, Message: {Message}, Category: {Category}";
 }
 
-public static class LogEntryExtensions
+public static class LogEntryViewExtensions
 {
-    private static readonly JsonSerializerOptions JsonSerializerOptions = new(JsonSerializerDefaults.Web)
-    {
-        WriteIndented = true
-    };
+    public static string ToJson(this IReadOnlyList<LogEntryView> entries) =>
+        JsonViewExtensions.ToJson(entries);
 
-    public static string ToJson(this IReadOnlyList<LogEntry> entries) =>
-        JsonSerializer.Serialize(entries, JsonSerializerOptions);
-
-    public static string ToSlog(this IReadOnlyList<LogEntry> entries, IReadOnlyList<string> malformed)
+    public static string ToSlog(this IReadOnlyList<LogEntryView> entries, IReadOnlyList<string> malformed)
     {
         var builder = new StringBuilder();
 

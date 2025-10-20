@@ -40,16 +40,17 @@ public class GitHubClient : IGitHubClient
         {
             var response = await _httpClient.GetAsync(ApiUrl, cancellationToken);
 
-            if (!response.IsSuccessStatusCode)
+            if (response.IsSuccessStatusCode)
             {
-                _logger.LogError("{ApiUrl} returned {StatusCode}", ApiUrl, response.StatusCode);
-                throw new HttpRequestException($"{ApiUrl} returned {response.StatusCode}.");
+                var jsonString = await response.Content.ReadAsStringAsync(cancellationToken);
+                var releases = JsonSerializer.Deserialize(jsonString, GithubReleaseAssetContext.Default.ListGitHubReleaseAsset) ?? [];
+                releases.Reverse();
+                return releases.Select<GitHubReleaseAsset, string>(r => r.ReleaseName);
             }
 
-            var jsonString = await response.Content.ReadAsStringAsync(cancellationToken);
-            var releases = JsonSerializer.Deserialize(jsonString, GithubReleaseAssetContext.Default.ListGitHubReleaseAsset) ?? [];
-            releases.Reverse();
-            return releases.Select<GitHubReleaseAsset, string>(r => r.ReleaseName);
+            var body = await response.Content.ReadAsStringAsync(cancellationToken);
+            _logger.LogError("{ApiUrl} returned {StatusCode}. Body: {Body}", ApiUrl, response.StatusCode, body);
+            throw new HttpRequestException($"{ApiUrl} returned {response.StatusCode}.");
         }
         catch (Exception ex)
         {
@@ -72,7 +73,8 @@ public class GitHubClient : IGitHubClient
                 return await response.Content.ReadAsStringAsync(cancellationToken);
             }
 
-            _logger.LogError("{Url} returned {StatusCode}", url, response.StatusCode);
+            var body = await response.Content.ReadAsStringAsync(cancellationToken);
+            _logger.LogError("{Url} returned {StatusCode}. Body: {Body}", url, response.StatusCode, body);
             throw new HttpRequestException($"GitHub SHA512 request failed: {response.StatusCode}");
         }
         catch (Exception ex)
@@ -96,7 +98,8 @@ public class GitHubClient : IGitHubClient
                 return response;
             }
 
-            _logger.LogError("{Url} returned {StatusCode}", url, response.StatusCode);
+            var body = await response.Content.ReadAsStringAsync(cancellationToken);
+            _logger.LogError("{Url} returned {StatusCode}. Body: {Body}", url, response.StatusCode, body);
             throw new HttpRequestException($"GitHub zip file request failed: {response.StatusCode}");
         }
         catch (Exception ex)

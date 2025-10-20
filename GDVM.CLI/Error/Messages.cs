@@ -36,6 +36,9 @@ public static class Messages
 
     // List
     public static string ListPanelHeader => "List Of Installed Versions";
+    public const string DefaultInstallationMarkerMarkup = ":eight_pointed_star:";
+    public const string DefaultInstallationMarkerGlyph = "✴";
+    public const string NonDefaultInstallationIndent = "   ";
 
     // Local
     public static string InteractiveWithQueryWarning => "[yellow]Warning: Cannot use --interactive with version query. Defaulting to interactive selection.[/]";

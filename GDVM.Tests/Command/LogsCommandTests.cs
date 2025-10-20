@@ -1,9 +1,10 @@
 using GDVM.Command;
 using GDVM.Environment;
+using GDVM.ViewModels;
 using Microsoft.Extensions.Logging.Abstractions;
+using Moq;
 using Spectre.Console.Testing;
 using System.Text.Json;
-using System.Threading;
 
 namespace GDVM.Test.Command;
 
@@ -15,6 +16,21 @@ public sealed class LogsCommandTests : IDisposable
     {
         _tempRoot = Path.Combine(Path.GetTempPath(), "gdvm-logs-tests", Guid.NewGuid().ToString());
         Directory.CreateDirectory(_tempRoot);
+    }
+
+    public void Dispose()
+    {
+        try
+        {
+            if (Directory.Exists(_tempRoot))
+            {
+                Directory.Delete(_tempRoot, true);
+            }
+        }
+        catch
+        {
+            // best effort cleanup
+        }
     }
 
     [Fact]
@@ -29,7 +45,7 @@ public sealed class LogsCommandTests : IDisposable
 
         var (command, console) = CreateCommand(logLines);
 
-        await command.Logs(json: false, cancellationToken: CancellationToken.None);
+        await command.Logs(cancellationToken: CancellationToken.None);
 
         var output = console.Output;
         Assert.Contains("Timestamp:", output);
@@ -51,12 +67,13 @@ public sealed class LogsCommandTests : IDisposable
 
         var (command, console) = CreateCommand(logLines);
 
-        await command.Logs(json: true, cancellationToken: CancellationToken.None);
+        await command.Logs(true, cancellationToken: CancellationToken.None);
 
         var json = console.Output.Trim();
         Assert.False(string.IsNullOrWhiteSpace(json));
 
-        var entries = JsonSerializer.Deserialize<List<JsonLogEntry>>(json, new JsonSerializerOptions(JsonSerializerDefaults.Web))!;
+        var entries = JsonSerializer.Deserialize<List<LogEntryView>>(json, JsonView.Options);
+        Assert.NotNull(entries);
         Assert.Equal(2, entries.Count);
         Assert.Contains(entries, e => e.Level == "Warning" && e.Category == "GDVM.Json.Category");
     }
@@ -84,7 +101,7 @@ public sealed class LogsCommandTests : IDisposable
         var logPath = Path.Combine(_tempRoot, ".log");
         File.WriteAllLines(logPath, lines);
 
-        var pathService = new TestPathService(logPath);
+        var pathService = CreatePathService(logPath);
         var console = new TestConsole();
         var logger = NullLogger<LogsCommand>.Instance;
 
@@ -92,48 +109,19 @@ public sealed class LogsCommandTests : IDisposable
         return (command, console);
     }
 
-    public void Dispose()
+    private static IPathService CreatePathService(string logPath)
     {
-        try
-        {
-            if (Directory.Exists(_tempRoot))
-            {
-                Directory.Delete(_tempRoot, recursive: true);
-            }
-        }
-        catch
-        {
-            // best effort cleanup
-        }
-    }
+        var rootPath = Path.GetDirectoryName(logPath)!;
+        var binPath = Path.Combine(rootPath, "bin");
 
-    private sealed class TestPathService : IPathService
-    {
-        public TestPathService(string logPath)
-        {
-            LogPath = logPath;
-            RootPath = Path.GetDirectoryName(logPath)!;
-            ConfigPath = Path.Combine(RootPath, "gdvm.ini");
-            ReleasesPath = Path.Combine(RootPath, ".releases");
-            BinPath = Path.Combine(RootPath, "bin");
-            SymlinkPath = Path.Combine(BinPath, "godot");
-            MacAppSymlinkPath = Path.Combine(BinPath, "Godot.app");
-        }
-
-        public string RootPath { get; }
-        public string ConfigPath { get; }
-        public string ReleasesPath { get; }
-        public string BinPath { get; }
-        public string SymlinkPath { get; }
-        public string MacAppSymlinkPath { get; }
-        public string LogPath { get; }
-    }
-
-    private sealed record JsonLogEntry
-    {
-        public DateTime Timestamp { get; init; }
-        public string Level { get; init; } = string.Empty;
-        public string Message { get; init; } = string.Empty;
-        public string Category { get; init; } = string.Empty;
+        var mock = new Mock<IPathService>();
+        mock.SetupGet(x => x.LogPath).Returns(logPath);
+        mock.SetupGet(x => x.RootPath).Returns(rootPath);
+        mock.SetupGet(x => x.ConfigPath).Returns(Path.Combine(rootPath, "gdvm.ini"));
+        mock.SetupGet(x => x.ReleasesPath).Returns(Path.Combine(rootPath, ".releases"));
+        mock.SetupGet(x => x.BinPath).Returns(binPath);
+        mock.SetupGet(x => x.SymlinkPath).Returns(Path.Combine(binPath, "godot"));
+        mock.SetupGet(x => x.MacAppSymlinkPath).Returns(Path.Combine(binPath, "Godot.app"));
+        return mock.Object;
     }
 }

@@ -110,6 +110,18 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
     }
 
     [Fact]
+    public async Task SearchCommandSupportsJsonOutput()
+    {
+        var result = await fixture.ExecuteCommand("search", "--json", "4.5");
+
+        result.AssertSuccessfulExecution();
+
+        using var document = JsonDocument.Parse(result.Stdout.Trim());
+        Assert.Equal(JsonValueKind.Array, document.RootElement.ValueKind);
+        Assert.True(document.RootElement.GetArrayLength() > 0);
+    }
+
+    [Fact]
     public async Task ListCommandDisplaysOutput()
     {
         var result = await fixture.ExecuteCommand("list");
@@ -119,11 +131,39 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
     }
 
     [Fact]
+    public async Task ListCommandSupportsJsonOutput()
+    {
+        var result = await fixture.ExecuteCommand("list", "--json");
+
+        result.AssertSuccessfulExecution();
+
+        using var document = JsonDocument.Parse(result.Stdout.Trim());
+        Assert.Equal(JsonValueKind.Array, document.RootElement.ValueKind);
+    }
+
+    [Fact]
     public async Task WhichCommandSucceedsWithoutActiveVersion()
     {
         var result = await fixture.ExecuteCommand("which");
 
         result.AssertSuccessfulExecution();
+    }
+
+    [Fact]
+    public async Task WhichCommandSupportsJsonOutput()
+    {
+        var result = await fixture.ExecuteCommand("which", "--json");
+
+        result.AssertSuccessfulExecution();
+
+        using var document = JsonDocument.Parse(result.Stdout.Trim());
+        Assert.Equal(JsonValueKind.Object, document.RootElement.ValueKind);
+        Assert.True(document.RootElement.TryGetProperty("hasVersion", out var hasVersion));
+        if (hasVersion.GetBoolean())
+        {
+            Assert.True(document.RootElement.TryGetProperty("symlinkPath", out var symlinkPath));
+            Assert.False(string.IsNullOrWhiteSpace(symlinkPath.GetString()));
+        }
     }
 
     [Fact]
@@ -218,11 +258,7 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
     [Fact]
     public async Task LocalCommandCreatesVersionFileWithCorrectContent()
     {
-        var searchResult = await fixture.ExecuteCommand("search");
-        AssertSuccess(searchResult, "searchResult");
-
-        var install = await fixture.ExecuteCommand("install", "4.5-stable");
-        AssertSuccess(install, "install");
+        await fixture.EnsureVersionInstalled("4.5-stable");
 
         await fixture.ExecuteShellCommand("mkdir", "-p", "/tmp/local-content-test");
         var result = await fixture.ExecuteCommandInDirectory("/tmp/local-content-test", "local", "4.5-stable");
@@ -387,6 +423,7 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
     private async Task CleanupVersion(string version)
     {
         await fixture.ExecuteCommand("remove", version);
+        TestHelpers.MarkVersionUninstalled(version);
     }
 
     [Fact]
@@ -756,8 +793,7 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
     public async Task GodotCommandUsesDetachedModeWhenProjectPathContainsFlagLikeSubstrings()
     {
         // Install and set a version once
-        var install = await fixture.ExecuteCommand("install", "4.4-stable");
-        AssertSuccess(install, "install");
+        await fixture.EnsureVersionInstalled("4.4-stable");
         await fixture.ExecuteCommand("set", "4.4");
 
         // Test multiple project names that contain flag-like substrings

@@ -3,6 +3,7 @@ using GDVM.Command;
 using GDVM.Environment;
 using GDVM.Filter;
 using GDVM.Godot;
+using GDVM.Http;
 using GDVM.Progress;
 using GDVM.Services;
 using Microsoft.Extensions.Configuration;
@@ -65,7 +66,9 @@ public class Program
                 var version = typeof(Program).Assembly.GetName().Version?.ToString() ?? "unknown";
                 client.DefaultRequestHeaders.UserAgent.Clear();
                 client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("gdvm", version));
-            });
+                client.Timeout = TimeSpan.FromSeconds(30);
+            })
+            .AddHttpMessageHandler(() => new ExponentialBackoffHandler(TimeSpan.FromSeconds(2), 3));
 
         services.AddHttpClient<ITuxFamilyClient, TuxFamilyClient>("tuxfamily")
             .ConfigureHttpClient((_, client) =>
@@ -73,7 +76,9 @@ public class Program
                 var version = typeof(Program).Assembly.GetName().Version?.ToString() ?? "unknown";
                 client.DefaultRequestHeaders.UserAgent.Clear();
                 client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("gdvm", version));
-            });
+                client.Timeout = TimeSpan.FromSeconds(30);
+            })
+            .AddHttpMessageHandler(() => new ExponentialBackoffHandler(TimeSpan.FromSeconds(2), 3));
 
         // Register core services
         services.AddSingleton<IDownloadClient, DownloadClient>();

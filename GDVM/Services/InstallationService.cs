@@ -237,7 +237,8 @@ public class InstallationService(
         var lastWriteTime = File.GetLastWriteTime(pathService.ReleasesPath);
         var isCacheValid = !remote && File.Exists(pathService.ReleasesPath) && DateTime.Now.AddDays(-1) <= lastWriteTime;
 
-        IEnumerable<string> releaseNames = [];
+        string[] releaseNames;
+        var fetchedRemote = false;
 
         if (isCacheValid)
         {
@@ -247,13 +248,17 @@ public class InstallationService(
             {
                 releaseNames = cachedReleases;
             }
-
-            logger.LogWarning("Cached releases file is empty, fetching from remote");
+            else
+            {
+                logger.LogWarning("Cached releases file is empty, fetching from remote");
+                releaseNames = (await releaseManager.ListReleases(cancellationToken)).ToArray();
+                fetchedRemote = true;
+            }
         }
         else
         {
-            releaseNames = await releaseManager
-                .ListReleases(cancellationToken);
+            releaseNames = (await releaseManager.ListReleases(cancellationToken)).ToArray();
+            fetchedRemote = true;
         }
 
         // Always sort releases using Release.CompareTo for consistent ordering
@@ -270,7 +275,11 @@ public class InstallationService(
             return [];
         }
 
-        await File.WriteAllLinesAsync(pathService.ReleasesPath, sortedReleases, cancellationToken);
+        if (fetchedRemote)
+        {
+            await File.WriteAllLinesAsync(pathService.ReleasesPath, sortedReleases, cancellationToken);
+        }
+
         return sortedReleases;
     }
 

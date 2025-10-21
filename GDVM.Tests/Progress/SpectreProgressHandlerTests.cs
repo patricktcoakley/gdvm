@@ -16,6 +16,16 @@ public class SpectreProgressHandlerTests
         };
 
         _testConsole.EmitAnsiSequences();
+
+        // NOTE: Without this, some tests fail in isolation?
+        // TODO: Investigate further
+        var handler = new SpectreProgressHandler<InstallationStage>(_testConsole);
+        handler.TrackProgressAsync(async p =>
+        {
+            p.Report(new OperationProgress<InstallationStage>(InstallationStage.Initializing, "Init"));
+            await Task.Delay(1);
+            return 0;
+        }).Wait();
     }
 
     [Fact]

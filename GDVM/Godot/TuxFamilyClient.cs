@@ -12,7 +12,8 @@ public interface ITuxFamilyClient
 // TuxFamily has had inconsistent connectivity and is seeminlgy down, so we just use the internet archive version.
 public class TuxFamilyClient(HttpClient httpClient, ILogger<TuxFamilyClient> logger) : ITuxFamilyClient
 {
-    private const string BaseUrl = "https://web.archive.org/web/20240927142429/https://downloads.tuxfamily.org/godotengine";
+    // Use a stable archive snapshot; the live endpoint is unreliable.
+    private const string BaseUrl = "https://web.archive.org/web/20211106101031if_/https://downloads.tuxfamily.org/godotengine";
 
     // TODO: Replace with Task<Result<string, NetworkError>> GetSha512Async(Release godotRelease, CancellationToken cancellationToken)
     public async Task<string> GetSha512Async(Release godotRelease, CancellationToken cancellationToken)
@@ -25,6 +26,7 @@ public class TuxFamilyClient(HttpClient httpClient, ILogger<TuxFamilyClient> log
 
             if (response.IsSuccessStatusCode)
             {
+                logger.LogInformation("Found SHA512 for {Version} at {Url}", godotRelease.Version, url);
                 return await response.Content.ReadAsStringAsync(cancellationToken);
             }
 
@@ -50,6 +52,7 @@ public class TuxFamilyClient(HttpClient httpClient, ILogger<TuxFamilyClient> log
 
             if (response.IsSuccessStatusCode)
             {
+                logger.LogInformation("Found {File} for {Release} at {Url}", filename, godotRelease.ReleaseNameWithRuntime, url);
                 return response;
             }
 
@@ -66,13 +69,12 @@ public class TuxFamilyClient(HttpClient httpClient, ILogger<TuxFamilyClient> log
 
     private static string BuildUrl(string filename, Release godotRelease)
     {
-        // stable is the root path on Tux Family
-        var baseUrl = godotRelease.Type is null || godotRelease.Type == "stable"
+        var basePath = godotRelease.Type is null || godotRelease.Type == "stable"
             ? $"{BaseUrl}/{godotRelease.Version}"
             : $"{BaseUrl}/{godotRelease.Version}/{godotRelease.Type}";
 
         return godotRelease.RuntimeEnvironment == RuntimeEnvironment.Mono
-            ? $"{baseUrl}/mono/{filename}"
-            : $"{baseUrl}/{filename}";
+            ? $"{basePath}/mono/{filename}"
+            : $"{basePath}/{filename}";
     }
 }

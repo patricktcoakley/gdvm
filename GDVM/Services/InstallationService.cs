@@ -133,7 +133,7 @@ public class InstallationService(
 
             // TODO: Revisit this to use the godot-builds JSON artifacts instead
             // Verify checksum if available
-            if (godotRelease is { Major: 4, Minor: >= 3 })
+            if (ShouldVerifyChecksum(godotRelease))
             {
                 progress.Report(new OperationProgress<InstallationStage>(InstallationStage.VerifyingChecksum, "Verifying checksum..."));
                 memStream.Position = 0;
@@ -290,6 +290,10 @@ public class InstallationService(
         var checksum = Convert.ToHexStringLower(hashBytes);
         return checksum;
     }
+
+    // TODO: Update once manifest-based releases are used
+    private static bool ShouldVerifyChecksum(Release release) =>
+        release.Major > 3 || release is { Major: 3, Minor: >= 3 };
 
     // TODO: Replace with Result<string, ParseError> ParseSha512SumsContent(string fileName, string content)
     public static string? TryParseSha512SumsContent(string fileName, string content)

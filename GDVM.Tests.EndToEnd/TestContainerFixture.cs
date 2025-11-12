@@ -32,7 +32,7 @@ public class TestContainerFixture : IAsyncLifetime
         }
 
         _container = new ContainerBuilder()
-            .WithImage("mcr.microsoft.com/dotnet/sdk:9.0")
+            .WithImage("mcr.microsoft.com/dotnet/sdk:10.0")
             .WithWorkingDirectory("/workspace")
             .WithBindMount(solutionDir, "/workspace")
             .WithCommand("tail", "-f", "/dev/null") // Keep container running

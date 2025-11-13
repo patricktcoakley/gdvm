@@ -1,5 +1,20 @@
 # Changelog
 
+<a name="1.4.0"></a>
+## [1.4.0](https://github.com/patricktcoakley/gdvm/releases/tag/v1.4.0) (2025-11-13)
+
+### ✨ Features
+
+* Add a GDVM_HOME env var for better testing and user customization. ([4f41fd4](https://github.com/patricktcoakley/gdvm/commit/4f41fd401c30c9de51ab71808416480a912d626b))
+* Add JSON output to list, search, and which; update logging for HTTP failures; update e2e tests to fail fast. ([4b9cfcb](https://github.com/patricktcoakley/gdvm/commit/4b9cfcb46c8c61cebc3ad2de25b657a9bb08b94d))
+* **HTTP:** Update HTTP calls to write cache so that we don't waste the results; improve error handling. ([b573642](https://github.com/patricktcoakley/gdvm/commit/b5736426c1f6b17ebee59fc264a8fabe3ee52a79))
+* **logs:** Add JSON output to logs; refactor logging code and add more testing. ([b7f3122](https://github.com/patricktcoakley/gdvm/commit/b7f312259666ec1de33d2b9422d0091f95752954))
+
+### 🐛 Bug Fixes
+
+* Add backoff logic to the HTTP clients; only update cache when remote fetch happens. ([1d3dc69](https://github.com/patricktcoakley/gdvm/commit/1d3dc69bb23401c0ac705e6680fdf66bea486aa4))
+* TuxFamily client should now properly grab checksums from internet archive snapshot for older releases. ([990732d](https://github.com/patricktcoakley/gdvm/commit/990732d120001b4382f9b90ea5de39a8d51b43c2))
+
 <a name="1.3.0"></a>
 ## [1.3.0](https://github.com/patricktcoakley/gdvm/releases/tag/v1.3.0) (2025-10-16)
 

@@ -1,3 +1,4 @@
+using GDVM.Types;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using System.Net.Http.Headers;
@@ -7,7 +8,7 @@ namespace GDVM.Godot;
 
 public interface IGitHubClient
 {
-    Task<IEnumerable<string>> ListReleasesAsync(CancellationToken cancellationToken);
+    Task<Result<IEnumerable<string>, NetworkError>> ListReleasesAsync(CancellationToken cancellationToken);
     Task<string> GetSha512Async(Release godotRelease, CancellationToken cancellationToken);
     Task<HttpResponseMessage> GetZipFileAsync(string filename, Release godotRelease, CancellationToken cancellationToken);
 }
@@ -33,8 +34,7 @@ public class GitHubClient : IGitHubClient
 
     private string? GitHubToken => _configuration.Value["github:token"];
 
-    // TODO: Replace with Task<Result<IEnumerable<string>, NetworkError>> ListReleasesAsync(CancellationToken cancellationToken)
-    public async Task<IEnumerable<string>> ListReleasesAsync(CancellationToken cancellationToken)
+    public async Task<Result<IEnumerable<string>, NetworkError>> ListReleasesAsync(CancellationToken cancellationToken)
     {
         try
         {
@@ -45,17 +45,20 @@ public class GitHubClient : IGitHubClient
                 var jsonString = await response.Content.ReadAsStringAsync(cancellationToken);
                 var releases = JsonSerializer.Deserialize(jsonString, GithubReleaseAssetContext.Default.ListGitHubReleaseAsset) ?? [];
                 releases.Reverse();
-                return releases.Select<GitHubReleaseAsset, string>(r => r.ReleaseName);
+                return new Result<IEnumerable<string>, NetworkError>.Success(
+                    releases.Select<GitHubReleaseAsset, string>(r => r.ReleaseName));
             }
 
             var body = await response.Content.ReadAsStringAsync(cancellationToken);
             _logger.LogError("{ApiUrl} returned {StatusCode}. Body: {Body}", ApiUrl, response.StatusCode, body);
-            throw new HttpRequestException($"{ApiUrl} returned {response.StatusCode}.");
+            return new Result<IEnumerable<string>, NetworkError>.Failure(
+                new NetworkError.RequestFailed(ApiUrl, (int)response.StatusCode, body));
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to list releases from GitHub");
-            throw;
+            return new Result<IEnumerable<string>, NetworkError>.Failure(
+                new NetworkError.Exception(ex.Message, ex.StackTrace));
         }
     }
 

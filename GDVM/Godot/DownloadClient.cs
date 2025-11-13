@@ -1,3 +1,5 @@
+using GDVM.Environment;
+using GDVM.Types;
 using Microsoft.Extensions.Logging;
 using System.Text.Json.Serialization;
 
@@ -5,7 +7,7 @@ namespace GDVM.Godot;
 
 public interface IDownloadClient
 {
-    Task<IEnumerable<string>> ListReleases(CancellationToken cancellationToken);
+    Task<Result<IEnumerable<string>, NetworkError>> ListReleases(CancellationToken cancellationToken);
     Task<string> GetSha512(Release godotRelease, CancellationToken cancellationToken);
     Task<HttpResponseMessage> GetZipFile(string filename, Release godotRelease, CancellationToken cancellationToken);
 }
@@ -14,20 +16,28 @@ public interface IDownloadClient
 ///     A download client that coordinates between GitHub and TuxFamily sources.
 ///     Uses GitHub as primary and TuxFamily as backup for improved reliability.
 /// </summary>
-public class DownloadClient(IGitHubClient gitHubClient, ITuxFamilyClient tuxFamilyClient, ILogger<DownloadClient> logger) : IDownloadClient
+public class DownloadClient(IGitHubClient gitHubClient, ITuxFamilyClient tuxFamilyClient, IPathService pathService, ILogger<DownloadClient> logger) : IDownloadClient
 {
-    // TODO: Replace with Task<Result<IEnumerable<string>, NetworkError>> ListReleases(CancellationToken cancellationToken)
-    public async Task<IEnumerable<string>> ListReleases(CancellationToken cancellationToken)
+    public async Task<Result<IEnumerable<string>, NetworkError>> ListReleases(CancellationToken cancellationToken)
     {
-        try
+        var result = await gitHubClient.ListReleasesAsync(cancellationToken);
+
+        // Write cache on successful fetch
+        if (result is Result<IEnumerable<string>, NetworkError>.Success success)
         {
-            return await gitHubClient.ListReleasesAsync(cancellationToken);
+            var releaseArray = success.Value.ToArray();
+            try
+            {
+                await File.WriteAllLinesAsync(pathService.ReleasesPath, releaseArray, cancellationToken);
+                logger.LogInformation("Updated releases cache at {ReleasesPath} with {Count} releases", pathService.ReleasesPath, releaseArray.Length);
+            }
+            catch (Exception cacheEx)
+            {
+                logger.LogWarning(cacheEx, "Failed to write releases cache, continuing anyway");
+            }
         }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Failed to list releases from GitHub");
-            throw;
-        }
+
+        return result;
     }
 
     // TODO: Replace with Task<Result<string, NetworkError>> GetSha512(Release godotRelease, CancellationToken cancellationToken)

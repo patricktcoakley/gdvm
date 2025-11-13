@@ -5,8 +5,8 @@ namespace GDVM.Godot;
 
 public interface IReleaseManager
 {
-    Task<IEnumerable<string>> ListReleases(CancellationToken cancellationToken);
-    Task<IEnumerable<string>> SearchRemoteReleases(string[] query, CancellationToken cancellationToken);
+    Task<Result<IEnumerable<string>, NetworkError>> ListReleases(CancellationToken cancellationToken);
+    Task<Result<IEnumerable<string>, NetworkError>> SearchRemoteReleases(string[] query, CancellationToken cancellationToken);
     Task<string> GetSha512(Release release, CancellationToken cancellationToken);
     Task<HttpResponseMessage> GetZipFile(string filename, Release release, CancellationToken cancellationToken);
 
@@ -19,13 +19,21 @@ public interface IReleaseManager
 
 public sealed class ReleaseManager(IHostSystem hostSystem, PlatformStringProvider platformStringProvider, IDownloadClient downloadClient) : IReleaseManager
 {
-    public async Task<IEnumerable<string>> ListReleases(CancellationToken cancellationToken) =>
+    public async Task<Result<IEnumerable<string>, NetworkError>> ListReleases(CancellationToken cancellationToken) =>
         await downloadClient.ListReleases(cancellationToken);
 
-    public async Task<IEnumerable<string>> SearchRemoteReleases(string[] query, CancellationToken cancellationToken)
+    public async Task<Result<IEnumerable<string>, NetworkError>> SearchRemoteReleases(string[] query, CancellationToken cancellationToken)
     {
-        var releaseNames = await ListReleases(cancellationToken);
-        return FilterReleasesByQuery(query, releaseNames.ToArray(), true);
+        var result = await ListReleases(cancellationToken);
+        return result switch
+        {
+            Result<IEnumerable<string>, NetworkError>.Success(var releases) =>
+                new Result<IEnumerable<string>, NetworkError>.Success(
+                    FilterReleasesByQuery(query, releases.ToArray(), true)),
+            Result<IEnumerable<string>, NetworkError>.Failure(var error) =>
+                new Result<IEnumerable<string>, NetworkError>.Failure(error),
+            _ => throw new InvalidOperationException("Unexpected Result type")
+        };
     }
 
     public async Task<string> GetSha512(Release release, CancellationToken cancellationToken) =>

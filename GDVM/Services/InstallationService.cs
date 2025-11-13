@@ -251,13 +251,25 @@ public class InstallationService(
             else
             {
                 logger.LogWarning("Cached releases file is empty, fetching from remote");
-                releaseNames = (await releaseManager.ListReleases(cancellationToken)).ToArray();
+                var result = await releaseManager.ListReleases(cancellationToken);
+                releaseNames = result switch
+                {
+                    Result<IEnumerable<string>, NetworkError>.Success(var releases) => releases.ToArray(),
+                    Result<IEnumerable<string>, NetworkError>.Failure(var error) => throw new HttpRequestException($"Failed to fetch releases: {error}"),
+                    _ => throw new InvalidOperationException("Unexpected Result type")
+                };
                 fetchedRemote = true;
             }
         }
         else
         {
-            releaseNames = (await releaseManager.ListReleases(cancellationToken)).ToArray();
+            var result = await releaseManager.ListReleases(cancellationToken);
+            releaseNames = result switch
+            {
+                Result<IEnumerable<string>, NetworkError>.Success(var releases) => releases.ToArray(),
+                Result<IEnumerable<string>, NetworkError>.Failure(var error) => throw new HttpRequestException($"Failed to fetch releases: {error}"),
+                _ => throw new InvalidOperationException("Unexpected Result type")
+            };
             fetchedRemote = true;
         }
 

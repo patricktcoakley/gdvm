@@ -1,3 +1,4 @@
+using GDVM.Types;
 using Moq;
 
 namespace GDVM.Test.Godot.ReleaseManager;
@@ -12,7 +13,9 @@ public class QueryTests
     {
         var releaseManager = new ReleaseManagerBuilder().Build();
         var result = await releaseManager.SearchRemoteReleases(query, CancellationToken.None);
-        Assert.Equal(expected, result);
+        Assert.IsType<Result<IEnumerable<string>, NetworkError>.Success>(result);
+        var success = (Result<IEnumerable<string>, NetworkError>.Success)result;
+        Assert.Equal(expected, success.Value);
     }
 
     [InlineData(new[] { "latest" }, "4.2-stable-standard")]
@@ -115,7 +118,9 @@ public class QueryTests
             .Build();
 
         var result = await releaseManager.SearchRemoteReleases(["stable"], CancellationToken.None);
-        Assert.Empty(result);
+        Assert.IsType<Result<IEnumerable<string>, NetworkError>.Success>(result);
+        var success = (Result<IEnumerable<string>, NetworkError>.Success)result;
+        Assert.Empty(success.Value);
     }
 
     [Fact]
@@ -214,7 +219,9 @@ public class QueryTests
 
         // Test chronological ordering (for search/display)
         var chronologicalResult = await releaseManager.SearchRemoteReleases(["4"], CancellationToken.None);
-        var chronologicalArray = chronologicalResult.ToArray();
+        Assert.IsType<Result<IEnumerable<string>, NetworkError>.Success>(chronologicalResult);
+        var success = (Result<IEnumerable<string>, NetworkError>.Success)chronologicalResult;
+        var chronologicalArray = success.Value.ToArray();
 
         // Should be ordered: major > minor > stability > patch
         // So within 4.5: stable before rc (regardless of patch), then dev

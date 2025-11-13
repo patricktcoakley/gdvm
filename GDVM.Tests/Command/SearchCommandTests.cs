@@ -1,6 +1,7 @@
 using GDVM.Command;
 using GDVM.Environment;
 using GDVM.Godot;
+using GDVM.Types;
 using GDVM.ViewModels;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
@@ -19,7 +20,7 @@ public sealed class SearchCommandTests
         var releases = new[] { "4.5-stable-standard", "4.5-stable-mono" };
         var releaseManager = new Mock<IReleaseManager>();
         releaseManager.Setup(x => x.SearchRemoteReleases(It.IsAny<string[]>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(releases);
+            .ReturnsAsync(new Result<IEnumerable<string>, NetworkError>.Success(releases));
 
         var command = CreateCommand(releaseManager.Object, out var console);
 
@@ -40,7 +41,7 @@ public sealed class SearchCommandTests
         var releases = new[] { "4.5-stable-standard" };
         var releaseManager = new Mock<IReleaseManager>();
         releaseManager.Setup(x => x.SearchRemoteReleases(It.IsAny<string[]>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(releases);
+            .ReturnsAsync(new Result<IEnumerable<string>, NetworkError>.Success(releases));
 
         var command = CreateCommand(releaseManager.Object, out var console);
 

@@ -1,5 +1,6 @@
 using GDVM.Environment;
 using GDVM.Godot;
+using GDVM.Types;
 using Microsoft.Extensions.Logging;
 using Moq;
 using System.Runtime.InteropServices;
@@ -21,7 +22,8 @@ public class ReleaseManagerBuilder
 
         _mockDownloadClient
             .Setup(x => x.ListReleases(It.IsAny<CancellationToken>()))
-            .Returns(Task.FromResult(_releases));
+            .Returns(Task.FromResult<Result<IEnumerable<string>, NetworkError>>(
+                new Result<IEnumerable<string>, NetworkError>.Success(_releases)));
     }
 
     public ReleaseManagerBuilder WithOSAndArch(OS os, Architecture arch)
@@ -35,7 +37,8 @@ public class ReleaseManagerBuilder
         _releases = releases.ToArray();
         _mockDownloadClient
             .Setup(x => x.ListReleases(It.IsAny<CancellationToken>()))
-            .Returns(Task.FromResult(_releases));
+            .Returns(Task.FromResult<Result<IEnumerable<string>, NetworkError>>(
+                new Result<IEnumerable<string>, NetworkError>.Success(_releases)));
 
         return this;
     }

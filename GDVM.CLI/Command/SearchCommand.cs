@@ -2,6 +2,7 @@ using ConsoleAppFramework;
 using GDVM.Environment;
 using GDVM.Error;
 using GDVM.Godot;
+using GDVM.Types;
 using GDVM.ViewModels;
 using Microsoft.Extensions.Logging;
 using Spectre.Console;
@@ -31,33 +32,41 @@ public sealed class SearchCommand(
 
     private async Task SearchCore(string[]? query, bool json, CancellationToken cancellationToken)
     {
-        try
+        var searchQuery = query ?? [];
+        var result = await releaseManager.SearchRemoteReleases(searchQuery, cancellationToken);
+
+        switch (result)
         {
-            var searchQuery = query ?? [];
+            case Result<IEnumerable<string>, NetworkError>.Success(var releaseNames):
+                var releases = releaseNames
+                    .Select(name => new RemoteReleaseView(name))
+                    .ToList();
 
-            // Use SearchRemoteReleases for both empty and non-empty queries to get chronological sorting
-            var filteredReleaseNames = await releaseManager.SearchRemoteReleases(searchQuery, cancellationToken);
-            var releases = filteredReleaseNames
-                .Select(name => new RemoteReleaseView(name))
-                .ToList();
-
-            if (json)
-            {
-                console.WriteLine(releases.ToJson());
+                if (json)
+                {
+                    console.WriteLine(releases.ToJson());
+                }
+                else
+                {
+                    console.Write(releases.ToPanel(searchQuery));
+                }
                 return;
-            }
 
-            console.Write(releases.ToPanel(searchQuery));
-        }
+            case Result<IEnumerable<string>, NetworkError>.Failure(var error):
+                var errorMessage = error switch
+                {
+                    NetworkError.RequestFailed(var url, var statusCode, _) =>
+                        $"Request to {url} failed with status code {statusCode}",
+                    NetworkError.Exception(var message, _) =>
+                        $"Network error: {message}",
+                    _ => "Unknown network error"
+                };
 
-        catch (Exception e)
-        {
-            logger.ZLogError($"Error searching releases: {e.Message}");
-            console.MarkupLine(
-                Messages.SomethingWentWrong("when trying to search releases", pathService)
-            );
-
-            throw;
+                logger.ZLogError($"Error searching releases: {errorMessage}");
+                console.MarkupLine(
+                    Messages.SomethingWentWrong("when trying to search releases", pathService)
+                );
+                throw new InvalidOperationException(errorMessage);
         }
     }
 }

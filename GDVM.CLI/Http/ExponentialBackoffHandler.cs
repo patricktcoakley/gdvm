@@ -1,8 +1,4 @@
-using System;
 using System.Net;
-using System.Net.Http;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace GDVM.Http;
 
@@ -13,10 +9,7 @@ internal sealed class ExponentialBackoffHandler : DelegatingHandler
 
     public ExponentialBackoffHandler(TimeSpan initialDelay, int maxRetries)
     {
-        if (maxRetries < 0)
-        {
-            throw new ArgumentOutOfRangeException(nameof(maxRetries));
-        }
+        ArgumentOutOfRangeException.ThrowIfNegative(maxRetries);
 
         _initialDelay = initialDelay;
         _maxRetries = maxRetries;

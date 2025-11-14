@@ -1,16 +1,15 @@
 using DotNet.Testcontainers.Builders;
 using DotNet.Testcontainers.Containers;
 using GDVM.Error;
-using System.IO;
 
 namespace GDVM.Tests.EndToEnd;
 
 public class TestContainerFixture : IAsyncLifetime
 {
     private IContainer? _container;
-    private string? _rid;
     private string? _publishContainerPath;
     private string? _publishHostPath;
+    private string? _rid;
 
     public IContainer Container => _container ?? throw new InvalidOperationException("Container not initialized");
     public string Rid => _rid ?? throw new InvalidOperationException("RID not initialized");
@@ -61,7 +60,9 @@ public class TestContainerFixture : IAsyncLifetime
         _publishContainerPath = $"/workspace/.gdvm-publish/{publishDirName}";
         Directory.CreateDirectory(_publishHostPath);
 
-        var publishResult = await _container.ExecAsync(["dotnet", "publish", "/workspace/GDVM.CLI/GDVM.CLI.csproj", "-c", "Debug", "-r", _rid, "-o", _publishContainerPath]);
+        var publishResult =
+            await _container.ExecAsync(["dotnet", "publish", "/workspace/GDVM.CLI/GDVM.CLI.csproj", "-c", "Debug", "-r", _rid, "-o", _publishContainerPath]);
+
         if (publishResult.ExitCode != ExitCodes.Success)
         {
             throw new InvalidOperationException(
@@ -79,7 +80,7 @@ public class TestContainerFixture : IAsyncLifetime
         if (_publishHostPath is not null)
         {
             Directory.CreateDirectory(_publishHostPath);
-            Directory.Delete(_publishHostPath, recursive: true);
+            Directory.Delete(_publishHostPath, true);
         }
     }
 }

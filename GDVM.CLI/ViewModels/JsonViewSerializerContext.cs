@@ -1,6 +1,5 @@
-using System.Collections.Generic;
-using System.Text.Json.Serialization;
 using GDVM.Command;
+using System.Text.Json.Serialization;
 
 namespace GDVM.ViewModels;
 
@@ -12,6 +11,4 @@ namespace GDVM.ViewModels;
 [JsonSerializable(typeof(WhichView))]
 [JsonSerializable(typeof(LogEntryView))]
 [JsonSerializable(typeof(List<LogEntryView>))]
-internal partial class JsonViewSerializerContext : JsonSerializerContext
-{
-}
+internal partial class JsonViewSerializerContext : JsonSerializerContext;

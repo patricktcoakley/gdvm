@@ -157,7 +157,7 @@ public class InstallationService(
             memStream.Position = 0;
             extractPath = Path.Combine(pathService.RootPath, installPathBase);
 
-            using var archive = new ZipArchive(memStream, ZipArchiveMode.Read);
+            await using var archive = new ZipArchive(memStream, ZipArchiveMode.Read);
             archive.ExtractWithFlatteningSupport(extractPath, true);
 
             if (setAsDefault)
@@ -258,6 +258,7 @@ public class InstallationService(
                     Result<IEnumerable<string>, NetworkError>.Failure(var error) => throw new HttpRequestException($"Failed to fetch releases: {error}"),
                     _ => throw new InvalidOperationException("Unexpected Result type")
                 };
+
                 fetchedRemote = true;
             }
         }
@@ -270,6 +271,7 @@ public class InstallationService(
                 Result<IEnumerable<string>, NetworkError>.Failure(var error) => throw new HttpRequestException($"Failed to fetch releases: {error}"),
                 _ => throw new InvalidOperationException("Unexpected Result type")
             };
+
             fetchedRemote = true;
         }
 

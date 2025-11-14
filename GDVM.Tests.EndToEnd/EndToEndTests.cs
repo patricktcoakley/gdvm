@@ -1,4 +1,3 @@
-using DotNet.Testcontainers.Containers;
 using GDVM.Error;
 using System.Text.Json;
 using System.Xml.Linq;
@@ -18,7 +17,7 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
     [Fact]
     public async Task DisplaysHelpWhenNoArgumentsProvided()
     {
-        var result = await fixture.ExecuteCommand();
+        var result = await fixture.ExecuteCommand([]);
 
         await fixture.AssertSuccessfulExecutionAsync(result);
         Assert.Contains("Usage:", result.Stdout);
@@ -29,7 +28,7 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
     public async Task DisplaysVersionWithVersionFlag()
     {
         var expected = GetProjectVersion();
-        var result = await fixture.ExecuteCommand("--version");
+        var result = await fixture.ExecuteCommand(["--version"]);
 
         await fixture.AssertSuccessfulExecutionAsync(result, expected);
     }
@@ -37,7 +36,7 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
     [Fact]
     public async Task CreatesGdvmDirectoryOnFirstCommand()
     {
-        await fixture.ExecuteCommand("list");
+        await fixture.ExecuteCommand(["list"]);
 
         var directoryExists = await fixture.DirectoryExists("/root/gdvm");
         Assert.True(directoryExists);
@@ -50,15 +49,15 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
         var gdvmRoot = $"{customHome}/gdvm";
         var gdvmPath = fixture.GdvmPath;
 
-        await fixture.ExecuteShellCommand("rm", "-rf", customHome);
+        await fixture.ExecuteShellCommand("rm", ["-rf", customHome]);
 
-        var result = await fixture.ExecuteShellCommand("sh", "-c", $"GDVM_HOME={customHome} {gdvmPath} list");
+        var result = await fixture.ExecuteShellCommand("sh", ["-c", $"GDVM_HOME={customHome} {gdvmPath} list"]);
         await fixture.AssertSuccessfulExecutionAsync(result);
 
         var directoryExists = await fixture.DirectoryExists(gdvmRoot);
         Assert.True(directoryExists, $"Expected GDVM root to be created at '{gdvmRoot}' when GDVM_HOME is set.");
 
-        await fixture.ExecuteShellCommand("rm", "-rf", customHome);
+        await fixture.ExecuteShellCommand("rm", ["-rf", customHome]);
     }
 
     [Fact]
@@ -68,23 +67,23 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
         var defaultRoot = "/root/gdvm";
         var gdvmPath = fixture.GdvmPath;
 
-        await fixture.ExecuteShellCommand("rm", "-rf", defaultRoot);
-        await fixture.ExecuteShellCommand("rm", "-rf", customHome);
+        await fixture.ExecuteShellCommand("rm", ["-rf", defaultRoot]);
+        await fixture.ExecuteShellCommand("rm", ["-rf", customHome]);
 
-        var result = await fixture.ExecuteShellCommand("sh", "-c", $"GDVM_HOME={customHome} {gdvmPath} list");
+        var result = await fixture.ExecuteShellCommand("sh", ["-c", $"GDVM_HOME={customHome} {gdvmPath} list"]);
         await fixture.AssertSuccessfulExecutionAsync(result);
 
         var defaultExists = await fixture.DirectoryExists(defaultRoot);
         Assert.False(defaultExists, $"Default root '{defaultRoot}' should not be recreated when GDVM_HOME is provided.");
 
-        await fixture.ExecuteShellCommand("rm", "-rf", defaultRoot);
-        await fixture.ExecuteShellCommand("rm", "-rf", customHome);
+        await fixture.ExecuteShellCommand("rm", ["-rf", defaultRoot]);
+        await fixture.ExecuteShellCommand("rm", ["-rf", customHome]);
     }
 
     [Fact]
     public async Task DisplaysHelpForUnrecognizedCommands()
     {
-        var result = await fixture.ExecuteCommand("nonexistent-command");
+        var result = await fixture.ExecuteCommand(["nonexistent-command"]);
 
         Assert.Equal(0, result.ExitCode);
         Assert.Contains("Usage:", result.Stdout);
@@ -93,10 +92,10 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
     [Fact]
     public async Task RecordsCommandExecutionsInLogs()
     {
-        await fixture.ExecuteCommand("list");
-        await fixture.ExecuteCommand("which");
+        await fixture.ExecuteCommand(["list"]);
+        await fixture.ExecuteCommand(["which"]);
 
-        var logResult = await fixture.ExecuteCommand("logs");
+        var logResult = await fixture.ExecuteCommand(["logs"]);
         Assert.Equal(0, logResult.ExitCode);
         Assert.True(logResult.Stdout.Length > 0, "Logs should not be empty after operations");
     }
@@ -104,7 +103,7 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
     [Fact]
     public async Task SearchCommandExecutesWithoutCrashing()
     {
-        var result = await fixture.ExecuteCommand("search");
+        var result = await fixture.ExecuteCommand(["search"]);
 
         await fixture.AssertSuccessfulExecutionAsync(result, "result");
     }
@@ -112,7 +111,7 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
     [Fact]
     public async Task SearchCommandSupportsJsonOutput()
     {
-        var result = await fixture.ExecuteCommand("search", "--json", "4.5");
+        var result = await fixture.ExecuteCommand(["search", "--json", "4.5"]);
 
         await fixture.AssertSuccessfulExecutionAsync(result);
 
@@ -124,7 +123,7 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
     [Fact]
     public async Task ListCommandDisplaysOutput()
     {
-        var result = await fixture.ExecuteCommand("list");
+        var result = await fixture.ExecuteCommand(["list"]);
 
         await fixture.AssertSuccessfulExecutionAsync(result);
         Assert.True(result.Stdout.Length > 0);
@@ -133,7 +132,7 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
     [Fact]
     public async Task ListCommandSupportsJsonOutput()
     {
-        var result = await fixture.ExecuteCommand("list", "--json");
+        var result = await fixture.ExecuteCommand(["list", "--json"]);
 
         await fixture.AssertSuccessfulExecutionAsync(result);
 
@@ -144,7 +143,7 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
     [Fact]
     public async Task WhichCommandSucceedsWithoutActiveVersion()
     {
-        var result = await fixture.ExecuteCommand("which");
+        var result = await fixture.ExecuteCommand(["which"]);
 
         await fixture.AssertSuccessfulExecutionAsync(result);
     }
@@ -152,7 +151,7 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
     [Fact]
     public async Task WhichCommandSupportsJsonOutput()
     {
-        var result = await fixture.ExecuteCommand("which", "--json");
+        var result = await fixture.ExecuteCommand(["which", "--json"]);
 
         await fixture.AssertSuccessfulExecutionAsync(result);
 
@@ -173,7 +172,7 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
 
         foreach (var command in commands)
         {
-            var result = await fixture.ExecuteCommand(command, "--help");
+            var result = await fixture.ExecuteCommand([command, "--help"]);
             Assert.Equal(0, result.ExitCode);
             Assert.Contains(command, result.Stdout, StringComparison.OrdinalIgnoreCase);
         }
@@ -182,7 +181,7 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
     [Fact]
     public async Task InstallCommandFailsGracefullyForInvalidVersion()
     {
-        var result = await fixture.ExecuteCommand("install", "nonexistent-version-999");
+        var result = await fixture.ExecuteCommand(["install", "nonexistent-version-999"]);
 
         Assert.Equal(ExitCodes.ArgumentError, result.ExitCode);
         await fixture.AssertLogContains("install");
@@ -191,7 +190,7 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
     [Fact]
     public async Task RemoveCommandHandlesInvalidVersionGracefully()
     {
-        var result = await fixture.ExecuteCommand("remove", "nonexistent-version-999");
+        var result = await fixture.ExecuteCommand(["remove", "nonexistent-version-999"]);
 
         await fixture.AssertSuccessfulExecutionAsync(result, "result");
     }
@@ -199,7 +198,7 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
     [Fact]
     public async Task SetCommandFailsGracefullyForInvalidVersion()
     {
-        var result = await fixture.ExecuteCommand("set", "nonexistent-version-999");
+        var result = await fixture.ExecuteCommand(["set", "nonexistent-version-999"]);
 
         Assert.Equal(ExitCodes.GeneralError, result.ExitCode);
     }
@@ -207,7 +206,7 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
     [Fact]
     public async Task LocalCommandHandlesInvalidVersionGracefully()
     {
-        var result = await fixture.ExecuteCommand("local", "nonexistent-version-999");
+        var result = await fixture.ExecuteCommand(["local", "nonexistent-version-999"]);
 
         Assert.Equal(ExitCodes.ArgumentError, result.ExitCode);
     }
@@ -215,7 +214,7 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
     [Fact]
     public async Task SearchCommandAcceptsVersionQueryParameter()
     {
-        var result = await fixture.ExecuteCommand("search", "4.5");
+        var result = await fixture.ExecuteCommand(["search", "4.5"]);
 
         await fixture.AssertSuccessfulExecutionAsync(result, "result");
         Assert.True(result.Stdout.Length > 0);
@@ -224,7 +223,7 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
     [Fact]
     public async Task GodotCommandShowsUsageWithoutArguments()
     {
-        var result = await fixture.ExecuteCommand("godot");
+        var result = await fixture.ExecuteCommand(["godot"]);
 
         await fixture.AssertSuccessfulExecutionAsync(result, "result");
     }
@@ -232,7 +231,7 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
     [Fact]
     public async Task GodotCommandPassesThroughArguments()
     {
-        var result = await fixture.ExecuteCommand("godot", "--version");
+        var result = await fixture.ExecuteCommand(["godot", "--version"]);
 
         await fixture.AssertSuccessfulExecutionAsync(result, "result");
     }
@@ -241,11 +240,11 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
     [Fact]
     public async Task LocalCommandCreatesVersionFileInCurrentDirectory()
     {
-        var install = await fixture.ExecuteCommand("install", "4.5-stable");
+        var install = await fixture.ExecuteCommand(["install", "4.5-stable"]);
         await fixture.AssertSuccessfulExecutionAsync(install, "install");
 
-        await fixture.ExecuteShellCommand("mkdir", "-p", "/tmp/local-test");
-        var result = await fixture.ExecuteCommandInDirectory("/tmp/local-test", "local", "4.5-stable");
+        await fixture.ExecuteShellCommand("mkdir", ["-p", "/tmp/local-test"]);
+        var result = await fixture.ExecuteCommandInDirectory("/tmp/local-test", ["local", "4.5-stable"]);
 
         Assert.True(result.ExitCode == ExitCodes.Success, $"Expected success but got exit code {result.ExitCode}. STDOUT: {result.Stdout}, STDERR: {result.Stderr}");
 
@@ -260,8 +259,8 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
     {
         await fixture.EnsureVersionInstalled("4.5-stable");
 
-        await fixture.ExecuteShellCommand("mkdir", "-p", "/tmp/local-content-test");
-        var result = await fixture.ExecuteCommandInDirectory("/tmp/local-content-test", "local", "4.5-stable");
+        await fixture.ExecuteShellCommand("mkdir", ["-p", "/tmp/local-content-test"]);
+        var result = await fixture.ExecuteCommandInDirectory("/tmp/local-content-test", ["local", "4.5-stable"]);
 
         await fixture.AssertSuccessfulExecutionAsync(result, "result");
 
@@ -275,13 +274,13 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
     [Fact]
     public async Task SetCommandUpdatesGlobalVersion()
     {
-        var searchResult = await fixture.ExecuteCommand("search");
+        var searchResult = await fixture.ExecuteCommand(["search"]);
         await fixture.AssertSuccessfulExecutionAsync(searchResult, "searchResult");
 
-        var install = await fixture.ExecuteCommand("install", "4.5-stable");
+        var install = await fixture.ExecuteCommand(["install", "4.5-stable"]);
         await fixture.AssertSuccessfulExecutionAsync(install, "install");
 
-        var result = await fixture.ExecuteCommand("set", "4.5");
+        var result = await fixture.ExecuteCommand(["set", "4.5"]);
         await fixture.AssertSuccessfulExecutionAsync(result, "result");
 
         await CleanupVersion("4.5-stable");
@@ -290,7 +289,7 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
     [Fact]
     public async Task RemoveCommandHandlesNonInstalledVersionGracefully()
     {
-        var result = await fixture.ExecuteCommand("remove", "99.99.99-invalid");
+        var result = await fixture.ExecuteCommand(["remove", "99.99.99-invalid"]);
 
         await fixture.AssertSuccessfulExecutionAsync(result, "result");
     }
@@ -298,7 +297,7 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
     [Fact]
     public async Task ListCommandWithInstalledFilter()
     {
-        var result = await fixture.ExecuteCommand("list", "--installed");
+        var result = await fixture.ExecuteCommand(["list", "--installed"]);
 
         Assert.Equal(ExitCodes.ArgumentError, result.ExitCode);
     }
@@ -306,7 +305,7 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
     [Fact]
     public async Task SearchCommandHandlesNetworkFailuresGracefully()
     {
-        var result = await fixture.ExecuteCommand("search", "nonexistent-query-that-wont-match-anything");
+        var result = await fixture.ExecuteCommand(["search", "nonexistent-query-that-wont-match-anything"]);
 
         await fixture.AssertSuccessfulExecutionAsync(result, "result");
     }
@@ -314,11 +313,11 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
     [Fact]
     public async Task LogsCommandDisplaysPreviousOperations()
     {
-        await fixture.ExecuteCommand("list");
-        await fixture.ExecuteCommand("search");
-        await fixture.ExecuteCommand("which");
+        await fixture.ExecuteCommand(["list"]);
+        await fixture.ExecuteCommand(["search"]);
+        await fixture.ExecuteCommand(["which"]);
 
-        var result = await fixture.ExecuteCommand("logs");
+        var result = await fixture.ExecuteCommand(["logs"]);
 
         await fixture.AssertSuccessfulExecutionAsync(result);
         Assert.True(result.Stdout.Length > 0);
@@ -327,9 +326,9 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
     [Fact]
     public async Task LogsCommandSupportsJsonOutput()
     {
-        await fixture.ExecuteCommand("list");
+        await fixture.ExecuteCommand(["list"]);
 
-        var result = await fixture.ExecuteCommand("logs", "--json");
+        var result = await fixture.ExecuteCommand(["logs", "--json"]);
 
         await fixture.AssertSuccessfulExecutionAsync(result);
         Assert.False(string.IsNullOrWhiteSpace(result.Stdout));
@@ -344,13 +343,13 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
     [Fact]
     public async Task MultipleSequentialInstallsWorkCorrectly()
     {
-        var searchResult = await fixture.ExecuteCommand("search");
+        var searchResult = await fixture.ExecuteCommand(["search"]);
         await fixture.AssertSuccessfulExecutionAsync(searchResult, "searchResult");
 
-        var install1 = await fixture.ExecuteCommand("install", "4.5-stable");
+        var install1 = await fixture.ExecuteCommand(["install", "4.5-stable"]);
         await fixture.AssertSuccessfulExecutionAsync(install1, "install1");
 
-        var install2 = await fixture.ExecuteCommand("install", "4.5-stable");
+        var install2 = await fixture.ExecuteCommand(["install", "4.5-stable"]);
         await fixture.AssertSuccessfulExecutionAsync(install2, "install2");
 
         await CleanupVersion("4.5-stable");
@@ -359,24 +358,24 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
     [Fact]
     public async Task FullVersionManagementWorkflow()
     {
-        var searchResult = await fixture.ExecuteCommand("search");
+        var searchResult = await fixture.ExecuteCommand(["search"]);
         await fixture.AssertSuccessfulExecutionAsync(searchResult, "searchResult");
 
         Assert.Contains("4.5-stable", searchResult.Stdout);
 
-        var installResult = await fixture.ExecuteCommand("install", "4.5-stable");
+        var installResult = await fixture.ExecuteCommand(["install", "4.5-stable"]);
         await fixture.AssertSuccessfulExecutionAsync(installResult, "installResult");
 
         Assert.True(await fixture.HasVersionInstalled("4.5"),
             "Expected 4.5 stable version to be installed");
 
         // Set it as the default
-        await fixture.ExecuteCommand("set", "4.5");
+        await fixture.ExecuteCommand(["set", "4.5"]);
 
         var currentVersion = await fixture.GetCurrentVersion();
         Assert.Contains("4.5", currentVersion);
 
-        var install2Result = await fixture.ExecuteCommand("install", "4.5-rc2");
+        var install2Result = await fixture.ExecuteCommand(["install", "4.5-rc2"]);
         await fixture.AssertSuccessfulExecutionAsync(install2Result, "install2Result");
 
         Assert.True(await fixture.HasVersionInstalled("4.5"),
@@ -387,24 +386,24 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
 
         // The install of 4.5-rc2 may find a patch version like 4.5.1-rc2
         // Query with just rc2 should find any rc2 version installed
-        var setResult = await fixture.ExecuteCommand("set", "rc2");
+        var setResult = await fixture.ExecuteCommand(["set", "rc2"]);
         await fixture.AssertSuccessfulExecutionAsync(setResult);
 
         var newCurrentVersion = await fixture.GetCurrentVersion();
         Assert.Contains("rc2", newCurrentVersion);
 
         var gdvmPath = fixture.GdvmPath;
-        await fixture.ExecuteShellCommand("mkdir", "-p", "/tmp/test-project");
-        var localSetResult = await fixture.ExecuteShellCommand("sh", "-c",
-            $"cd /tmp/test-project && {gdvmPath} local 4.5-stable");
+        await fixture.ExecuteShellCommand("mkdir", ["-p", "/tmp/test-project"]);
+        var localSetResult = await fixture.ExecuteShellCommand("sh", ["-c",
+            $"cd /tmp/test-project && {gdvmPath} local 4.5-stable"]);
 
         if (localSetResult.ExitCode == ExitCodes.Success)
         {
             var versionFileExists = await fixture.FileExists("/tmp/test-project/.gdvm-version");
             Assert.True(versionFileExists, "Expected .gdvm-version file to be created after successful local command");
 
-            var localResult = await fixture.ExecuteShellCommand("sh", "-c",
-                $"cd /tmp/test-project && {gdvmPath} which");
+            var localResult = await fixture.ExecuteShellCommand("sh", ["-c",
+                $"cd /tmp/test-project && {gdvmPath} which"]);
 
             Assert.Contains("4.5", localResult.Stdout);
         }
@@ -412,7 +411,7 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
         await CleanupVersion("4.5-rc2");
         await CleanupVersion("4.5-stable");
 
-        var finalListResult = await fixture.ExecuteCommand("list");
+        var finalListResult = await fixture.ExecuteCommand(["list"]);
         await fixture.AssertSuccessfulExecutionAsync(finalListResult);
 
         var logs = await fixture.GetLogs();
@@ -422,7 +421,7 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
 
     private async Task CleanupVersion(string version)
     {
-        await fixture.ExecuteCommand("remove", version);
+        await fixture.ExecuteCommand(["remove", version]);
         TestHelpers.MarkVersionUninstalled(version);
     }
 
@@ -430,11 +429,11 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
     public async Task HandlesInvalidVersionFormatGracefully()
     {
         var gdvmPath = fixture.GdvmPath;
-        await fixture.ExecuteShellCommand("mkdir", "-p", "/tmp/invalid-version");
-        await fixture.ExecuteShellCommand("sh", "-c", "echo 'not-a-valid-version-123' > /tmp/invalid-version/.gdvm-version");
+        await fixture.ExecuteShellCommand("mkdir", ["-p", "/tmp/invalid-version"]);
+        await fixture.ExecuteShellCommand("sh", ["-c", "echo 'not-a-valid-version-123' > /tmp/invalid-version/.gdvm-version"]);
 
         // Try to use local command which should validate the version
-        var localResult = await fixture.ExecuteShellCommand("sh", "-c", $"cd /tmp/invalid-version && {gdvmPath} local");
+        var localResult = await fixture.ExecuteShellCommand("sh", ["-c", $"cd /tmp/invalid-version && {gdvmPath} local"]);
 
         // Should fail with GeneralError since the .gdvm-version contains invalid format
         Assert.Equal(ExitCodes.GeneralError, localResult.ExitCode);
@@ -444,9 +443,9 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
     public async Task GodotCommandHandlesNoVersionSetGracefully()
     {
         var gdvmPath = fixture.GdvmPath;
-        await fixture.ExecuteShellCommand("mkdir", "-p", "/tmp/no-version");
+        await fixture.ExecuteShellCommand("mkdir", ["-p", "/tmp/no-version"]);
 
-        var result = await fixture.ExecuteShellCommand("sh", "-c", $"cd /tmp/no-version && {gdvmPath} godot \"--version\"");
+        var result = await fixture.ExecuteShellCommand("sh", ["-c", $"cd /tmp/no-version && {gdvmPath} godot \"--version\""]);
 
         await fixture.AssertSuccessfulExecutionAsync(result, "result");
     }
@@ -454,15 +453,15 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
     [Fact]
     public async Task GodotCommandHandlesComplexArguments()
     {
-        var searchResult = await fixture.ExecuteCommand("search");
+        var searchResult = await fixture.ExecuteCommand(["search"]);
         await fixture.AssertSuccessfulExecutionAsync(searchResult, "searchResult");
 
-        var install = await fixture.ExecuteCommand("install", "4.5-stable");
+        var install = await fixture.ExecuteCommand(["install", "4.5-stable"]);
         await fixture.AssertSuccessfulExecutionAsync(install, "install");
 
-        await fixture.ExecuteCommand("set", "4.5-stable");
+        await fixture.ExecuteCommand(["set", "4.5-stable"]);
 
-        var result = await fixture.ExecuteCommand("godot", "--args", "--help");
+        var result = await fixture.ExecuteCommand(["godot", "--args", "--help"]);
 
         await fixture.AssertSuccessfulExecutionAsync(result, "result");
 
@@ -472,13 +471,13 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
     [Fact]
     public async Task InstallingSameVersionTwiceIsIdempotent()
     {
-        var searchResult = await fixture.ExecuteCommand("search");
+        var searchResult = await fixture.ExecuteCommand(["search"]);
         await fixture.AssertSuccessfulExecutionAsync(searchResult, "search");
 
-        var install1 = await fixture.ExecuteCommand("install", "4.5-stable");
+        var install1 = await fixture.ExecuteCommand(["install", "4.5-stable"]);
         await fixture.AssertSuccessfulExecutionAsync(install1, "install 4.5-stable (first)");
 
-        var install2 = await fixture.ExecuteCommand("install", "4.5-stable");
+        var install2 = await fixture.ExecuteCommand(["install", "4.5-stable"]);
         await fixture.AssertSuccessfulExecutionAsync(install2, "install 4.5-stable (second)");
 
         await CleanupVersion("4.5-stable");
@@ -487,7 +486,7 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
     [Fact]
     public async Task InstallCommandWithInvalidVersionFails()
     {
-        var result = await fixture.ExecuteCommand("install", "999.999-invalid");
+        var result = await fixture.ExecuteCommand(["install", "999.999-invalid"]);
 
         Assert.Equal(ExitCodes.ArgumentError, result.ExitCode);
     }
@@ -495,14 +494,14 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
     [Fact]
     public async Task RemovingGloballySetVersionSucceeds()
     {
-        var searchResult = await fixture.ExecuteCommand("search");
+        var searchResult = await fixture.ExecuteCommand(["search"]);
         await fixture.AssertSuccessfulExecutionAsync(searchResult, "searchResult");
 
-        var install = await fixture.ExecuteCommand("install", "4.5-stable");
+        var install = await fixture.ExecuteCommand(["install", "4.5-stable"]);
         await fixture.AssertSuccessfulExecutionAsync(install, "install");
 
-        await fixture.ExecuteCommand("set", "4.5-stable");
-        var remove = await fixture.ExecuteCommand("remove", "4.5-stable");
+        await fixture.ExecuteCommand(["set", "4.5-stable"]);
+        var remove = await fixture.ExecuteCommand(["remove", "4.5-stable"]);
 
         await fixture.AssertSuccessfulExecutionAsync(remove, "remove");
     }
@@ -510,17 +509,17 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
     [Fact]
     public async Task RemovingLocallySetVersionSucceeds()
     {
-        var searchResult = await fixture.ExecuteCommand("search");
+        var searchResult = await fixture.ExecuteCommand(["search"]);
         await fixture.AssertSuccessfulExecutionAsync(searchResult, "searchResult");
 
-        var install = await fixture.ExecuteCommand("install", "4.5-stable");
+        var install = await fixture.ExecuteCommand(["install", "4.5-stable"]);
         await fixture.AssertSuccessfulExecutionAsync(install, "install");
 
         var gdvmPath = fixture.GdvmPath;
-        await fixture.ExecuteShellCommand("mkdir", "-p", "/tmp/remove-local");
-        await fixture.ExecuteShellCommand("sh", "-c", $"cd /tmp/remove-local && {gdvmPath} local 4.5-stable");
+        await fixture.ExecuteShellCommand("mkdir", ["-p", "/tmp/remove-local"]);
+        await fixture.ExecuteShellCommand("sh", ["-c", $"cd /tmp/remove-local && {gdvmPath} local 4.5-stable"]);
 
-        var remove = await fixture.ExecuteCommand("remove", "4.5-stable");
+        var remove = await fixture.ExecuteCommand(["remove", "4.5-stable"]);
 
         await fixture.AssertSuccessfulExecutionAsync(remove, "remove");
     }
@@ -528,7 +527,7 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
     [Fact]
     public async Task SetCommandWithNonExistentVersionFails()
     {
-        var result = await fixture.ExecuteCommand("set", "999.999-nonexistent");
+        var result = await fixture.ExecuteCommand(["set", "999.999-nonexistent"]);
 
         Assert.Equal(ExitCodes.GeneralError, result.ExitCode);
     }
@@ -536,7 +535,7 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
     [Fact]
     public async Task LocalCommandWithNonExistentVersionFails()
     {
-        var result = await fixture.ExecuteCommand("local", "999.999-nonexistent");
+        var result = await fixture.ExecuteCommand(["local", "999.999-nonexistent"]);
 
         Assert.Equal(ExitCodes.ArgumentError, result.ExitCode);
     }
@@ -545,7 +544,7 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
     [Fact]
     public async Task LogsCommandWorksWithNoOperations()
     {
-        var result = await fixture.ExecuteCommand("logs");
+        var result = await fixture.ExecuteCommand(["logs"]);
 
         Assert.Equal(0, result.ExitCode);
     }
@@ -553,16 +552,16 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
     [Fact]
     public async Task LogsCommandShowsRecentOperationsInOrder()
     {
-        var searchResult = await fixture.ExecuteCommand("search");
+        var searchResult = await fixture.ExecuteCommand(["search"]);
         await fixture.AssertSuccessfulExecutionAsync(searchResult, "searchResult");
 
-        var install = await fixture.ExecuteCommand("install", "4.5-stable");
+        var install = await fixture.ExecuteCommand(["install", "4.5-stable"]);
         await fixture.AssertSuccessfulExecutionAsync(install, "install");
 
-        var set = await fixture.ExecuteCommand("set", "4.5");
+        var set = await fixture.ExecuteCommand(["set", "4.5"]);
         await fixture.AssertSuccessfulExecutionAsync(set, "set");
 
-        var list = await fixture.ExecuteCommand("list");
+        var list = await fixture.ExecuteCommand(["list"]);
         await fixture.AssertSuccessfulExecutionAsync(list, "list");
 
         var logs = await fixture.GetLogs();
@@ -579,7 +578,7 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
     {
         // v3.6-stable standard works on both x64 (x11.64) and arm64 (linux.arm64)
         // When installing 3.6-stable, it will find the latest patch version (e.g., 3.6.1-stable)
-        var install = await fixture.ExecuteCommand("install", "3.6-stable");
+        var install = await fixture.ExecuteCommand(["install", "3.6-stable"]);
         await fixture.AssertSuccessfulExecutionAsync(install, "install");
 
         // Check that some version of 3.6 stable was installed (could be 3.6-stable or 3.6.1-stable, etc.)
@@ -592,13 +591,13 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
     [Fact]
     public async Task InstalledGodotBinaryIsExecutable()
     {
-        var install = await fixture.ExecuteCommand("install", "4.3-stable");
+        var install = await fixture.ExecuteCommand(["install", "4.3-stable"]);
         await fixture.AssertSuccessfulExecutionAsync(install, "install");
 
-        await fixture.ExecuteCommand("set", "4.3-stable");
+        await fixture.ExecuteCommand(["set", "4.3-stable"]);
 
         // Run Godot in headless mode to verify it's actually executable
-        var godotVersion = await fixture.ExecuteCommand("godot", "--", "--version", "--headless");
+        var godotVersion = await fixture.ExecuteCommand(["godot", "--", "--version", "--headless"]);
         await fixture.AssertSuccessfulExecutionAsync(godotVersion, "godotVersion");
         Assert.Contains("4.3", godotVersion.Stdout);
 
@@ -608,24 +607,24 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
     [Fact]
     public async Task InstallingMonoRuntimeWorks()
     {
-        var install = await fixture.ExecuteCommand("install", "4.5", "mono");
+        var install = await fixture.ExecuteCommand(["install", "4.5", "mono"]);
         await fixture.AssertSuccessfulExecutionAsync(install, "install");
 
         Assert.True(await fixture.HasVersionInstalled("mono"),
             "Mono runtime version not found in installed versions");
 
-        await fixture.ExecuteCommand("set", "4.5", "mono");
+        await fixture.ExecuteCommand(["set", "4.5", "mono"]);
 
-        var godotVersion = await fixture.ExecuteCommand("godot", "--", "--version", "--headless");
+        var godotVersion = await fixture.ExecuteCommand(["godot", "--", "--version", "--headless"]);
         Assert.Equal(0, godotVersion.ExitCode);
 
-        await fixture.ExecuteCommand("remove", "latest", "mono");
+        await fixture.ExecuteCommand(["remove", "latest", "mono"]);
     }
 
     [Fact]
     public async Task SearchCommandDisplaysChronologicalOrdering()
     {
-        var searchResult = await fixture.ExecuteCommand("search", "4");
+        var searchResult = await fixture.ExecuteCommand(["search", "4"]);
         await fixture.AssertSuccessfulExecutionAsync(searchResult, "searchResult");
 
         // Parse output by removing panel borders and extracting version lines
@@ -672,7 +671,7 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
         // install prefers stable versions over newer unstable versions
 
         // First, check what versions are available
-        var searchResult = await fixture.ExecuteCommand("search", "4");
+        var searchResult = await fixture.ExecuteCommand(["search", "4"]);
         await fixture.AssertSuccessfulExecutionAsync(searchResult, "searchResult");
 
         var hasStable = searchResult.Stdout.Contains("-stable");
@@ -683,10 +682,10 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
             return; // Skip if we don't have both stable and dev versions
         }
 
-        var installResult = await fixture.ExecuteCommand("install", "4");
+        var installResult = await fixture.ExecuteCommand(["install", "4"]);
         await fixture.AssertSuccessfulExecutionAsync(installResult, "installResult");
 
-        var listResult = await fixture.ExecuteCommand("list");
+        var listResult = await fixture.ExecuteCommand(["list"]);
         await fixture.AssertSuccessfulExecutionAsync(listResult, "listResult");
 
         // Should have installed a stable version, not a dev version
@@ -704,62 +703,62 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
     public async Task InstallSetAndVerifyWithWhich()
     {
         // Install a version
-        var install = await fixture.ExecuteCommand("install", "4.3-stable");
+        var install = await fixture.ExecuteCommand(["install", "4.3-stable"]);
         await fixture.AssertSuccessfulExecutionAsync(install, "install");
 
         // Set it as the global default
-        var set = await fixture.ExecuteCommand("set", "4.3");
+        var set = await fixture.ExecuteCommand(["set", "4.3"]);
         await fixture.AssertSuccessfulExecutionAsync(set, "set");
 
         // Verify which shows it as the default
-        var which = await fixture.ExecuteCommand("which");
+        var which = await fixture.ExecuteCommand(["which"]);
         await fixture.AssertSuccessfulExecutionAsync(which, "which");
         Assert.Contains("4.3", which.Stdout);
 
         // Cleanup
         await CleanupVersion("4.3-stable");
-        await fixture.ExecuteShellCommand("rm", "-f", "/root/gdvm/.version");
+        await fixture.ExecuteShellCommand("rm", ["-f", "/root/gdvm/.version"]);
     }
 
     [Fact]
     public async Task FirstVersionBecomesDefaultSecondDoesNot()
     {
         // Clear any existing default
-        await fixture.ExecuteShellCommand("rm", "-f", "/root/gdvm/.version");
+        await fixture.ExecuteShellCommand("rm", ["-f", "/root/gdvm/.version"]);
 
         // Install first version
-        var install1 = await fixture.ExecuteCommand("install", "4.2-stable");
+        var install1 = await fixture.ExecuteCommand(["install", "4.2-stable"]);
         await fixture.AssertSuccessfulExecutionAsync(install1, "install1");
 
         // Explicitly set it as default (install doesn't auto-set)
-        var set1 = await fixture.ExecuteCommand("set", "4.2");
+        var set1 = await fixture.ExecuteCommand(["set", "4.2"]);
         await fixture.AssertSuccessfulExecutionAsync(set1, "set1");
 
         // Verify it's the default
-        var which1 = await fixture.ExecuteCommand("which");
+        var which1 = await fixture.ExecuteCommand(["which"]);
         await fixture.AssertSuccessfulExecutionAsync(which1, "which1");
         Assert.Contains("4.2", which1.Stdout);
 
         // Install second version without setting it
-        var install2 = await fixture.ExecuteCommand("install", "4.3-stable");
+        var install2 = await fixture.ExecuteCommand(["install", "4.3-stable"]);
         await fixture.AssertSuccessfulExecutionAsync(install2, "install2");
 
         // Verify first version is still default
-        var which2 = await fixture.ExecuteCommand("which");
+        var which2 = await fixture.ExecuteCommand(["which"]);
         await fixture.AssertSuccessfulExecutionAsync(which2, "which2");
         Assert.Contains("4.2", which2.Stdout);
 
         // Cleanup
         await CleanupVersion("4.2-stable");
         await CleanupVersion("4.3-stable");
-        await fixture.ExecuteShellCommand("rm", "-f", "/root/gdvm/.version");
+        await fixture.ExecuteShellCommand("rm", ["-f", "/root/gdvm/.version"]);
     }
 
     [Fact]
     public async Task LocalCommandReadsProjectGodotAndCreatesVersionFile()
     {
         // Create a project directory with a project.godot file
-        await fixture.ExecuteShellCommand("mkdir", "-p", "/tmp/godot-project");
+        await fixture.ExecuteShellCommand("mkdir", ["-p", "/tmp/godot-project"]);
 
         var projectContent = """
                              [application]
@@ -767,10 +766,10 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
                              config/features=PackedStringArray("4.3", "Forward Plus")
                              """;
 
-        await fixture.ExecuteShellCommand("sh", "-c", $"cat > /tmp/godot-project/project.godot << 'EOF'\n{projectContent}\nEOF");
+        await fixture.ExecuteShellCommand("sh", ["-c", $"cat > /tmp/godot-project/project.godot << 'EOF'\n{projectContent}\nEOF"]);
 
         // Run local command in that directory (should detect 4.3 from project.godot)
-        var local = await fixture.ExecuteCommandInDirectory("/tmp/godot-project", "local");
+        var local = await fixture.ExecuteCommandInDirectory("/tmp/godot-project", ["local"]);
         await fixture.AssertSuccessfulExecutionAsync(local, "local");
 
         // Verify .gdvm-version was created
@@ -794,7 +793,7 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
     {
         // Install and set a version once
         await fixture.EnsureVersionInstalled("4.4-stable");
-        await fixture.ExecuteCommand("set", "4.4");
+        await fixture.ExecuteCommand(["set", "4.4"]);
 
         // Test multiple project names that contain flag-like substrings
         var projectNames = new[]
@@ -811,7 +810,7 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
         {
             // Create project with name containing flag-like substrings
             var projectPath = $"/tmp/{projectName}";
-            await fixture.ExecuteShellCommand("mkdir", "-p", projectPath);
+            await fixture.ExecuteShellCommand("mkdir", ["-p", projectPath]);
 
             var projectContent = $"""
                                   ; Engine configuration file.
@@ -822,11 +821,11 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
                                   config/features=PackedStringArray("4.4", "Forward Plus")
                                   """;
 
-            await fixture.ExecuteShellCommand("sh", "-c",
-                $"cat > {projectPath}/project.godot << 'EOF'\n{projectContent}\nEOF");
+            await fixture.ExecuteShellCommand("sh", ["-c",
+                $"cat > {projectPath}/project.godot << 'EOF'\n{projectContent}\nEOF"]);
 
             // Run gdvm godot in that directory
-            var result = await fixture.ExecuteCommandInDirectory(projectPath, "godot");
+            var result = await fixture.ExecuteCommandInDirectory(projectPath, ["godot"]);
 
             // Should use DETACHED mode, not attached
             Assert.DoesNotContain("attached mode", result.Stdout.ToLower());

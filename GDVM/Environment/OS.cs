@@ -18,21 +18,27 @@ public enum OS
 
 public static class OSExtensions
 {
-    public static string ToDisplayString(this OS os) => os switch
+    extension(OS os)
     {
-        OS.Windows => "Windows",
-        OS.Linux => "Linux",
-        OS.MacOS => "macOS",
-        OS.FreeBSD => "FreeBSD",
-        _ => "Unknown OS"
-    };
+        public string ToDisplayString() => os switch
+        {
+            OS.Windows => "Windows",
+            OS.Linux => "Linux",
+            OS.MacOS => "macOS",
+            OS.FreeBSD => "FreeBSD",
+            _ => "Unknown OS"
+        };
+    }
 
-    public static string ToDisplayString(this Architecture arch) => arch switch
+    extension(Architecture arch)
     {
-        Architecture.X64 => "x64",
-        Architecture.X86 => "x86",
-        Architecture.Arm64 => "ARM64",
-        Architecture.Arm => "ARM32",
-        _ => arch.ToString()
-    };
+        public string ToDisplayString() => arch switch
+        {
+            Architecture.X64 => "x64",
+            Architecture.X86 => "x86",
+            Architecture.Arm64 => "ARM64",
+            Architecture.Arm => "ARM32",
+            _ => arch.ToString()
+        };
+    }
 }

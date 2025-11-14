@@ -8,5 +8,8 @@ public enum RuntimeEnvironment
 
 public static class RuntimeEnvironmentExtensions
 {
-    public static string Name(this RuntimeEnvironment env) => env.ToString().ToLowerInvariant();
+    extension(RuntimeEnvironment env)
+    {
+        public string Name() => env.ToString().ToLowerInvariant();
+    }
 }

@@ -50,6 +50,7 @@ public sealed class SearchCommand(
                 {
                     console.Write(releases.ToPanel(searchQuery));
                 }
+
                 return;
 
             case Result<IEnumerable<string>, NetworkError>.Failure(var error):
@@ -66,6 +67,7 @@ public sealed class SearchCommand(
                 console.MarkupLine(
                     Messages.SomethingWentWrong("when trying to search releases", pathService)
                 );
+
                 throw new InvalidOperationException(errorMessage);
         }
     }
@@ -75,20 +77,23 @@ internal readonly record struct RemoteReleaseView([property: JsonPropertyName("n
 
 internal static class RemoteReleaseViewExtensions
 {
-    public static Panel ToPanel(this IReadOnlyList<RemoteReleaseView> releases, IReadOnlyList<string> query)
+    extension(IReadOnlyList<RemoteReleaseView> releases)
     {
-        var content = releases.Count > 0
-            ? string.Join("\n", releases.Select(r => r.Name))
-            : "[dim]No releases found.[/]";
-
-        var header = query.Count == 0
-            ? Messages.AvailableVersionsHeader
-            : "[green]List Of Available Versions[/]";
-
-        return new Panel(content)
+        public Panel ToPanel(IReadOnlyList<string> query)
         {
-            Header = new PanelHeader(header),
-            Width = 40
-        };
+            var content = releases.Count > 0
+                ? string.Join("\n", releases.Select(r => r.Name))
+                : "[dim]No releases found.[/]";
+
+            var header = query.Count == 0
+                ? Messages.AvailableVersionsHeader
+                : "[green]List Of Available Versions[/]";
+
+            return new Panel(content)
+            {
+                Header = new PanelHeader(header),
+                Width = 40
+            };
+        }
     }
 }

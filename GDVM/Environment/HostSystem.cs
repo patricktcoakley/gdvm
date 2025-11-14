@@ -147,9 +147,9 @@ public sealed class HostSystem(SystemInfo systemInfo, IPathService pathService, 
     {
         var installed = new FileSystemEnumerable<string>(
             pathService.RootPath,
-            (ref FileSystemEntry entry) => entry.FileName.ToString())
+            (ref entry) => entry.FileName.ToString())
         {
-            ShouldIncludePredicate = (ref FileSystemEntry entry) =>
+            ShouldIncludePredicate = (ref entry) =>
                 entry is { IsDirectory: true, FileName: not "bin", IsHidden: false }
         };
 

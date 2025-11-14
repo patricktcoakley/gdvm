@@ -109,15 +109,18 @@ internal readonly record struct ListView(
 
 internal static class ListViewExtensions
 {
-    public static Panel ToPanel(this IReadOnlyList<ListView> views)
+    extension(IReadOnlyList<ListView> views)
     {
-        var content = string.Join("\n", views.Select(view => view.ToDisplay()));
-
-        return new Panel(content)
+        public Panel ToPanel()
         {
-            Header = new PanelHeader(Messages.ListPanelHeader),
-            Width = 40,
-            Border = BoxBorder.Rounded
-        };
+            var content = string.Join("\n", views.Select(view => view.ToDisplay()));
+
+            return new Panel(content)
+            {
+                Header = new PanelHeader(Messages.ListPanelHeader),
+                Width = 40,
+                Border = BoxBorder.Rounded
+            };
+        }
     }
 }

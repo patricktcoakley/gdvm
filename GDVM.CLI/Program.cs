@@ -38,10 +38,10 @@ public class Program
                         opts.UsePlainTextFormatter(formatter =>
                         {
                             formatter.SetPrefixFormatter($"{0}|{1}|",
-                                (in MessageTemplate template, in LogInfo info) => template.Format(info.Timestamp, info.LogLevel));
+                                (in template, in info) => template.Format(info.Timestamp, info.LogLevel));
 
                             formatter.SetSuffixFormatter($"|{0}",
-                                (in MessageTemplate template, in LogInfo info) => template.Format(info.Category));
+                                (in template, in info) => template.Format(info.Category));
 
                             formatter.SetExceptionFormatter((writer, ex) => Utf8String.Format(writer, $"{ex.Message}"));
                         });

@@ -109,13 +109,14 @@ gdvm --help
 
 but here is a detailed summary of the available commands:
 
-- `gdvm list`  will list locally installed Godot versions.
+- `gdvm list` [`--json`] will list locally installed Godot versions. Use `--json` to output in JSON format.
 - `gdvm install [<...strings>]` will prompt the user to install a version if no arguments are supplied, or will
   try to find the closest matching version based on the query, defaulting to "stable" if no other release type is supplied.
-  It will also set the last installed version as the default.
+  It will automatically set the installed version as the default if it's the first installation.
     - Queries:
         - `latest` or `latest standard` will install the latest stable, and `latest mono` will install the latest .NET stable.
         - `4 mono` will grab the latest stable 4.x .NET release, `3.3 rc` will grab the latest rc of 3.3 standard, `1` would take the last stable version `1`, and so on.
+- `gdvm install default [<...strings>]` same as `install`, but explicitly sets the installed version as the default regardless of whether other versions are already installed.
 - `gdvm godot` runs the appropriate Godot version, or with the `--interactive` or `-i` flag, will prompt the user to launch an installed version. When run in a project directory with a `.gdvm-version`
   file, it will use that project-specific version. If no `.gdvm-version` file exists, it will use the global default version. The command will automatically detect and launch the project if a
   `project.godot` file is found.
@@ -134,13 +135,13 @@ but here is a detailed summary of the available commands:
   will use that version.
     - If a list of arguments are provided, it will find the best matching version based on the query (including runtime preferences like `mono` or `standard`) and install it if necessary.
     - Use `-i|--interactive` to force interactive selection from already installed versions instead of auto-installing.
-- `gdvm which` displays the location that the current Godot symlink points to.
+- `gdvm which` [`--json`] displays the location that the current Godot symlink points to. Use `--json` to output in JSON format.
 - `gdvm remove [<...strings>]` prompts the user to select multiple installations to delete, or optionally takes a query to filter down to specific versions to delete. If there is only one match, it
   will delete it directly. If there are multiple matches, it will prompt the user to select which ones to delete.
     - For example, if you wanted to list all of the `4.y.z` versions to remove, you could just do `gdvm remove 4` to list all of the 4 major releases. However, if remove a specific version, like
       `4.4.1-stable-mono`, it will just delete that version directly. Deleting the currently set version will unset it and you will need to set a new one.
-- `gdvm logs [--level|-l <string>, --message|-m <string>]` displays all the of the logs, or optionally takes a level or message filter.
-- `gdvm search [<...strings>]` takes an optional query to search all available remote versions of Godot.
+- `gdvm logs [--level|-l <string>, --message|-m <string>] [--json]` displays all the of the logs, or optionally takes a level or message filter. Use `--json` to output in JSON format.
+- `gdvm search [<...strings>] [--json]` takes an optional query to search all available remote versions of Godot. Use `--json` to output in JSON format.
     - Queries:
         - `4` would filter all 4.x releases, including "stable", "dev", etc.
         - `4.2-rc` would only list the `4.2` `rc` releases, but `4.2 rc` would list all `4.2.x` releases with the `rc` release type, including `4.2.2.-rc3`
@@ -255,7 +256,6 @@ Also please make sure to run `dotnet format` before committing to ensure code st
 
 ## Roadmap
 
-- Get some working e2e tests, including searching, installing, setting, launching, and removing a specific version.
 - Possibly consider adding multi-select and multi-query to installations so that you could bulk-install multiple versions.
 - I currently have [gdvmup](#gdvmup-currently-windows-only) for Windows, and it would make sense to port that script to bash for macOS and Linux support, allowing users to more easily install gdvm
   without having to rely on a package manager, but at the cost of extra maintenance and overhead.

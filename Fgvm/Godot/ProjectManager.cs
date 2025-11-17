@@ -1,0 +1,211 @@
+using System.Text.RegularExpressions;
+
+namespace Fgvm.Godot;
+
+/// <summary>
+///     Interface for managing Godot project information and version files
+/// </summary>
+public interface IProjectManager
+{
+    /// <summary>
+    ///     Finds project release information including version and runtime environment.
+    /// </summary>
+    /// <param name="directory">The directory to search in. If null, uses current working directory.</param>
+    /// <returns>Release if found, null otherwise.</returns>
+    Release? FindProjectInfo(string? directory = null);
+
+
+    /// <summary>
+    ///     Finds the path to the project.godot file in the specified directory.
+    /// </summary>
+    /// <param name="directory">The directory to search in. If null, uses current working directory.</param>
+    /// <returns>The full path to project.godot if found, null otherwise.</returns>
+    string? FindProjectFilePath(string? directory = null);
+
+    /// <summary>
+    ///     Creates or updates a `.fgvm-version` file in the specified directory.
+    /// </summary>
+    /// <param name="version">The version to write to the file</param>
+    /// <param name="directory">The directory to create the file in (null for current directory)</param>
+    void CreateVersionFile(string version, string? directory = null);
+
+    /// <summary>
+    ///     Finds project release info from `.fgvm-version` file only
+    /// </summary>
+    /// <param name="directory">The directory to search in. If null, uses current working directory.</param>
+    /// <returns>Release if .fgvm-version file found, null otherwise.</returns>
+    Release? FindExplicitProjectInfo(string? directory = null);
+}
+
+public partial class ProjectManager(IReleaseManager releaseManager) : IProjectManager
+{
+    private const string VersionFile = ".fgvm-version";
+    private const string ProjectFile = "project.godot";
+
+    /// <summary>
+    ///     Finds project release information including version and .NET status.
+    /// </summary>
+    /// <param name="directory">The directory to search in. If null, uses current working directory.</param>
+    /// <returns>Release if found and parseable, null otherwise.</returns>
+    // TODO: Replace with Result<Release, ProjectError> FindProjectInfo(string? directory = null)
+    public Release? FindProjectInfo(string? directory = null)
+    {
+        var targetDir = directory ?? Directory.GetCurrentDirectory();
+
+        // 1. Check for `.fgvm-version` file first (user override)
+        var versionFile = Path.Combine(targetDir, VersionFile);
+        if (File.Exists(versionFile))
+        {
+            var content = File.ReadAllText(versionFile).Trim();
+            if (!string.IsNullOrEmpty(content))
+            {
+                return releaseManager.TryCreateRelease(content);
+            }
+        }
+
+        // 2. Check `project.godot` file for automatic detection
+        var projectFile = Path.Combine(targetDir, ProjectFile);
+        return File.Exists(projectFile) ? ParseProjectGodot(projectFile) : null;
+    }
+
+    /// <summary>
+    ///     Finds the path to the project.godot file in the specified directory.
+    /// </summary>
+    /// <param name="directory">The directory to search in. If null, uses current working directory.</param>
+    /// <returns>The full path to project.godot if found, null otherwise.</returns>
+    // TODO: Replace with Result<string, ProjectError> FindProjectFilePath(string? directory = null)
+    public string? FindProjectFilePath(string? directory = null)
+    {
+        var targetDir = directory ?? Directory.GetCurrentDirectory();
+        var projectFile = Path.Combine(targetDir, ProjectFile);
+        return File.Exists(projectFile) ? projectFile : null;
+    }
+
+    public void CreateVersionFile(string version, string? directory = null)
+    {
+        var targetDir = directory ?? Directory.GetCurrentDirectory();
+        var filePath = Path.Combine(targetDir, VersionFile);
+        File.WriteAllText(filePath, version + System.Environment.NewLine);
+    }
+
+    /// <summary>
+    ///     Finds project release info from `.fgvm-version` file only
+    /// </summary>
+    /// <param name="directory">The directory to search in. If null, uses current working directory.</param>
+    /// <returns>Release if .fgvm-version file found and parseable, null otherwise.</returns>
+    // TODO: Replace with Result<Release, ProjectError> FindExplicitProjectInfo(string? directory = null)
+    public Release? FindExplicitProjectInfo(string? directory = null)
+    {
+        var targetDir = directory ?? Directory.GetCurrentDirectory();
+
+        // Only check for `.fgvm-version` file (user override)
+        var versionFile = Path.Combine(targetDir, VersionFile);
+        if (!File.Exists(versionFile))
+        {
+            return null;
+        }
+
+        var content = File.ReadAllText(versionFile).Trim();
+        if (string.IsNullOrEmpty(content))
+        {
+            return null;
+        }
+
+        return releaseManager.TryCreateRelease(content);
+    }
+
+    /// <summary>
+    ///     Finds the project version using the following priority:
+    ///     1. `.fgvm-version` file (user override) or
+    ///     2. `project.godot` file (automatic detection) and creates a `.fgvm-version` file based on the contents.
+    /// </summary>
+    /// <param name="directory">The directory to search in. If null, uses current working directory.</param>
+    /// <returns>The version string if found, null otherwise.</returns>
+    // TODO: Replace with Result<string, ProjectError> FindProjectVersion(string? directory = null)
+    public string? FindProjectVersion(string? directory = null)
+    {
+        var release = FindProjectInfo(directory);
+        return release?.ReleaseNameWithRuntime;
+    }
+
+    /// <summary>
+    ///     Parses a project.godot file to extract version and .NET information, then creates a Release.
+    /// </summary>
+    /// <param name="projectFilePath">Path to the project.godot file.</param>
+    /// <returns>Release if parsing and creation succeeds, null otherwise.</returns>
+    // TODO: Replace with Result<Release, ProjectError> ParseProjectGodot(string projectFilePath)
+    private Release? ParseProjectGodot(string projectFilePath)
+    {
+        try
+        {
+            var content = File.ReadAllText(projectFilePath);
+            var lines = content.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+
+            string? version = null;
+            var runtime = RuntimeEnvironment.Standard;
+
+            foreach (var line in lines)
+            {
+                var trimmedLine = line.Trim();
+
+                // Extract version from config/features
+                if (trimmedLine.StartsWith("config/features=PackedStringArray("))
+                {
+                    version = ExtractVersionFromFeatures(trimmedLine);
+                }
+
+                // Check for .NET section
+                if (trimmedLine == "[dotnet]")
+                {
+                    runtime = RuntimeEnvironment.Mono;
+                }
+            }
+
+            if (version != null)
+            {
+                // For project.godot versions (like "4.3"), we need to append "-stable" and runtime
+                // to create a valid release name
+                var versionWithType = version.Contains('-') ? version : $"{version}-stable";
+                var runtimeSuffix = runtime == RuntimeEnvironment.Mono ? "-mono" : "-standard";
+                var fullVersion = $"{versionWithType}{runtimeSuffix}";
+
+                return releaseManager.TryCreateRelease(fullVersion);
+            }
+        }
+        catch (Exception)
+        {
+            return null;
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    ///     Extracts the Godot version from a config/features line.
+    /// </summary>
+    /// <param name="featuresLine">The line containing config/features=PackedStringArray(...)</param>
+    /// <returns>The version string if found, null otherwise.</returns>
+    private static string? ExtractVersionFromFeatures(string featuresLine)
+    {
+        // Example: config/features=PackedStringArray("4.4", "Forward Plus")
+        var startIndex = featuresLine.IndexOf('(');
+        var endIndex = featuresLine.LastIndexOf(')');
+
+        if (startIndex == -1 || endIndex == -1 || endIndex <= startIndex)
+        {
+            return null;
+        }
+
+        var featuresContent = featuresLine.Substring(startIndex + 1, endIndex - startIndex - 1);
+
+        // Split by comma and look for version-like strings
+        var features = featuresContent.Split(',')
+            .Select(f => f.Trim().Trim('"'))
+            .Where(f => !string.IsNullOrEmpty(f));
+
+        return features.FirstOrDefault(feature => VersionRegex().IsMatch(feature));
+    }
+
+    [GeneratedRegex(@"^\d+\.\d+(\.\d+)?$")]
+    private static partial Regex VersionRegex();
+}

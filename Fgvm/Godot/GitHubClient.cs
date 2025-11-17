@@ -1,0 +1,125 @@
+using Fgvm.Types;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
+using System.Net.Http.Headers;
+using System.Text.Json;
+
+namespace Fgvm.Godot;
+
+public interface IGitHubClient
+{
+    Task<Result<IEnumerable<string>, NetworkError>> ListReleasesAsync(CancellationToken cancellationToken);
+    Task<string> GetSha512Async(Release godotRelease, CancellationToken cancellationToken);
+    Task<HttpResponseMessage> GetZipFileAsync(string filename, Release godotRelease, CancellationToken cancellationToken);
+}
+
+public class GitHubClient : IGitHubClient
+{
+    private const string BaseUrl = "https://github.com/godotengine/godot-builds/releases/download";
+    private const string ApiUrl = "https://api.github.com/repos/godotengine/godot-builds/contents/releases";
+    private readonly Lazy<IConfiguration> _configuration;
+
+    private readonly HttpClient _httpClient;
+    private readonly ILogger<GitHubClient> _logger;
+
+    public GitHubClient(HttpClient httpClient, Lazy<IConfiguration> configuration, ILogger<GitHubClient> logger)
+    {
+        _httpClient = httpClient;
+        _configuration = configuration;
+        _logger = logger;
+
+        // Configure the HttpClient for GitHub API
+        ConfigureHttpClient();
+    }
+
+    private string? GitHubToken => _configuration.Value["github:token"];
+
+    public async Task<Result<IEnumerable<string>, NetworkError>> ListReleasesAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            var response = await _httpClient.GetAsync(ApiUrl, cancellationToken);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var jsonString = await response.Content.ReadAsStringAsync(cancellationToken);
+                var releases = JsonSerializer.Deserialize(jsonString, GithubReleaseAssetContext.Default.ListGitHubReleaseAsset) ?? [];
+                releases.Reverse();
+                return new Result<IEnumerable<string>, NetworkError>.Success(
+                    releases.Select<GitHubReleaseAsset, string>(r => r.ReleaseName));
+            }
+
+            var body = await response.Content.ReadAsStringAsync(cancellationToken);
+            _logger.LogError("{ApiUrl} returned {StatusCode}. Body: {Body}", ApiUrl, response.StatusCode, body);
+            return new Result<IEnumerable<string>, NetworkError>.Failure(
+                new NetworkError.RequestFailed(ApiUrl, (int)response.StatusCode, body));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to list releases from GitHub");
+            return new Result<IEnumerable<string>, NetworkError>.Failure(
+                new NetworkError.Exception(ex.Message, ex.StackTrace));
+        }
+    }
+
+    // TODO: Replace with Task<Result<string, NetworkError>> GetSha512Async(Release godotRelease, CancellationToken cancellationToken)
+    public async Task<string> GetSha512Async(Release godotRelease, CancellationToken cancellationToken)
+    {
+        var url = $"{BaseUrl}/{godotRelease.ReleaseName}/SHA512-SUMS.txt";
+
+        try
+        {
+            var response = await _httpClient.GetAsync(url, cancellationToken);
+
+            if (response.IsSuccessStatusCode)
+            {
+                return await response.Content.ReadAsStringAsync(cancellationToken);
+            }
+
+            var body = await response.Content.ReadAsStringAsync(cancellationToken);
+            _logger.LogError("{Url} returned {StatusCode}. Body: {Body}", url, response.StatusCode, body);
+            throw new HttpRequestException($"GitHub SHA512 request failed: {response.StatusCode}");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to get SHA512 from GitHub for {Version}", godotRelease.Version);
+            throw;
+        }
+    }
+
+    // TODO: Replace with Task<Result<HttpResponseMessage, NetworkError>> GetZipFileAsync(string filename, Release godotRelease, CancellationToken cancellationToken)
+    public async Task<HttpResponseMessage> GetZipFileAsync(string filename, Release godotRelease, CancellationToken cancellationToken)
+    {
+        var url = $"{BaseUrl}/{godotRelease.ReleaseName}/{filename}";
+
+        try
+        {
+            var response = await _httpClient.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+
+            if (response.IsSuccessStatusCode)
+            {
+                return response;
+            }
+
+            var body = await response.Content.ReadAsStringAsync(cancellationToken);
+            _logger.LogError("{Url} returned {StatusCode}. Body: {Body}", url, response.StatusCode, body);
+            throw new HttpRequestException($"GitHub zip file request failed: {response.StatusCode}");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to get zip file from GitHub for {ReleaseNameWithRuntime}", godotRelease.ReleaseNameWithRuntime);
+            throw;
+        }
+    }
+
+    private void ConfigureHttpClient()
+    {
+        _httpClient.DefaultRequestHeaders.UserAgent.Clear();
+        _httpClient.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("fgvm", null));
+
+        if (GitHubToken != null)
+        {
+            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", GitHubToken);
+        }
+    }
+}

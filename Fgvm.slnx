@@ -1,0 +1,14 @@
+<Solution>
+    <Configurations>
+        <Platform Name="Any CPU"/>
+        <Platform Name="x64"/>
+        <Platform Name="x86"/>
+    </Configurations>
+    <Project Path="Fgvm.Cli/Fgvm.Cli.csproj"/>
+    <Project Path="Fgvm.Tests.EndToEnd/Fgvm.Tests.EndToEnd.csproj"/>
+    <Project Path="Fgvm.Tests/Fgvm.Tests.csproj"/>
+    <Project Path="Fgvm/Fgvm.csproj"/>
+    <Properties Name="MonoDevelopProperties">
+        <Property Name="StartupItem" Value="Fgvm\Fgvm.Cli.csproj"/>
+    </Properties>
+</Solution>

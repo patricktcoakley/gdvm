@@ -10,26 +10,15 @@ namespace Fgvm.Cli.Command;
 public sealed class LocalCommand(IVersionManagementService versionManagementService, IAnsiConsole console, ILogger<LocalCommand> logger)
 {
     /// <summary>
-    ///     Sets the Godot version for the current project using `.fgvm-version` file.
-    ///     If no arguments are provided and a project version is detected but not installed, it will automatically install that version.
-    ///     If arguments are provided, it will find the best matching version and install it if necessary.
-    ///     Use --interactive to select from already installed versions.
+    ///     Set the Godot version for the current project.
     /// </summary>
-    /// <param name="query">Version query arguments</param>
-    /// <param name="interactive">-i, Creates a prompt to select from installed versions for the local project.</param>
     /// <param name="cancellationToken">Cancellation token</param>
-    public async Task Local([Argument] string[]? query = null, bool interactive = false, CancellationToken cancellationToken = default)
+    /// <param name="query">Version query arguments</param>
+    public async Task Local(CancellationToken cancellationToken = default, [Argument] params string[] query)
     {
-        // Warn if both query and interactive are provided, then default to interactive
-        if (query is { Length: > 0 } && interactive)
-        {
-            console.MarkupLine(Messages.InteractiveWithQueryWarning);
-            query = null; // Clear query to use interactive mode
-        }
-
         try
         {
-            var godotRelease = await versionManagementService.SetLocalVersionAsync(query, interactive, cancellationToken);
+            var godotRelease = await versionManagementService.SetLocalVersionAsync(query.Length > 0 ? query : null, cancellationToken: cancellationToken);
             console.MarkupLine(Messages.SetLocalVersion(godotRelease.ReleaseNameWithRuntime));
         }
         catch (TaskCanceledException)

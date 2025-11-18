@@ -20,8 +20,7 @@ public sealed class GodotCommand(
     ILogger<GodotCommand> logger)
 {
     /// <summary>
-    ///     Launches the currently selected Godot version. If a project-specific version is detected but not installed, it prompts the user to automatically install it.
-    ///     By default, Godot runs in detached mode (independent of the terminal).
+    ///     Launch the currently selected Godot version.
     /// </summary>
     /// <param name="interactive">-i, Creates a prompt to select and launch an installed Godot version.</param>
     /// <param name="attached">-a, Launches Godot in attached mode, keeping it connected to the terminal for output.</param>

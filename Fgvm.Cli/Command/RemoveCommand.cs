@@ -16,8 +16,7 @@ public sealed class RemoveCommand(
     ILogger<RemoveCommand> logger)
 {
     /// <summary>
-    ///     Removes Godot installations. Automatically removes when exactly one version matches the query,
-    ///     or prompts the user to select from multiple matches.
+    ///     Remove an installed Godot version.
     /// </summary>
     /// <param name="cancellationToken"></param>
     /// <param name="query"></param>

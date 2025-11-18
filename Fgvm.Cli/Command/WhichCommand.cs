@@ -10,7 +10,7 @@ namespace Fgvm.Cli.Command;
 public sealed class WhichCommand(IHostSystem hostSystem, IAnsiConsole console)
 {
     /// <summary>
-    ///     Displays the currently selected version of Godot (if any).
+    ///     Show the path to the current Godot version.
     /// </summary>
     public void Which(bool json = false)
     {

@@ -92,3 +92,4 @@ lcov.info
 coverage/
 coverage.json
 .gdvm-publish/
+.fgvm-publish

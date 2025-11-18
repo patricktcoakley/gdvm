@@ -326,6 +326,9 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
     [Fact]
     public async Task LogsCommandSupportsJsonOutput()
     {
+        // Clear old log file to avoid multi-line HTTP log entries from automatic logging
+        await fixture.ExecuteCommand(["sh", "-c", "rm -f /root/.local/state/fgvm/fgvm.log"]);
+
         await fixture.ExecuteCommand(["list"]);
 
         var result = await fixture.ExecuteCommand(["logs", "--json"]);
@@ -537,6 +540,51 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
     }
 
     [Fact]
+    public async Task SetCommandAcceptsMultipleArgumentsForStandard()
+    {
+        var install = await fixture.ExecuteCommand(["install", "4.5", "standard"]);
+        await fixture.AssertSuccessfulExecutionAsync(install, "install");
+
+        var result = await fixture.ExecuteCommand(["set", "4.5", "standard"]);
+        await fixture.AssertSuccessfulExecutionAsync(result, "set with standard runtime");
+
+        Assert.True(await fixture.HasVersionInstalled("standard"),
+            "Standard runtime version not found in installed versions");
+
+        await CleanupVersion("4.5-stable-standard");
+    }
+
+    [Fact]
+    public async Task SetCommandAcceptsMultipleArgumentsForMono()
+    {
+        var install = await fixture.ExecuteCommand(["install", "4.5", "mono"]);
+        await fixture.AssertSuccessfulExecutionAsync(install, "install");
+
+        var result = await fixture.ExecuteCommand(["set", "4.5", "mono"]);
+        await fixture.AssertSuccessfulExecutionAsync(result, "set with mono runtime");
+
+        Assert.True(await fixture.HasVersionInstalled("mono"),
+            "Mono runtime version not found in installed versions");
+
+        await CleanupVersion("4.5-stable-mono");
+    }
+
+    [Fact]
+    public async Task SetCommandWithSingleVersionArgument()
+    {
+        var install = await fixture.ExecuteCommand(["install", "4.5"]);
+        await fixture.AssertSuccessfulExecutionAsync(install, "install");
+
+        var result = await fixture.ExecuteCommand(["set", "4.5"]);
+        await fixture.AssertSuccessfulExecutionAsync(result, "set with version only");
+
+        var whichResult = await fixture.ExecuteCommand(["which"]);
+        Assert.Contains("4.5", whichResult.Stdout);
+
+        await CleanupVersion("4.5-stable-standard");
+    }
+
+    [Fact]
     public async Task LocalCommandWithNonExistentVersionFails()
     {
         var result = await fixture.ExecuteCommand(["local", "999.999-nonexistent"]);
@@ -544,6 +592,37 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
         Assert.Equal(ExitCodes.ArgumentError, result.ExitCode);
     }
 
+    [Fact]
+    public async Task LocalCommandAcceptsMultipleArgumentsForStandard()
+    {
+        var install = await fixture.ExecuteCommand(["install", "4.5", "standard"]);
+        await fixture.AssertSuccessfulExecutionAsync(install, "install");
+
+        await fixture.ExecuteShellCommand("mkdir", ["-p", "/tmp/local-multi-standard"]);
+        var result = await fixture.ExecuteCommandInDirectory("/tmp/local-multi-standard", ["local", "4.5", "standard"]);
+        await fixture.AssertSuccessfulExecutionAsync(result, "local with standard runtime");
+
+        var fileExists = await fixture.FileExists("/tmp/local-multi-standard/.fgvm-version");
+        Assert.True(fileExists, "Version file was not created");
+
+        await CleanupVersion("4.5-stable-standard");
+    }
+
+    [Fact]
+    public async Task LocalCommandAcceptsMultipleArgumentsForMono()
+    {
+        var install = await fixture.ExecuteCommand(["install", "4.5", "mono"]);
+        await fixture.AssertSuccessfulExecutionAsync(install, "install");
+
+        await fixture.ExecuteShellCommand("mkdir", ["-p", "/tmp/local-multi-mono"]);
+        var result = await fixture.ExecuteCommandInDirectory("/tmp/local-multi-mono", ["local", "4.5", "mono"]);
+        await fixture.AssertSuccessfulExecutionAsync(result, "local with mono runtime");
+
+        var fileExists = await fixture.FileExists("/tmp/local-multi-mono/.fgvm-version");
+        Assert.True(fileExists, "Version file was not created");
+
+        await CleanupVersion("4.5-stable-mono");
+    }
 
     [Fact]
     public async Task LogsCommandWorksWithNoOperations()
@@ -793,6 +872,35 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
     }
 
     [Fact]
+    public async Task LocalCommandFailsWhenProjectVersionDoesNotExistAndNoVersionsInstalled()
+    {
+        // Ensure no versions are installed by removing all versions
+        var list = await fixture.ExecuteCommand(["list"]);
+        if (list.ExitCode == 0 && list.Stdout.Contains("4."))
+        {
+            // Remove any 4.x versions that might exist
+            await fixture.ExecuteCommand(["remove", "4"]);
+        }
+
+        // Create a project directory with a project.godot file requesting a non-existent version
+        await fixture.ExecuteShellCommand("mkdir", ["-p", "/tmp/godot-project-invalid"]);
+
+        var projectContent = """
+                             [application]
+                             config/name="Test Project"
+                             config/features=PackedStringArray("999.999", "Forward Plus")
+                             """;
+
+        await fixture.ExecuteShellCommand("sh", ["-c", $"cat > /tmp/godot-project-invalid/project.godot << 'EOF'\n{projectContent}\nEOF"]);
+
+        // Run local command - should fail because version 999.999 doesn't exist and no versions are installed
+        var local = await fixture.ExecuteCommandInDirectory("/tmp/godot-project-invalid", ["local"]);
+
+        // Should exit with error (not success)
+        Assert.NotEqual(ExitCodes.Success, local.ExitCode);
+    }
+
+    [Fact]
     public async Task GodotCommandUsesDetachedModeWhenProjectPathContainsFlagLikeSubstrings()
     {
         // Install and set a version once
@@ -852,7 +960,7 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
         var dir = new DirectoryInfo(AppContext.BaseDirectory);
 
         FileInfo? slnFile = null;
-        while (dir is not null && (slnFile = dir.GetFiles("*.sln").FirstOrDefault()) is null)
+        while (dir is not null && (slnFile = dir.GetFiles("*.sln*").FirstOrDefault(f => f.Extension is ".sln" or ".slnx")) is null)
         {
             dir = dir.Parent;
         }
@@ -863,7 +971,7 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
         }
 
         var csproj = dir?.GetFiles("*.csproj", SearchOption.AllDirectories)
-            .FirstOrDefault(f => f.Name.Equals("Fgvm.CLI.csproj", StringComparison.OrdinalIgnoreCase));
+            .FirstOrDefault(f => f.Name.Equals("Fgvm.Cli.csproj", StringComparison.OrdinalIgnoreCase));
 
         if (csproj is null)
         {

@@ -61,7 +61,7 @@ public class TestContainerFixture : IAsyncLifetime
         Directory.CreateDirectory(_publishHostPath);
 
         var publishResult =
-            await _container.ExecAsync(["dotnet", "publish", "/workspace/Fgvm.CLI/Fgvm.CLI.csproj", "-c", "Debug", "-r", _rid, "-o", _publishContainerPath]);
+            await _container.ExecAsync(["dotnet", "publish", "/workspace/Fgvm.Cli/Fgvm.Cli.csproj", "-c", "Debug", "-r", _rid, "-o", _publishContainerPath]);
 
         if (publishResult.ExitCode != ExitCodes.Success)
         {

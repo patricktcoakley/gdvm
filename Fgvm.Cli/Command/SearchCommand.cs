@@ -18,7 +18,7 @@ public sealed class SearchCommand(
     ILogger<SearchCommand> logger)
 {
     /// <summary>
-    ///     A remote search that takes an optional query and displays a filtered list of Godot releases available to download.
+    ///     Search available Godot versions.
     /// </summary>
     /// <param name="query">Optional query arguments.</param>
     /// <param name="cancellationToken"></param>

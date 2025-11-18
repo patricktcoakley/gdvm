@@ -29,7 +29,7 @@ public sealed class InstallCommand(
     ILogger<InstallCommand> logger)
 {
     /// <summary>
-    ///     Prompts the user to select a version or takes a query to find the best match, verifies and installs it.
+    ///     Install a Godot version.
     /// </summary>
     /// <param name="query">Version query arguments</param>
     /// <param name="cancellationToken">Cancellation token</param>
@@ -39,7 +39,7 @@ public sealed class InstallCommand(
     public async Task Install(CancellationToken cancellationToken = default, [Argument] params string[] query) => await InstallCore(query, false, cancellationToken);
 
     /// <summary>
-    ///     Prompts the user to select a version or takes a query to find the best match, verifies and installs it as the default.
+    ///     Install a Godot version and set it as the default.
     /// </summary>
     /// <param name="query">Version query arguments</param>
     /// <param name="cancellationToken">Cancellation token</param>

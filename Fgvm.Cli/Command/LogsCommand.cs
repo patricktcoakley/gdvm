@@ -20,7 +20,7 @@ public sealed class LogsCommand(
     private static readonly string[] LogLevels = ["DEFAULT", "DEBUG", "INFORMATION", "WARNING", "ERROR", "CRITICAL"];
 
     /// <summary>
-    ///     Outputs the contents of the log file, with optional filters `-l|--level` for level and `-m|--message` for messages.
+    ///     View application logs.
     /// </summary>
     /// <param name="json">Output logs to JSON.</param>
     /// <param name="level">-l, Level to filter by.</param>
@@ -63,7 +63,7 @@ public sealed class LogsCommand(
                         entries.Add(entry);
                     }
                 }
-                else
+                else if (!string.IsNullOrWhiteSpace(line))
                 {
                     malformed.Add(line);
                 }
@@ -115,6 +115,25 @@ public sealed class LogsCommand(
         var levelPart = parts[1].Trim();
         var messagePart = parts[2].Trim();
         var categoryPart = parts[3].Trim();
+
+        // Sanitize control characters that may corrupt JSON serialization
+        // ReadLineAsync should remove \n and \r, but we sanitize all control characters to be safe
+        static string SanitizeControlChars(string input)
+        {
+            var chars = input.ToCharArray();
+            for (int i = 0; i < chars.Length; i++)
+            {
+                if (char.IsControl(chars[i]))
+                {
+                    chars[i] = ' ';
+                }
+            }
+            return new string(chars);
+        }
+
+        levelPart = SanitizeControlChars(levelPart);
+        messagePart = SanitizeControlChars(messagePart);
+        categoryPart = SanitizeControlChars(categoryPart);
 
         // TODO: eventually remove this but keep for backward compatibility
         // Handle the old log category format

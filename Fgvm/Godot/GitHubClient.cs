@@ -38,7 +38,9 @@ public class GitHubClient : IGitHubClient
     {
         try
         {
+            _logger.LogInformation("HTTP GET {Url}", ApiUrl);
             var response = await _httpClient.GetAsync(ApiUrl, cancellationToken);
+            _logger.LogInformation("HTTP GET {Url} completed with status {StatusCode}", ApiUrl, (int)response.StatusCode);
 
             if (response.IsSuccessStatusCode)
             {
@@ -69,7 +71,9 @@ public class GitHubClient : IGitHubClient
 
         try
         {
+            _logger.LogInformation("HTTP GET {Url}", url);
             var response = await _httpClient.GetAsync(url, cancellationToken);
+            _logger.LogInformation("HTTP GET {Url} completed with status {StatusCode}", url, (int)response.StatusCode);
 
             if (response.IsSuccessStatusCode)
             {
@@ -94,7 +98,9 @@ public class GitHubClient : IGitHubClient
 
         try
         {
+            _logger.LogInformation("HTTP GET {Url}", url);
             var response = await _httpClient.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+            _logger.LogInformation("HTTP GET {Url} completed with status {StatusCode}", url, (int)response.StatusCode);
 
             if (response.IsSuccessStatusCode)
             {

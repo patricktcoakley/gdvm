@@ -22,11 +22,13 @@ public class TuxFamilyClient(HttpClient httpClient, ILogger<TuxFamilyClient> log
 
         try
         {
+            logger.LogInformation("HTTP GET {Url}", url);
             var response = await httpClient.GetAsync(url, cancellationToken);
+            logger.LogInformation("HTTP GET {Url} completed with status {StatusCode}", url, (int)response.StatusCode);
 
             if (response.IsSuccessStatusCode)
             {
-                logger.LogInformation("Found SHA512 for {Version} at {Url}", godotRelease.Version, url);
+                logger.LogInformation("Found SHA512 for {Version} at TuxFamily", godotRelease.Version);
                 return await response.Content.ReadAsStringAsync(cancellationToken);
             }
 
@@ -48,11 +50,13 @@ public class TuxFamilyClient(HttpClient httpClient, ILogger<TuxFamilyClient> log
 
         try
         {
+            logger.LogInformation("HTTP GET {Url}", url);
             var response = await httpClient.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+            logger.LogInformation("HTTP GET {Url} completed with status {StatusCode}", url, (int)response.StatusCode);
 
             if (response.IsSuccessStatusCode)
             {
-                logger.LogInformation("Found {File} for {Release} at {Url}", filename, godotRelease.ReleaseNameWithRuntime, url);
+                logger.LogInformation("Found {File} for {Release} at TuxFamily", filename, godotRelease.ReleaseNameWithRuntime);
                 return response;
             }
 

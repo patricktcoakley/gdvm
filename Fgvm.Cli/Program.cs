@@ -34,6 +34,10 @@ public class Program
             {
                 builder.ClearProviders();
                 builder.SetMinimumLevel(LogLevel.Information);
+
+                // Suppress automatic HTTP client logging - we'll add our own custom logging
+                builder.AddFilter("System.Net.Http.HttpClient", LogLevel.Warning);
+
                 builder.AddZLoggerFile(pathService.LogPath,
                     opts =>
                     {

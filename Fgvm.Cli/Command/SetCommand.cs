@@ -11,17 +11,16 @@ namespace Fgvm.Cli.Command;
 public sealed class SetCommand(IVersionManagementService versionManagementService, IAnsiConsole console, ILogger<SetCommand> logger)
 {
     /// <summary>
-    ///     Sets the selected version of Godot.
+    ///     Set the default Godot version.
     /// </summary>
-    /// <param name="query">Version query arguments</param>
-    /// <param name="interactive">-i, Creates a prompt to select from installed versions to set as global.</param>
     /// <param name="cancellationToken">Cancellation token</param>
+    /// <param name="query">Version query arguments</param>
     /// <exception cref="FileNotFoundException"></exception>
-    public async Task Set([Argument] string[]? query = null, bool interactive = false, CancellationToken cancellationToken = default)
+    public async Task Set(CancellationToken cancellationToken = default, [Argument] params string[] query)
     {
         try
         {
-            _ = await versionManagementService.SetGlobalVersionAsync(query ?? [], interactive, cancellationToken);
+            _ = await versionManagementService.SetGlobalVersionAsync(query, cancellationToken: cancellationToken);
         }
         catch (TaskCanceledException)
         {

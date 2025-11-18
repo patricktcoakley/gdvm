@@ -12,7 +12,7 @@ namespace Fgvm.Cli.Command;
 public sealed class ListCommand(IHostSystem hostSystem, IPathService pathService, IAnsiConsole console, ILogger<ListCommand> logger)
 {
     /// <summary>
-    ///     Lists the local Godot installations.
+    ///     List all installed Godot versions.
     /// </summary>
     public void List(bool json = false)
     {

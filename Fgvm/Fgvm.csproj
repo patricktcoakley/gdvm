@@ -20,7 +20,7 @@
 
     <ItemGroup>
         <InternalsVisibleTo Include="Fgvm.Tests"/>
-        <InternalsVisibleTo Include="Fgvm.CLI"/>
+        <InternalsVisibleTo Include="Fgvm.Cli"/>
     </ItemGroup>
 
 </Project>

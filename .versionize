@@ -1,9 +1,9 @@
 {
-    "projectFile": "GDVM/GDVM.csproj",
+    "projectFile": "Fgvm.Cli/Fgvm.csproj",
     "tagPrefix": "v",
     "ignoreInsignificantCommits": true,
     "changelog": {
-        "header": "# GDVM Changelog",
+        "header": "# fgvm Changelog",
         "sections": [
             {
                 "type": "feat",
@@ -52,9 +52,9 @@
             }
         ],
         "linkTemplates": {
-            "issueLink": "https://github.com/patricktcoakley/gdvm/issues/{issue}",
-            "commitLink": "https://github.com/patricktcoakley/gdvm/commit/{commitSha}",
-            "versionTagLink": "https://github.com/patricktcoakley/gdvm/releases/tag/v{version}"
+            "issueLink": "https://github.com/patricktcoakley/fgvm/issues/{issue}",
+            "commitLink": "https://github.com/patricktcoakley/fgvm/commit/{commitSha}",
+            "versionTagLink": "https://github.com/patricktcoakley/fgvm/releases/tag/v{version}"
         }
     }
 }

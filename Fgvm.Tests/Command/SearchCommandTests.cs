@@ -24,7 +24,7 @@ public sealed class SearchCommandTests
 
         var command = CreateCommand(releaseManager.Object, out var console);
 
-        await command.SearchJson([], CancellationToken.None);
+        await command.Search(json: true);
 
         var json = console.Output.Trim();
         Assert.False(string.IsNullOrWhiteSpace(json));
@@ -45,7 +45,7 @@ public sealed class SearchCommandTests
 
         var command = CreateCommand(releaseManager.Object, out var console);
 
-        await command.Search([], CancellationToken.None);
+        await command.Search();
 
         var output = console.Output;
         Assert.Contains("4.5-stable-standard", output);

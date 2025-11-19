@@ -20,17 +20,11 @@ public sealed class SearchCommand(
     /// <summary>
     ///     Search available Godot versions.
     /// </summary>
+    /// <param name="json">-j, Output results as JSON.</param>
     /// <param name="query">Optional query arguments.</param>
     /// <param name="cancellationToken"></param>
-    public async Task Search([Argument] string[]? query = null, CancellationToken cancellationToken = default) =>
-        await SearchCore(query, false, cancellationToken);
-
-    // NOTE: A hack around ConsoleAppFramework's issues with Argument and flags.
-    [Command("search --json")]
-    public async Task SearchJson([Argument] string[]? query = null, CancellationToken cancellationToken = default) =>
-        await SearchCore(query, true, cancellationToken);
-
-    private async Task SearchCore(string[]? query, bool json, CancellationToken cancellationToken)
+    [ConsoleAppFramework.Command("search|s")]
+    public async Task Search(bool json = false, [Argument] string[]? query = null, CancellationToken cancellationToken = default)
     {
         var searchQuery = query ?? [];
         var result = await releaseManager.SearchRemoteReleases(searchQuery, cancellationToken);

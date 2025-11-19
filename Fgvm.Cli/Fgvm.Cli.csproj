@@ -31,14 +31,14 @@
 
 
     <ItemGroup>
-        <PackageReference Include="ConsoleAppFramework" Version="5.7.3">
+        <PackageReference Include="ConsoleAppFramework" Version="5.7.9">
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
             <PrivateAssets>all</PrivateAssets>
         </PackageReference>
         <PackageReference Include="Microsoft.Extensions.Configuration" Version="10.0.0"/>
         <PackageReference Include="Microsoft.Extensions.Configuration.Ini" Version="10.0.0"/>
         <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.0"/>
-        <PackageReference Include="Spectre.Console" Version="0.53.0"/>
+        <PackageReference Include="Spectre.Console" Version="0.54.0"/>
         <PackageReference Include="ZLogger" Version="2.5.10"/>
     </ItemGroup>
 

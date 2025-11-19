@@ -31,27 +31,17 @@ public sealed class InstallCommand(
     /// <summary>
     ///     Install a Godot version.
     /// </summary>
-    /// <param name="query">Version query arguments</param>
+    /// <param name="setDefault">-D|--default, Set as the default version after installing</param>
     /// <param name="cancellationToken">Cancellation token</param>
+    /// <param name="query">Version query arguments</param>
     /// <exception cref="ArgumentException"></exception>
     /// <exception cref="CryptographicException"></exception>
     /// <exception cref="SecurityException"></exception>
-    public async Task Install(CancellationToken cancellationToken = default, [Argument] params string[] query) => await InstallCore(query, false, cancellationToken);
+    [ConsoleAppFramework.Command("install|i")]
+    public async Task Install(bool setDefault = false, CancellationToken cancellationToken = default, [Argument] params string[] query) => await InstallCore(query, setDefault, cancellationToken);
 
     /// <summary>
-    ///     Install a Godot version and set it as the default.
-    /// </summary>
-    /// <param name="query">Version query arguments</param>
-    /// <param name="cancellationToken">Cancellation token</param>
-    /// <exception cref="ArgumentException"></exception>
-    /// <exception cref="CryptographicException"></exception>
-    /// <exception cref="SecurityException"></exception>
-    [Command("install default")]
-    public async Task InstallDefault(CancellationToken cancellationToken = default, [Argument] params string[] query) =>
-        await InstallCore(query, true, cancellationToken);
-
-    /// <summary>
-    ///     Core installation logic shared between Install and InstallDefault methods.
+    ///     Core installation logic.
     /// </summary>
     /// <param name="query">Version query arguments</param>
     /// <param name="setAsDefault">Whether to set the installed version as default</param>

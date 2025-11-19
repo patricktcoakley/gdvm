@@ -1,16 +1,16 @@
 <#
 .SYNOPSIS
-    One-line installer for gdvmup and gdvm
+    One-line installer for fgvmup and fgvm
 
 .DESCRIPTION
-    Provides a simple way to download and install gdvmup and gdvm.
+    Provides a simple way to download and install fgvmup and fgvm.
 
 .LINK
-    https://github.com/patricktcoakley/gdvm
+    https://github.com/patricktcoakley/fgvm
 
 .EXAMPLE
-    irm https://raw.githubusercontent.com/patricktcoakley/gdvm/main/installer.ps1 | iex
-    # Downloads and installs the latest version of gdvmup
+    irm https://raw.githubusercontent.com/patricktcoakley/fgvm/main/installer.ps1 | iex
+    # Downloads and installs the latest version of fgvmup
     
 .NOTES
     Platform: Currently only supports Windows x86_64.
@@ -21,12 +21,12 @@ $tempFile = Join-Path $env:TEMP ([System.Guid]::NewGuid().ToString() + ".ps1")
 
 try {
     # Download the main script
-    $scriptUrl = "https://raw.githubusercontent.com/patricktcoakley/gdvm/main/gdvmup.ps1"
-    Write-Host "Downloading gdvmup installer from $scriptUrl."
+    $scriptUrl = "https://raw.githubusercontent.com/patricktcoakley/fgvm/main/fgvmup.ps1"
+    Write-Host "Downloading fgvmup installer from $scriptUrl."
     Invoke-WebRequest -Uri $scriptUrl -OutFile $tempFile -UseBasicParsing
     
     # Execute with install command
-    Write-Host "Installing gdvmup..."
+    Write-Host "Installing fgvmup..."
     & $tempFile install
     
     if ($LASTEXITCODE -ne 0) { 

@@ -14,6 +14,7 @@ public sealed class LocalCommand(IVersionManagementService versionManagementServ
     /// </summary>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <param name="query">Version query arguments</param>
+    [ConsoleAppFramework.Command("local")]
     public async Task Local(CancellationToken cancellationToken = default, [Argument] params string[] query)
     {
         try

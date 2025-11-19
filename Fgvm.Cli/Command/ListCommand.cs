@@ -1,3 +1,4 @@
+using ConsoleAppFramework;
 using Fgvm.Cli.Error;
 using Fgvm.Cli.ViewModels;
 using Fgvm.Environment;
@@ -14,6 +15,7 @@ public sealed class ListCommand(IHostSystem hostSystem, IPathService pathService
     /// <summary>
     ///     List all installed Godot versions.
     /// </summary>
+    [Command("list|l")]
     public void List(bool json = false)
     {
         try

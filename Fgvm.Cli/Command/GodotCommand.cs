@@ -24,10 +24,10 @@ public sealed class GodotCommand(
     /// </summary>
     /// <param name="interactive">-i, Creates a prompt to select and launch an installed Godot version.</param>
     /// <param name="attached">-a, Launches Godot in attached mode, keeping it connected to the terminal for output.</param>
-    /// <param name="args">Arguments to pass to the Godot executable. Multiple arguments must be passed as a single quoted string (e.g., "--version --verbose").</param>
+    /// <param name="args">Arguments to pass to the Godot executable (e.g., --args="--version --verbose").</param>
     /// <param name="cancellationToken">Cancellation token</param>
-    [Command("godot")]
-    public async Task Launch(bool interactive = false, bool attached = false, string[]? args = null, CancellationToken cancellationToken = default)
+    [ConsoleAppFramework.Command("godot|g")]
+    public async Task Launch(bool interactive = false, bool attached = false, string args = "", CancellationToken cancellationToken = default)
     {
         var error = new StringBuilder();
         var process = new Process();
@@ -52,15 +52,6 @@ public sealed class GodotCommand(
         try
         {
             cancellationToken.ThrowIfCancellationRequested();
-
-            // Validate arg string
-            if (args is { Length: > 1 })
-            {
-                console.MarkupLine(Messages.MultipleArgsError);
-                console.MarkupLine(Messages.ArgsExampleUsage(string.Join(" ", args)));
-                console.MarkupLine(Messages.ArgsExplanation);
-                return;
-            }
 
             // Use the version management service to resolve the appropriate version (explicit .fgvm-version only)
             versionResult = await versionManagementService.ResolveVersionForLaunchExplicitAsync(interactive, cancellationToken);
@@ -110,7 +101,7 @@ public sealed class GodotCommand(
             };
 
             // Check if this is a help or version command that should output directly to console
-            var argumentString = args != null ? string.Join(" ", args) : "";
+            var argumentString = args;
 
             // Auto-detect project file and add it to arguments if we're in a project directory
             if (string.IsNullOrEmpty(argumentString))

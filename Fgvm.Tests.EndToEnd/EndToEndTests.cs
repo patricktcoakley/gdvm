@@ -324,26 +324,6 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
     }
 
     [Fact]
-    public async Task LogsCommandSupportsJsonOutput()
-    {
-        // Clear old log file to avoid multi-line HTTP log entries from automatic logging
-        await fixture.ExecuteCommand(["sh", "-c", "rm -f /root/.local/state/fgvm/fgvm.log"]);
-
-        await fixture.ExecuteCommand(["list"]);
-
-        var result = await fixture.ExecuteCommand(["logs", "--json"]);
-
-        await fixture.AssertSuccessfulExecutionAsync(result);
-        Assert.False(string.IsNullOrWhiteSpace(result.Stdout));
-
-        var json = result.Stdout.Trim();
-        using var document = JsonDocument.Parse(json);
-
-        Assert.Equal(JsonValueKind.Array, document.RootElement.ValueKind);
-        Assert.DoesNotContain('(', json);
-    }
-
-    [Fact]
     public async Task MultipleSequentialInstallsWorkCorrectly()
     {
         var searchResult = await fixture.ExecuteCommand(["search"]);

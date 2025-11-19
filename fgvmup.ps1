@@ -1,15 +1,15 @@
 <#
 .SYNOPSIS
-    GDVM Updater - Installation management tool for gdvm.
+    fgvm Updater - Installation management tool for fgvm.
 
 .DESCRIPTION
-    Manages the installation and removal of gdvm.
+    Manages the installation and removal of fgvm.
 
 .LINK
-    https://github.com/patricktcoakley/gdvm
+    https://github.com/patricktcoakley/fgvm
 
 .PARAMETER Command
-    The operation to perform: install, uninstall, or upgrade gdvm.
+    The operation to perform: install, uninstall, or upgrade fgvm.
 
 .PARAMETER Version
     The specific version to install (defaults to latest).
@@ -18,19 +18,19 @@
     Suppress all non-error output.
 
 .PARAMETER Force
-    Force a clean installation, removing existing gdvm files.
+    Force a clean installation, removing existing fgvm files.
 
 .EXAMPLE
-    .\gdvmup.ps1 install
-    # Installs the latest version of gdvm
+    .\fgvmup.ps1 install
+    # Installs the latest version of fgvm
 
 .EXAMPLE
-    .\gdvmup.ps1 install --version 0.1.6
-    # Installs version 0.1.6 of gdvm
+    .\fgvmup.ps1 install --version 0.1.6
+    # Installs version 0.1.6 of fgvm
 
 .EXAMPLE
-    .\gdvmup.ps1 uninstall
-    # Completely removes gdvm from the system, including all Godot installations
+    .\fgvmup.ps1 uninstall
+    # Completely removes fgvm from the system, including all Godot installations
 
 .NOTES
     Platform: Currently only supports Windows x86_64.
@@ -41,20 +41,20 @@
 $ErrorActionPreference = "Stop" # Immediately halt on errors
 
 # Repository and versioning
-$script:repo = "patricktcoakley/gdvm"
+$script:repo = "patricktcoakley/fgvm"
 $script:version = "latest"
 
 # Downloads
 $script:maxRetries = 3
 
 # Installation paths
-$script:installPath = "$env:LOCALAPPDATA\gdvm"       # Main installation directory
-$script:gdvmPath = "$env:USERPROFILE\gdvm"           # Godot versions directory
+$script:installPath = "$env:LOCALAPPDATA\fgvm"       # Main installation directory
+$script:fgvmPath = "$env:USERPROFILE\fgvm"           # Godot versions directory
 
 # Temporary file paths
-$script:zipPath = "$env:TEMP\gdvm.zip"               # Downloaded archive
-$script:checksumPath = "$env:TEMP\gdvm.sha256"       # Downloaded checksum
-$script:updaterScript = "$env:TEMP\gdvmup_updater.ps1" # Self-updater script
+$script:zipPath = "$env:TEMP\fgvm.zip"               # Downloaded archive
+$script:checksumPath = "$env:TEMP\fgvm.sha256"       # Downloaded checksum
+$script:updaterScript = "$env:TEMP\fgvmup_updater.ps1" # Self-updater script
 
 # Cache management
 $script:cacheDir = "$script:installPath\cache"       # Cache directory
@@ -72,13 +72,13 @@ $script:force = $false                               # Force clean installation
 function Initialize-Environment {
     # Check PowerShell version
     if ($PSVersionTable.PSVersion.Major -lt 5) {
-        throw "Error: PowerShell 5 or later is required to use gdvmup."
+        throw "Error: PowerShell 5 or later is required to use fgvmup."
     }
 
     # Check execution policy
     $allowedPolicy = @('Unrestricted', 'RemoteSigned', 'Bypass')
     if ((Get-ExecutionPolicy).ToString() -notin $allowedPolicy) {
-        throw "Error: PowerShell requires execution policy in [$($allowedPolicy -join ", ")] to run gdvmup."
+        throw "Error: PowerShell requires execution policy in [$($allowedPolicy -join ", ")] to run fgvmup."
     }
 }
 
@@ -114,7 +114,7 @@ function New-TempDir {
 }
 
 function Show-Usage {
-    Write-Output "Usage: gdvmup COMMAND [OPTIONS]"
+    Write-Output "Usage: fgvmup COMMAND [OPTIONS]"
     Write-Output "Commands: install [--quiet] [--version VERSION] [--force], uninstall, upgrade"
     Write-Output "Options:"
     Write-Output "  --version VERSION    Specify version to install"
@@ -128,7 +128,7 @@ function Test-WindowsPlatform {
     if (Test-Path Variable:IsWindows) {
         if (-not $IsWindows) {
             Write-LogMessage "Error: This script only supports Windows."
-            Write-LogMessage "See: https://github.com/patricktcoakley/gdvm"
+            Write-LogMessage "See: https://github.com/patricktcoakley/fgvm"
             exit 1
         }
     }
@@ -136,7 +136,7 @@ function Test-WindowsPlatform {
     else {
         if (-not $env:OS -or $env:OS -ne "Windows_NT") {
             Write-LogMessage "Error: This script only supports Windows."
-            Write-LogMessage "See: https://github.com/patricktcoakley/gdvm"
+            Write-LogMessage "See: https://github.com/patricktcoakley/fgvm"
             exit 1
         }
     }
@@ -205,13 +205,13 @@ function Install-Script {
     }
     
     # Target path
-    $targetPath = "$script:installPath\gdvmup.ps1"
+    $targetPath = "$script:installPath\fgvmup.ps1"
     
-    # Create a batch to wrap gdvmup.ps1
-    $batchPath = "$script:installPath\gdvmup.cmd"
+    # Create a batch to wrap fgvmup.ps1
+    $batchPath = "$script:installPath\fgvmup.cmd"
     $batchContent = @"
 @echo off
-powershell.exe -ExecutionPolicy Bypass -NoLogo -NoProfile -Command "& '%LOCALAPPDATA%\gdvm\gdvmup.ps1' %*"
+powershell.exe -ExecutionPolicy Bypass -NoLogo -NoProfile -Command "& '%LOCALAPPDATA%\fgvm\fgvmup.ps1' %*"
 "@
     Set-Content -Path $batchPath -Value $batchContent
     
@@ -220,14 +220,14 @@ powershell.exe -ExecutionPolicy Bypass -NoLogo -NoProfile -Command "& '%LOCALAPP
         # Don't try to copy if running from the target path
         if ($scriptPath -ne $targetPath) {
             Copy-Item -Path $scriptPath -Destination $targetPath -Force
-            Write-LogMessage "Installed gdvmup."
+            Write-LogMessage "Installed fgvmup."
         }
     }
 }
 
 function Get-InstalledVersion {
     try {
-        $output = & "$script:installPath\gdvm.exe" --version 2>$null
+        $output = & "$script:installPath\fgvm.exe" --version 2>$null
         return $output.Trim()
     }
     catch {
@@ -404,51 +404,51 @@ public static extern IntPtr SendMessageTimeout(
     }
 }
 
-function Add-GdvmToPath {
+function Add-fgvmToPath {
     try {
-        $binPath = Join-Path $script:gdvmPath "bin"
+        $binPath = Join-Path $script:fgvmPath "bin"
         
         # Add paths to PATH
         Update-UserPath -pathsToAdd @($script:installPath, $binPath)
     }
     catch {
-        throw "Failed to add gdvm to PATH: $_"
+        throw "Failed to add fgvm to PATH: $_"
     }
 }
 
-function Uninstall-GDVM {
+function Uninstall-fgvm {
     try {
-        $binPath = Join-Path $script:gdvmPath "bin"
+        $binPath = Join-Path $script:fgvmPath "bin"
 
         Update-UserPath -pathsToRemove @($script:installPath, $binPath)
     }
     catch {
-        throw "Failed to remove gdvm from PATH: $_."
+        throw "Failed to remove fgvm from PATH: $_."
     }
 
     if (Test-Path $script:installPath) {
         try {
             Remove-Item -Recurse -Force $script:installPath
-            Write-LogMessage "Removed gdvm installation."
+            Write-LogMessage "Removed fgvm installation."
         }
         catch {
-            throw "Unable to remove gdvm 1: $_."
+            throw "Unable to remove fgvm 1: $_."
         }
     }
 
     # Remove Godot installs only on uninstall, not on force install
-    if ($script:command -eq "uninstall" -and (Test-Path $script:gdvmPath)) {
+    if ($script:command -eq "uninstall" -and (Test-Path $script:fgvmPath)) {
         try {
-            Remove-Item -Recurse -Force $script:gdvmPath
-            Write-LogMessage "Removed gdvm Godot installations."
+            Remove-Item -Recurse -Force $script:fgvmPath
+            Write-LogMessage "Removed fgvm Godot installations."
         }
         catch {
-            throw "Unable to remove gdvm Godot installations: $_."
+            throw "Unable to remove fgvm Godot installations: $_."
         }
     }
 
 
-    Write-LogMessage "Successfully uninstalled gdvm."
+    Write-LogMessage "Successfully uninstalled fgvm."
 }
 
 function Invoke-FileDownload {
@@ -467,7 +467,7 @@ function Invoke-FileDownload {
 function Get-ReleaseChecksum {
     param([string]$Version)
     
-    $url = "https://github.com/$script:repo/releases/download/$Version/gdvm-win-x64.zip.sha256"
+    $url = "https://github.com/$script:repo/releases/download/$Version/fgvm-win-x64.zip.sha256"
     Invoke-FileDownload -Url $url -OutputFile $script:checksumPath
     
     if (Test-Path $script:checksumPath) {
@@ -504,7 +504,7 @@ function Test-Checksum {
     }
 }
 
-function Install-GDVM {
+function Install-fgvm {
     param([string]$Version)
     try {
         # Check environment before proceeding
@@ -512,29 +512,29 @@ function Install-GDVM {
         
         # Determine architecture
         $arch = Get-Arch
-        $url = "https://github.com/$script:repo/releases/download/$Version/gdvm-$arch.zip"
+        $url = "https://github.com/$script:repo/releases/download/$Version/fgvm-$arch.zip"
         
         # Create installation directory
         if (-not (Test-Path $script:installPath)) {
             New-Item -ItemType Directory -Path $script:installPath -Force | Out-Null
         }
 
-        # Ensure gdvmPath exists
-        if (-not (Test-Path -Path $script:gdvmPath)) {
-            New-Item -ItemType Directory -Path $script:gdvmPath -Force | Out-Null
+        # Ensure fgvmPath exists
+        if (-not (Test-Path -Path $script:fgvmPath)) {
+            New-Item -ItemType Directory -Path $script:fgvmPath -Force | Out-Null
         }
         
         # Check if already installed, unless force flag is specified
         if (-not $script:force) {
             $installedVersion = Get-InstalledVersion
             if ($installedVersion -eq $Version) {
-                Write-LogMessage "gdvm version $Version is already installed."
+                Write-LogMessage "fgvm version $Version is already installed."
                 return
             }
         }
         else {
             # Remove existing installation
-            Write-LogMessage "Forcing clean installation of gdvm version $Version"
+            Write-LogMessage "Forcing clean installation of fgvm version $Version"
             if (Test-Path $script:installPath) {
                 Write-LogMessage "Removing existing installation..."
                 Remove-Item -Path "$script:installPath\*" -Recurse -Force -ErrorAction SilentlyContinue
@@ -543,11 +543,11 @@ function Install-GDVM {
         
         # Use temp directory for downloads
         $tempDir = New-TempDir
-        $tempZipPath = Join-Path $tempDir "gdvm.zip"
-        $tempChecksumPath = Join-Path $tempDir "gdvm.sha256"
+        $tempZipPath = Join-Path $tempDir "fgvm.zip"
+        $tempChecksumPath = Join-Path $tempDir "fgvm.sha256"
         
         # Download and verify
-        Write-LogMessage "Downloading gdvm version $Version..."
+        Write-LogMessage "Downloading fgvm version $Version..."
         Invoke-FileDownload -Url $url -OutputFile $tempZipPath
             
         $checksumUrl = "$url.sha256"
@@ -568,12 +568,12 @@ function Install-GDVM {
         Expand-Archive -Path $tempZipPath -DestinationPath $script:installPath -Force
             
         # Update PATH if needed
-        Add-GdvmToPath
+        Add-fgvmToPath
             
         # Always copy the script in case of updates or fixes
         Install-Script
 
-        Write-LogMessage "Successfully installed gdvmup with gdvm version $Version"
+        Write-LogMessage "Successfully installed fgvmup with fgvm version $Version"
     }
     catch {
         Write-LogMessage "Error: Installation failed - $_"
@@ -600,7 +600,7 @@ function Start-Installation {
                 throw "Error: Version $script:version does not exist"
             }
         }
-        Install-GDVM -Version $script:version
+        Install-fgvm -Version $script:version
     }
     catch {
         Write-LogMessage "Installation failed: $_"
@@ -612,7 +612,7 @@ function Start-Upgrade {
     try {
         $script:version = Get-LatestRelease
         Write-LogMessage "Latest version: $script:version"
-        Install-GDVM -Version $script:version
+        Install-fgvm -Version $script:version
     }
     catch {
         Write-LogMessage "Upgrade failed: $_"
@@ -636,7 +636,7 @@ function Remove-InstallationFiles {
     Write-LogMessage "Cleanup complete"
 }
 
-function Start-GdvmProcess {
+function Start-fgvmProcess {
     param (
         [string[]]$Arguments
     )
@@ -651,7 +651,7 @@ function Start-GdvmProcess {
                 Start-Installation
             }
             "uninstall" {
-                Uninstall-GDVM
+                Uninstall-fgvm
             }
             "upgrade" {
                 Start-Upgrade
@@ -674,9 +674,9 @@ if ($MyInvocation.InvocationName -ne '.') {
     
     if ($isWebExecution) {
         # Default to installation
-        Start-GdvmProcess @("install")
+        Start-fgvmProcess @("install")
     }
     else {
-        Start-GdvmProcess $args
+        Start-fgvmProcess $args
     }
 }

@@ -59,22 +59,24 @@ public sealed class RemoveCommand(
                 versionsToDelete = await Prompts.Remove.ShowVersionRemovalPrompt(filteredInstallations, console, cancellationToken);
             }
 
-            foreach (var selectionPath in versionsToDelete.Select(selection => Path.Combine(pathService.RootPath, selection)))
+            foreach (var version in versionsToDelete)
             {
+                var selectionPath = Path.Combine(pathService.RootPath, version);
                 if (Directory.Exists(selectionPath))
                 {
                     Directory.Delete(selectionPath, true);
-                    logger.ZLogInformation($"Removed {selectionPath}.");
+                    logger.ZLogInformation($"Removed installation: {version}");
                     console.MarkupLine(Messages.SuccessfullyRemoved(selectionPath));
                 }
                 else
                 {
-                    logger.ZLogWarning($"Directory {selectionPath} does not exist, skipping removal.");
+                    logger.ZLogWarning($"Installation {version} does not exist at {selectionPath}, skipping removal.");
                 }
             }
 
             if (!hostSystem.ListInstallations().Any())
             {
+                logger.ZLogInformation($"No installations remaining, removing symbolic links.");
                 hostSystem.RemoveSymbolicLinks();
             }
         }

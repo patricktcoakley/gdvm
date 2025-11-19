@@ -74,34 +74,43 @@ public sealed class ReleaseManager(IHostSystem hostSystem, PlatformStringProvide
 
     public IEnumerable<string> FilterReleasesByQuery(string[] query, string[] releaseNames, bool chronological = false)
     {
-        // Default to no version filter
+        // Extract runtime environment filter (mono/standard)
+        var runtimeFilter = query.Length > 0
+            ? query.FirstOrDefault(x => x.Equals("mono", StringComparison.OrdinalIgnoreCase) ||
+                                       x.Equals("standard", StringComparison.OrdinalIgnoreCase), string.Empty)
+            : string.Empty;
+
+        // Extract release type filter (stable/rc/beta/alpha/dev)
         var releaseType = query.Length > 0
             ? query.FirstOrDefault(x => ReleaseType.Prefixes
                 .Any(prefix => x.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)), string.Empty)
             : string.Empty;
 
-        // Default to no type filter
+        // Extract version filter (anything that's not runtime or release type)
         var possibleVersion = query.Length > 0
-            ? query.Where(x => !x.Equals(releaseType, StringComparison.OrdinalIgnoreCase))
+            ? query.Where(x => !x.Equals(releaseType, StringComparison.OrdinalIgnoreCase) &&
+                              !x.Equals(runtimeFilter, StringComparison.OrdinalIgnoreCase))
                 .FirstOrDefault(string.Empty)
             : string.Empty;
 
         var filtered = releaseNames
             .Where(x => string.IsNullOrEmpty(possibleVersion) || x.StartsWith(possibleVersion, StringComparison.OrdinalIgnoreCase))
             .Where(x => string.IsNullOrEmpty(releaseType) || x.Contains(releaseType, StringComparison.OrdinalIgnoreCase))
-            .Select(name => TryCreateRelease($"{name}-standard"))
-            .OfType<Release>();
+            .Where(x => string.IsNullOrEmpty(runtimeFilter) || x.Contains(runtimeFilter, StringComparison.OrdinalIgnoreCase))
+            .Select(name => new { OriginalName = name, Release = TryCreateRelease(name) ?? TryCreateRelease($"{name}-standard") })
+            .Where(x => x.Release != null)
+            .Select(x => new { x.OriginalName, Release = x.Release! });
 
         // Sort chronologically for display (version-first) or by stability for selection (stability-first)
         var sorted = chronological
             ? filtered
-                .OrderByDescending(r => r.Major)
-                .ThenByDescending(r => r.Minor)
-                .ThenByDescending(r => r.Type) // Stability within same minor version
-                .ThenByDescending(r => r.Patch) // Then patch number
-            : filtered.OrderByDescending(r => r);
+                .OrderByDescending(x => x.Release.Major)
+                .ThenByDescending(x => x.Release.Minor)
+                .ThenByDescending(x => x.Release.Type) // Stability within same minor version
+                .ThenByDescending(x => x.Release.Patch) // Then patch number
+            : filtered.OrderByDescending(x => x.Release);
 
-        return sorted.Select(r => r.ReleaseName);
+        return sorted.Select(x => x.OriginalName);
     }
 
     public Release? TryCreateRelease(string versionString)

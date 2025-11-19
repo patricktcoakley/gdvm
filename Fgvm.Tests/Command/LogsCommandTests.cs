@@ -39,7 +39,7 @@ public sealed class LogsCommandTests : IDisposable
         var timestamp = DateTime.UtcNow;
         var logLines = new[]
         {
-            $"{timestamp:yyyy-MM-dd HH:mm:ss.fff}|Information|Operation completed|Fgvm.Test.Component",
+            $$"""{"Timestamp":"{{timestamp:O}}","LogLevel":"Information","Message":"Operation completed","Category":"Fgvm.Test.Component"}""",
             "malformed entry"
         };
 
@@ -61,8 +61,8 @@ public sealed class LogsCommandTests : IDisposable
         var second = first.AddSeconds(1);
         var logLines = new[]
         {
-            $"{first:yyyy-MM-dd HH:mm:ss.fff}|Warning|First message|Fgvm.Json.Category",
-            $"{second:yyyy-MM-dd HH:mm:ss.fff}|Information|Second message with | pipe|Fgvm.Json.Other"
+            $$"""{"Timestamp":"{{first:O}}","LogLevel":"Warning","Message":"First message","Category":"Fgvm.Json.Category"}""",
+            $$"""{"Timestamp":"{{second:O}}","LogLevel":"Information","Message":"Second message with | pipe","Category":"Fgvm.Json.Other"}"""
         };
 
         var (command, console) = CreateCommand(logLines);
@@ -81,10 +81,11 @@ public sealed class LogsCommandTests : IDisposable
     [Fact]
     public async Task LogsCommand_AppliesFilters()
     {
+        var timestamp = DateTime.UtcNow;
         var logLines = new[]
         {
-            $"{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss.fff}|Information|Download completed|Fgvm.Filter.Component",
-            $"{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss.fff}|Warning|Cache miss|Fgvm.Filter.Component"
+            $$"""{"Timestamp":"{{timestamp:O}}","LogLevel":"Information","Message":"Download completed","Category":"Fgvm.Filter.Component"}""",
+            $$"""{"Timestamp":"{{timestamp.AddSeconds(1):O}}","LogLevel":"Warning","Message":"Cache miss","Category":"Fgvm.Filter.Component"}"""
         };
 
         var (command, console) = CreateCommand(logLines);
@@ -99,6 +100,7 @@ public sealed class LogsCommandTests : IDisposable
     private (LogsCommand Command, TestConsole Console) CreateCommand(IEnumerable<string> lines)
     {
         var logPath = Path.Combine(_tempRoot, ".log");
+        // Write each line as NDJSON (newline-delimited JSON)
         File.WriteAllLines(logPath, lines);
 
         var pathService = CreatePathService(logPath);

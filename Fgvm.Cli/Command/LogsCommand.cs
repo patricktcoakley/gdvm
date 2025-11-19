@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using Spectre.Console;
 using System.Globalization;
 using System.Text;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 using ZLogger;
 
@@ -16,7 +17,6 @@ public sealed class LogsCommand(
     ILogger<LogsCommand> logger
 )
 {
-    private const string DateTimeFormat = "yyyy-MM-dd HH:mm:ss.fff";
     private static readonly string[] LogLevels = ["DEFAULT", "DEBUG", "INFORMATION", "WARNING", "ERROR", "CRITICAL"];
 
     /// <summary>
@@ -55,15 +55,25 @@ public sealed class LogsCommand(
 
             while (await reader.ReadLineAsync(cancellationToken) is { } line)
             {
-                var parsed = TryParseLogLine(line, logger);
-                if (parsed is { } entry)
+                if (string.IsNullOrWhiteSpace(line))
+                    continue;
+
+                try
                 {
-                    if (MatchesFilter(entry, level, message))
+                    var entry = JsonSerializer.Deserialize(line, JsonViewSerializerContext.Default.LogEntryView);
+
+                    // Apply filters
+                    var levelMatch = string.IsNullOrEmpty(level) ||
+                                   entry.Level.Contains(level, StringComparison.OrdinalIgnoreCase);
+                    var messageMatch = string.IsNullOrEmpty(message) ||
+                                     entry.Message.Contains(message, StringComparison.OrdinalIgnoreCase);
+
+                    if (levelMatch && messageMatch)
                     {
                         entries.Add(entry);
                     }
                 }
-                else if (!string.IsNullOrWhiteSpace(line))
+                catch (JsonException)
                 {
                     malformed.Add(line);
                 }
@@ -88,88 +98,15 @@ public sealed class LogsCommand(
             throw;
         }
     }
-
-    private static LogEntryView? TryParseLogLine(string line, ILogger logger)
-    {
-        if (string.IsNullOrWhiteSpace(line))
-        {
-            return null;
-        }
-
-        var parts = line.Split('|', 4);
-        if (parts.Length < 4)
-        {
-            logger.ZLogWarning($"Malformed log entry (expected 4 segments): {line}");
-            return null;
-        }
-
-        if (!DateTime.TryParseExact(parts[0], DateTimeFormat,
-                CultureInfo.InvariantCulture,
-                DateTimeStyles.None,
-                out var timestamp))
-        {
-            logger.ZLogWarning($"Could not parse timestamp '{parts[0]}' in log entry: {line}");
-            return null;
-        }
-
-        var levelPart = parts[1].Trim();
-        var messagePart = parts[2].Trim();
-        var categoryPart = parts[3].Trim();
-
-        // Sanitize control characters that may corrupt JSON serialization
-        // ReadLineAsync should remove \n and \r, but we sanitize all control characters to be safe
-        static string SanitizeControlChars(string input)
-        {
-            var chars = input.ToCharArray();
-            for (int i = 0; i < chars.Length; i++)
-            {
-                if (char.IsControl(chars[i]))
-                {
-                    chars[i] = ' ';
-                }
-            }
-            return new string(chars);
-        }
-
-        levelPart = SanitizeControlChars(levelPart);
-        messagePart = SanitizeControlChars(messagePart);
-        categoryPart = SanitizeControlChars(categoryPart);
-
-        // TODO: eventually remove this but keep for backward compatibility
-        // Handle the old log category format
-        if (categoryPart.Length >= 2 && categoryPart.StartsWith('(') && categoryPart.EndsWith(')'))
-        {
-            categoryPart = categoryPart[1..^1].Trim();
-        }
-
-        return new LogEntryView(timestamp, levelPart, messagePart, categoryPart);
-    }
-
-    private static bool MatchesFilter(LogEntryView entry, string levelFilter, string messageFilter)
-    {
-        if (!string.IsNullOrEmpty(levelFilter) &&
-            !entry.Level.Contains(levelFilter, StringComparison.OrdinalIgnoreCase))
-        {
-            return false;
-        }
-
-        if (!string.IsNullOrEmpty(messageFilter) &&
-            !entry.Message.Contains(messageFilter, StringComparison.OrdinalIgnoreCase))
-        {
-            return false;
-        }
-
-        return true;
-    }
 }
 
 public readonly record struct LogEntryView(
-    [property: JsonPropertyName("timestamp")]
+    [property: JsonPropertyName("Timestamp")]
     DateTime Timestamp,
-    [property: JsonPropertyName("level")] string Level,
-    [property: JsonPropertyName("message")]
+    [property: JsonPropertyName("LogLevel")] string Level,
+    [property: JsonPropertyName("Message")]
     string Message,
-    [property: JsonPropertyName("category")]
+    [property: JsonPropertyName("Category")]
     string Category) : IJsonView<LogEntryView>
 {
     public override string ToString() =>
@@ -178,31 +115,34 @@ public readonly record struct LogEntryView(
 
 public static class LogEntryViewExtensions
 {
-    public static string ToJson(this IReadOnlyList<LogEntryView> entries) =>
-        JsonViewExtensions.ToJson(entries);
-
-    public static string ToSlog(this IReadOnlyList<LogEntryView> entries, IReadOnlyList<string> malformed)
+    extension(IReadOnlyList<LogEntryView> entries)
     {
-        var builder = new StringBuilder();
+        public string ToJson() =>
+            JsonViewExtensions.ToJson(entries);
 
-        if (entries.Count > 0)
+        public string ToSlog(IReadOnlyList<string> malformed)
         {
-            foreach (var entry in entries)
+            var builder = new StringBuilder();
+
+            if (entries.Count > 0)
             {
-                builder.AppendLine(entry.ToString());
+                foreach (var entry in entries)
+                {
+                    builder.AppendLine(entry.ToString());
+                }
             }
-        }
 
-        if (malformed.Count > 0)
-        {
-            builder.AppendLine($"Skipped {malformed.Count} malformed log entries.");
-        }
+            if (malformed.Count > 0)
+            {
+                builder.AppendLine($"Skipped {malformed.Count} malformed log entries.");
+            }
 
-        if (entries.Count == 0 && malformed.Count == 0)
-        {
-            builder.AppendLine("No log entries found.");
-        }
+            if (entries.Count == 0 && malformed.Count == 0)
+            {
+                builder.AppendLine("No log entries found.");
+            }
 
-        return builder.ToString().TrimEnd();
+            return builder.ToString().TrimEnd();
+        }
     }
 }

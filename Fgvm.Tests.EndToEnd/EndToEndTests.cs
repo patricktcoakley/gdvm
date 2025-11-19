@@ -196,6 +196,55 @@ public class EndToEndTests(TestContainerFixture fixture) : IClassFixture<TestCon
     }
 
     [Fact]
+    public async Task RemoveWithRuntimeFilter_RemovesCorrectVersion()
+    {
+        // Install mono version
+        var installMono = await fixture.ExecuteCommand(["install", "4.3", "stable", "mono"]);
+        await fixture.AssertSuccessfulExecutionAsync(installMono, "install mono");
+
+        // Verify it's installed
+        var listBefore = await fixture.ExecuteCommand(["list"]);
+        Assert.Contains("4.3", listBefore.Stdout, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("mono", listBefore.Stdout, StringComparison.OrdinalIgnoreCase);
+
+        // Remove with specific version and runtime query to match exactly one
+        var remove = await fixture.ExecuteCommand(["remove", "4.3", "stable", "mono"]);
+        await fixture.AssertSuccessfulExecutionAsync(remove, "remove 4.3 stable mono");
+
+        // Verify it's removed
+        var listAfter = await fixture.ExecuteCommand(["list"]);
+        // The 4.3 mono version should be gone (but other versions may exist)
+        Assert.False(listAfter.Stdout.Contains("4.3-stable-mono", StringComparison.OrdinalIgnoreCase),
+            "4.3-stable-mono should be removed");
+    }
+
+    [Fact]
+    public async Task RemoveWithDevAndMonoQuery_RemovesCorrectly()
+    {
+        // Install a dev version with mono runtime
+        var install = await fixture.ExecuteCommand(["install", "dev", "mono"]);
+        await fixture.AssertSuccessfulExecutionAsync(install, "install dev mono");
+
+        // Get the exact version that was installed
+        var listBefore = await fixture.ExecuteCommand(["list"]);
+        Assert.Contains("dev", listBefore.Stdout, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("mono", listBefore.Stdout, StringComparison.OrdinalIgnoreCase);
+
+        // Remove with dev and mono query - should match exactly one (the one we just installed)
+        var remove = await fixture.ExecuteCommand(["remove", "dev", "mono"]);
+        await fixture.AssertSuccessfulExecutionAsync(remove, "remove dev mono");
+
+        // Verify dev mono is no longer in the list
+        var listAfter = await fixture.ExecuteCommand(["list"]);
+        // Should not have any dev+mono combination
+        var lines = listAfter.Stdout.Split('\n');
+        var hasDevMono = lines.Any(line =>
+            line.Contains("dev", StringComparison.OrdinalIgnoreCase) &&
+            line.Contains("mono", StringComparison.OrdinalIgnoreCase));
+        Assert.False(hasDevMono, "Dev mono version should be removed");
+    }
+
+    [Fact]
     public async Task SetCommandFailsGracefullyForInvalidVersion()
     {
         var result = await fixture.ExecuteCommand(["set", "nonexistent-version-999"]);

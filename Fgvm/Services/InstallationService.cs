@@ -6,7 +6,6 @@ using Fgvm.Progress;
 using Fgvm.Types;
 using Microsoft.Extensions.Logging;
 using System.IO.Compression;
-using System.Security;
 using System.Security.Cryptography;
 
 namespace Fgvm.Services;
@@ -133,23 +132,49 @@ public class InstallationService(
 
             // TODO: Revisit this to use the godot-builds JSON artifacts instead
             // Verify checksum if available
+            ChecksumVerification checksumStatus = new ChecksumVerification.Skipped();
+
             if (ShouldVerifyChecksum(godotRelease))
             {
                 progress.Report(new OperationProgress<InstallationStage>(InstallationStage.VerifyingChecksum, "Verifying checksum..."));
                 memStream.Position = 0;
-                var sha512String = await releaseManager.GetSha512(godotRelease, cancellationToken);
-                var calculatedChecksum = await CalculateChecksum(memStream, cancellationToken);
 
-                // TODO: Replace throws with Result<..., InstallationError>.Failure(...) - remove CryptographicException and SecurityException
-                if (TryParseSha512SumsContent(godotRelease.ZipFileName, sha512String) is not { } expectedHash)
+                var sha512Result = await releaseManager.GetSha512(godotRelease, cancellationToken);
+
+                if (sha512Result is Result<string, NetworkError>.Success success)
                 {
-                    throw new CryptographicException($"Unable to Parse {sha512String} or find expected hash.");
+                    var sha512String = success.Value;
+                    if (TryParseSha512SumsContent(godotRelease.ZipFileName, sha512String) is not { } expectedHash)
+                    {
+                        logger.LogWarning("Checksum entry not found for {FileName} in SHA512-SUMS.txt, continuing installation without verification",
+                            godotRelease.ZipFileName);
+
+                        checksumStatus = new ChecksumVerification.Failed(
+                            new NetworkError.ConnectionFailure($"Checksum entry for {godotRelease.ZipFileName} not found in SHA512-SUMS.txt"));
+                    }
+                    else
+                    {
+                        var calculatedChecksum = await CalculateChecksum(memStream, cancellationToken);
+
+                        if (!calculatedChecksum.Equals(expectedHash, StringComparison.OrdinalIgnoreCase))
+                        {
+                            logger.LogError("Checksum mismatch for {FileName}. Expected: {Expected}, Actual: {Actual}",
+                                godotRelease.ZipFileName, expectedHash, calculatedChecksum);
+
+                            return new Result<InstallationOutcome, InstallationError>.Failure(
+                                new InstallationError.ChecksumMismatch(expectedHash, calculatedChecksum, godotRelease.ZipFileName));
+                        }
+
+                        checksumStatus = new ChecksumVerification.Verified();
+                        logger.LogInformation("Checksum verified successfully for {FileName}", godotRelease.ZipFileName);
+                    }
                 }
-
-                if (!calculatedChecksum.Equals(expectedHash, StringComparison.OrdinalIgnoreCase))
+                else if (sha512Result is Result<string, NetworkError>.Failure failure)
                 {
-                    throw new SecurityException(
-                        $"Unexpected results for {godotRelease.ZipFileName} checksum. Expected hash: {expectedHash}, computed hash: {calculatedChecksum}.");
+                    logger.LogWarning("Failed to fetch checksum for {ReleaseNameWithRuntime}, continuing installation without verification",
+                        godotRelease.ReleaseNameWithRuntime);
+
+                    checksumStatus = new ChecksumVerification.Failed(failure.Error);
                 }
             }
 
@@ -180,7 +205,7 @@ public class InstallationService(
 
             logger.LogInformation("Successfully installed {ReleaseNameWithRuntime}", godotRelease.ReleaseNameWithRuntime);
             return new Result<InstallationOutcome, InstallationError>.Success(
-                new InstallationOutcome.NewInstallation(godotRelease.ReleaseNameWithRuntime));
+                new InstallationOutcome.NewInstallation(godotRelease.ReleaseNameWithRuntime, checksumStatus));
         }
         catch (TaskCanceledException)
         {
@@ -192,10 +217,10 @@ public class InstallationService(
             if (Directory.Exists(extractPath))
             {
                 Directory.Delete(extractPath, true);
-                logger.LogError(e, "Removing {ExtractPath} due to error", extractPath);
+                logger.LogError("Removing {ExtractPath} due to error: {Message}", extractPath, e.Message);
             }
 
-            logger.LogError(e, "Error downloading and installing Godot {ReleaseNameWithRuntime}", godotRelease.ReleaseNameWithRuntime);
+            logger.LogError("Error downloading and installing Godot {ReleaseNameWithRuntime}: {Message}", godotRelease.ReleaseNameWithRuntime, e.Message);
             throw;
         }
     }

@@ -151,4 +151,14 @@ public static class Messages
     public static string LogLevelOutOfRange(string level) => $"{level} is not valid. Accepted values include: default, debug, info, warning, error, or critical";
     public static string LogPathNotFound(string logPath) => $"Path to logs {logPath} doesn't exist.";
     public static string UnableToGetRelease(string version) => $"Unable to get release with selection `{version}`.";
+
+    // Checksum verification
+    public static string ChecksumVerificationFailed(string releaseNameWithRuntime, Types.NetworkError error) =>
+        $"[orange1]Warning: Could not verify checksum for {releaseNameWithRuntime}. Installation continued without verification.[/]";
+
+    public static string ChecksumMismatch(string fileName, string expected, string actual) =>
+        $"[red]Checksum mismatch for {fileName}![/]\n[red]Expected: {expected}[/]\n[red]Actual:   {actual}[/]\n[red]This could indicate a corrupted download or security issue.[/]";
+
+    public static string ChecksumParseError(string content) =>
+        $"[red]Failed to parse checksum file.[/]\n[dim]Content preview: {(content.Length > 100 ? content[..100] + "..." : content)}[/]";
 }

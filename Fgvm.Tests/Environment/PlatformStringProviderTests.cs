@@ -34,18 +34,15 @@ public class PlatformStringProviderTests
         if (expected is null)
         {
             var result = platformStringProvider.GetPlatformString(release);
-            Assert.IsType<Result<string, PlatformError>.Failure>(result);
-            var failure = (Result<string, PlatformError>.Failure)result;
-            Assert.IsType<PlatformError.Unsupported>(failure.Error);
-            var unsupported = (PlatformError.Unsupported)failure.Error;
+            var failure = Assert.IsType<Result<string, PlatformError>.Failure>(result);
+            var unsupported = Assert.IsType<PlatformError.Unsupported>(failure.Error);
             Assert.Equal(OS.MacOS, unsupported.OS);
             Assert.Equal(arch, unsupported.Architecture);
             return;
         }
 
         var successResult = platformStringProvider.GetPlatformString(release);
-        Assert.IsType<Result<string, PlatformError>.Success>(successResult);
-        var success = (Result<string, PlatformError>.Success)successResult;
+        var success = Assert.IsType<Result<string, PlatformError>.Success>(successResult);
         Assert.Equal(expected, success.Value);
     }
 
@@ -73,18 +70,15 @@ public class PlatformStringProviderTests
         if (expected is null)
         {
             var result = platformStringProvider.GetPlatformString(release);
-            Assert.IsType<Result<string, PlatformError>.Failure>(result);
-            var failure = (Result<string, PlatformError>.Failure)result;
-            Assert.IsType<PlatformError.Unsupported>(failure.Error);
-            var unsupported = (PlatformError.Unsupported)failure.Error;
+            var failure = Assert.IsType<Result<string, PlatformError>.Failure>(result);
+            var unsupported = Assert.IsType<PlatformError.Unsupported>(failure.Error);
             Assert.Equal(OS.Linux, unsupported.OS);
             Assert.Equal(arch, unsupported.Architecture);
             return;
         }
 
         var successResult = platformStringProvider.GetPlatformString(release);
-        Assert.IsType<Result<string, PlatformError>.Success>(successResult);
-        var success = (Result<string, PlatformError>.Success)successResult;
+        var success = Assert.IsType<Result<string, PlatformError>.Success>(successResult);
         Assert.Equal(expected, success.Value);
     }
 
@@ -112,18 +106,15 @@ public class PlatformStringProviderTests
         if (expected is null)
         {
             var result = platformStringProvider.GetPlatformString(release);
-            Assert.IsType<Result<string, PlatformError>.Failure>(result);
-            var failure = (Result<string, PlatformError>.Failure)result;
-            Assert.IsType<PlatformError.Unsupported>(failure.Error);
-            var unsupported = (PlatformError.Unsupported)failure.Error;
+            var failure = Assert.IsType<Result<string, PlatformError>.Failure>(result);
+            var unsupported = Assert.IsType<PlatformError.Unsupported>(failure.Error);
             Assert.Equal(OS.Windows, unsupported.OS);
             Assert.Equal(arch, unsupported.Architecture);
             return;
         }
 
         var successResult = platformStringProvider.GetPlatformString(release);
-        Assert.IsType<Result<string, PlatformError>.Success>(successResult);
-        var success = (Result<string, PlatformError>.Success)successResult;
+        var success = Assert.IsType<Result<string, PlatformError>.Success>(successResult);
         Assert.Equal(expected, success.Value);
     }
 

@@ -5,7 +5,10 @@ namespace Fgvm.Types;
 /// </summary>
 public abstract record NetworkError
 {
-    public record RequestFailed(string Url, int StatusCode, string? Body = null) : NetworkError;
+    public record RequestFailure(string Url, int StatusCode, string? Body = null) : NetworkError;
 
-    public record Exception(string Message, string? Details = null) : NetworkError;
+    public record ConnectionFailure(string Message, string? Details = null) : NetworkError;
+
+    /// <summary>All sources exhausted without success</summary>
+    public record AllSourcesFailed(string Resource, IReadOnlyList<NetworkError> Errors) : NetworkError;
 }

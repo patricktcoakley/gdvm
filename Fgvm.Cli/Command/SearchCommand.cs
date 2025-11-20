@@ -50,9 +50,9 @@ public sealed class SearchCommand(
             case Result<IEnumerable<string>, NetworkError>.Failure(var error):
                 var errorMessage = error switch
                 {
-                    NetworkError.RequestFailed(var url, var statusCode, _) =>
+                    NetworkError.RequestFailure(var url, var statusCode, _) =>
                         $"Request to {url} failed with status code {statusCode}",
-                    NetworkError.Exception(var message, _) =>
+                    NetworkError.ConnectionFailure(var message, _) =>
                         $"Network error: {message}",
                     _ => "Unknown network error"
                 };

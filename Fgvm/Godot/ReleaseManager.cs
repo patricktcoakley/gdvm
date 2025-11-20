@@ -7,7 +7,7 @@ public interface IReleaseManager
 {
     Task<Result<IEnumerable<string>, NetworkError>> ListReleases(CancellationToken cancellationToken);
     Task<Result<IEnumerable<string>, NetworkError>> SearchRemoteReleases(string[] query, CancellationToken cancellationToken);
-    Task<string> GetSha512(Release release, CancellationToken cancellationToken);
+    Task<Result<string, NetworkError>> GetSha512(Release release, CancellationToken cancellationToken);
     Task<HttpResponseMessage> GetZipFile(string filename, Release release, CancellationToken cancellationToken);
 
     Release? TryFindReleaseByQuery(string[] query, string[] releaseNames);
@@ -36,7 +36,7 @@ public sealed class ReleaseManager(IHostSystem hostSystem, PlatformStringProvide
         };
     }
 
-    public async Task<string> GetSha512(Release release, CancellationToken cancellationToken) =>
+    public async Task<Result<string, NetworkError>> GetSha512(Release release, CancellationToken cancellationToken) =>
         await downloadClient.GetSha512(release, cancellationToken);
 
     public async Task<HttpResponseMessage> GetZipFile(string filename, Release release, CancellationToken cancellationToken) =>

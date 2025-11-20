@@ -1,10 +1,11 @@
+using Fgvm.Types;
 using Microsoft.Extensions.Logging;
 
 namespace Fgvm.Godot;
 
 public interface ITuxFamilyClient
 {
-    Task<string> GetSha512Async(Release godotRelease, CancellationToken cancellationToken);
+    Task<Result<string, NetworkError>> GetSha512Async(Release godotRelease, CancellationToken cancellationToken);
     Task<HttpResponseMessage> GetZipFileAsync(string filename, Release godotRelease, CancellationToken cancellationToken);
 }
 
@@ -15,8 +16,7 @@ public class TuxFamilyClient(HttpClient httpClient, ILogger<TuxFamilyClient> log
     // Use a stable archive snapshot; the live endpoint is unreliable.
     private const string BaseUrl = "https://web.archive.org/web/20211106101031if_/https://downloads.tuxfamily.org/godotengine";
 
-    // TODO: Replace with Task<Result<string, NetworkError>> GetSha512Async(Release godotRelease, CancellationToken cancellationToken)
-    public async Task<string> GetSha512Async(Release godotRelease, CancellationToken cancellationToken)
+    public async Task<Result<string, NetworkError>> GetSha512Async(Release godotRelease, CancellationToken cancellationToken)
     {
         var url = BuildUrl("SHA512-SUMS.txt", godotRelease);
 
@@ -29,17 +29,20 @@ public class TuxFamilyClient(HttpClient httpClient, ILogger<TuxFamilyClient> log
             if (response.IsSuccessStatusCode)
             {
                 logger.LogInformation("Found SHA512 for {Version} at TuxFamily", godotRelease.Version);
-                return await response.Content.ReadAsStringAsync(cancellationToken);
+                var content = await response.Content.ReadAsStringAsync(cancellationToken);
+                return new Result<string, NetworkError>.Success(content);
             }
 
             var body = await response.Content.ReadAsStringAsync(cancellationToken);
             logger.LogError("{Url} returned {StatusCode}. Body: {Body}", url, response.StatusCode, body);
-            throw new HttpRequestException($"TuxFamily SHA512 request failed: {response.StatusCode}");
+            return new Result<string, NetworkError>.Failure(
+                new NetworkError.RequestFailure(url, (int)response.StatusCode, body));
         }
-        catch (Exception ex)
+        catch (System.Exception ex)
         {
-            logger.LogError(ex, "Failed to get SHA512 from TuxFamily for {Version}", godotRelease.Version);
-            throw;
+            logger.LogError("Failed to get SHA512 from TuxFamily for {Version}: {Message}", godotRelease.Version, ex.Message);
+            return new Result<string, NetworkError>.Failure(
+                new NetworkError.ConnectionFailure(ex.Message));
         }
     }
 
@@ -66,7 +69,7 @@ public class TuxFamilyClient(HttpClient httpClient, ILogger<TuxFamilyClient> log
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Failed to get zip file from TuxFamily for {ReleaseNameWithRuntime}", godotRelease.ReleaseNameWithRuntime);
+            logger.LogError("Failed to get zip file from TuxFamily for {ReleaseNameWithRuntime}: {Message}", godotRelease.ReleaseNameWithRuntime, ex.Message);
             throw;
         }
     }

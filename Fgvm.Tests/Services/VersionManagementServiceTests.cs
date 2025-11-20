@@ -112,7 +112,7 @@ public class VersionManagementServiceTests
                 var result = await _service.ResolveVersionForLaunchAsync();
 
                 Assert.True(result is Result<VersionResolutionOutcome, VersionResolutionError>.Success);
-                var success = (Result<VersionResolutionOutcome, VersionResolutionError>.Success)result;
+                var success = Assert.IsType<Result<VersionResolutionOutcome, VersionResolutionError>.Success>(result);
                 Assert.True(success.Value is VersionResolutionOutcome.Found);
                 var found = (VersionResolutionOutcome.Found)success.Value;
                 Assert.Equal(compatibleVersion, found.VersionName);
@@ -211,7 +211,7 @@ public class VersionManagementServiceTests
                 var result = await _service.ResolveVersionForLaunchAsync();
 
                 Assert.True(result is Result<VersionResolutionOutcome, VersionResolutionError>.Success);
-                var success = (Result<VersionResolutionOutcome, VersionResolutionError>.Success)result;
+                var success = Assert.IsType<Result<VersionResolutionOutcome, VersionResolutionError>.Success>(result);
                 Assert.True(success.Value is VersionResolutionOutcome.Found);
                 var found = (VersionResolutionOutcome.Found)success.Value;
                 Assert.Equal(compatibleVersion, found.VersionName);
@@ -351,7 +351,7 @@ public class VersionManagementServiceTests
 
         var mockRelease = CreateMockRelease(newVersion);
         var installationResult = new Result<InstallationOutcome, InstallationError>.Success(
-            new InstallationOutcome.NewInstallation(mockRelease.ReleaseNameWithRuntime));
+            new InstallationOutcome.NewInstallation(mockRelease.ReleaseNameWithRuntime, new ChecksumVerification.Skipped()));
 
         _mockInstallationService.Setup(x =>
                 x.InstallByQueryAsync(query, It.IsAny<IProgress<OperationProgress<InstallationStage>>>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
@@ -426,7 +426,7 @@ public class VersionManagementServiceTests
 
         var mockRelease = CreateMockRelease(compatibleVersion);
         var installationResult = new Result<InstallationOutcome, InstallationError>.Success(
-            new InstallationOutcome.NewInstallation(mockRelease.ReleaseNameWithRuntime));
+            new InstallationOutcome.NewInstallation(mockRelease.ReleaseNameWithRuntime, new ChecksumVerification.Skipped()));
 
         _mockInstallationService.Setup(x =>
                 x.InstallByQueryAsync(new[] { projectVersion }, It.IsAny<IProgress<OperationProgress<InstallationStage>>>(), It.IsAny<bool>(),
@@ -483,7 +483,7 @@ public class VersionManagementServiceTests
 
         var mockRelease = CreateMockRelease(compatibleVersion);
         var installationResult = new Result<InstallationOutcome, InstallationError>.Success(
-            new InstallationOutcome.NewInstallation(mockRelease.ReleaseNameWithRuntime));
+            new InstallationOutcome.NewInstallation(mockRelease.ReleaseNameWithRuntime, new ChecksumVerification.Skipped()));
 
         _mockInstallationService.Setup(x =>
                 x.InstallByQueryAsync(new[] { projectVersion }, It.IsAny<IProgress<OperationProgress<InstallationStage>>>(), It.IsAny<bool>(),
@@ -634,7 +634,7 @@ public class VersionManagementServiceTests
         var result = await _service.ResolveVersionForLaunchAsync(true);
 
         Assert.True(result is Result<VersionResolutionOutcome, VersionResolutionError>.Success);
-        var success = (Result<VersionResolutionOutcome, VersionResolutionError>.Success)result;
+        var success = Assert.IsType<Result<VersionResolutionOutcome, VersionResolutionError>.Success>(result);
         Assert.True(success.Value is VersionResolutionOutcome.InteractiveRequired);
         var interactive = (VersionResolutionOutcome.InteractiveRequired)success.Value;
         Assert.Empty(interactive.AvailableVersions);
@@ -657,7 +657,7 @@ public class VersionManagementServiceTests
         var result = await _service.ResolveVersionForLaunchAsync(true);
 
         Assert.True(result is Result<VersionResolutionOutcome, VersionResolutionError>.Success);
-        var success = (Result<VersionResolutionOutcome, VersionResolutionError>.Success)result;
+        var success = Assert.IsType<Result<VersionResolutionOutcome, VersionResolutionError>.Success>(result);
         Assert.True(success.Value is VersionResolutionOutcome.InteractiveRequired);
         var interactive = (VersionResolutionOutcome.InteractiveRequired)success.Value;
         Assert.Equal(2, interactive.AvailableVersions.Count); // Using Assert.Equal since we need exactly 2
@@ -682,7 +682,7 @@ public class VersionManagementServiceTests
         var result = await _service.ResolveVersionForLaunchAsync(true);
 
         Assert.True(result is Result<VersionResolutionOutcome, VersionResolutionError>.Success);
-        var success = (Result<VersionResolutionOutcome, VersionResolutionError>.Success)result;
+        var success = Assert.IsType<Result<VersionResolutionOutcome, VersionResolutionError>.Success>(result);
         Assert.True(success.Value is VersionResolutionOutcome.InteractiveRequired);
         var interactive = (VersionResolutionOutcome.InteractiveRequired)success.Value;
         Assert.Single(interactive.AvailableVersions);

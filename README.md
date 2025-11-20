@@ -207,20 +207,42 @@ other use cases in the future, but otherwise all functionality exists inside the
 #### Environment Variables
 
 - **`FGVM_HOME`**: Customize the installation directory for fgvm. By default, fgvm uses `~/fgvm/` (macOS/Linux) or `C:\Users\USERNAME\fgvm\` (Windows). Setting this variable allows you to use a different location:
-  ```bash
-  # Example: Use a custom directory
-  export FGVM_HOME=/custom/path
-  fgvm list  # Will use /custom/path/fgvm/ instead
-  ```
-  This is particularly useful for testing, CI/CD environments, or managing multiple fgvm installations.
+
+  macOS/Linux:
+    ```bash
+    # Example: Use a custom directory
+    export FGVM_HOME=/custom/path
+    fgvm list  # Will use /custom/path/fgvm/ instead
+    ```
+  
+  Windows:
+    ```powershell
+    # Example: Use a custom directory
+    $env:FGVM_HOME = "C:\custom\path"
+    fgvm list  # Will use C:\custom\path\fgvm\ instead
+    ```
+  
+
+  This is particularly useful for testing, CI/CD environments, or keeping your Godot installations on a separate storage device for backup purposes.
 
 ## Notes
 
 ### Windows
 
+#### Symlink
+
 In order to use the symlink feature for Windows, you first need to enable [Developer Mode](https://learn.microsoft.com/en-us/windows/apps/get-started/enable-your-device-for-development).
 Without it, you can still install, remove, etc, but you won't have the added benefit of having a symlink pointing to your desired version, which is what the `fgvm godot` command uses to launch Godot
 directly from the terminal.
+
+#### Emoji Support
+
+Powershell, the default shell for Windows, doesn't seem to support the emojis out of the box. To fix this, you simply need to update the `$PROFILE`/profile.ps1:
+```powershell 
+'[console]::InputEncoding = [console]::OutputEncoding = [System.Text.UTF8Encoding]::new()' | Add-Content -Path $PROFILE
+```
+
+If you are using `cmd`, you can also try the beta unicode support by going to Region in the control panel, going to Administrative, clicking Change system locale, and checking the Beta: Use Unicode UTF-8 for worldwide language support checkbox. You will have to restart your computer, but it should enable emoji support there as well.
 
 ## Development
 

@@ -21,7 +21,7 @@
         <PublishTrimmed>true</PublishTrimmed>
         <TrimMode>full</TrimMode>
         <InvariantGlobalization>true</InvariantGlobalization>
-        <IlcOptimizationPreference>Size</IlcOptimizationPreference>
+        <OptimizationPreference>Speed</OptimizationPreference>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(Configuration)' == 'Debug'">

@@ -29,7 +29,7 @@ terminal, or, the preferred method of installation, using a [package manager](#p
 
 ### Package Managers
 
-The primary way to install fgvm is through a package manager, which will make it easier to keep up to date and manage your installations:
+The recommended way to install fgvm is through a package manager, which will make it easier to keep up to date and manage your installations:
 
 #### Homebrew (macOS/Linux)
 
@@ -84,20 +84,17 @@ See [Build](#build) for instructions on how to build fgvm from source.
 
 ### Getting Started
 
-fgvm downloads and installs Godot into folders inside of `~/fgvm/` for macOS and Linux, and `C:\Users\USERNAME\fgvm\` for Windows; this might be customizable in the future.
-Each installation will be in a folder with the `VERSION-TYPE-RUNTIME`. So if you installed the 4.3 stable with .NET support, it would be in a folder marked
-`4.3-stable-mono`. By default, when you install a version a [symlink](https://en.wikipedia.org/wiki/Symbolic_link) is created in a folder called `bin`. This is what the `fgvm godot` command is using
-by default,
-or you can run `fgvm godot -i` to pick any another installation to launch, or you can simply use `fgvm set` to pick the version you want to launch by default.
-This command was added to not have to rely on having your `PATH` variable set to use symlinks. You can also just drag the symlink to your taskbar or dock (depending on your OS and desktop environment)
-for easy launching through icons; for macOS you would specifically use `.app`. However, if you'd like to be able to just run `godot` from the terminal directly, see [PATH](#path) for basic
-instructions
+fgvm downloads and installs Godot into folders inside of `~/fgvm/` for macOS and Linux, and `$env:USERPROFILE\fgvm\` for Windows. You can customize this location using the `FGVM_HOME` environment variable (see [Environment Variables](#environment-variables)).
+Each installation will be in a folder with the `<VERSION>-<TYPE>-<RUNTIME>`; which equates to version number, the release type (stable, dev, etc), and the runtime (standard or .NET). For example, 
+if you installed the 4.3 stable with .NET support, it would be in a folder marked `4.3-stable-mono`. 
 
-Right now it supports installing whatever your computer supports by CPU and OS, so if you're running Windows on a standard x86-standard CPU you are able to install
+By default, when you install a version a [symlink](https://en.wikipedia.org/wiki/Symbolic_link) is created in a folder called `bin`. This is what the `fgvm godot` command is running when you don't pass any arguments,
+but you can also just run `fgvm godot -i` to pick any another installation to launch, or you can simply use `fgvm set` to pick the version you want to launch by default.
+
+Right now fvgm supports installing whatever your computer supports by CPU and OS, so if you're running Windows on a standard x86_64 CPU you are able to install
 and run versions of Godot all the way back to 1.x. macOS went through multiple architecture transitions since Godot 1 and so most modern Macs will only support releases
 as far back as ~3.3, but if you have an older Mac you should still be able to install whatever it supports (should fgvm itself be able to run on the system). An override to force downloads on
-unsupported systems
-may be added later, but it hasn't come up as a requested feature yet.
+unsupported systems may be added later, but it hasn't come up as a requested feature yet.
 
 ### Commands
 
@@ -206,22 +203,27 @@ other use cases in the future, but otherwise all functionality exists inside the
 
 #### Environment Variables
 
-- **`FGVM_HOME`**: Customize the installation directory for fgvm. By default, fgvm uses `~/fgvm/` (macOS/Linux) or `C:\Users\USERNAME\fgvm\` (Windows). Setting this variable allows you to use a different location:
+- **`FGVM_HOME`**: Customize the installation directory for fgvm. By default, fgvm uses `~/fgvm/` (macOS/Linux) or `$env:USERPROFILE\fgvm\` (Windows). Setting this variable allows you to use a different location:
 
   macOS/Linux:
     ```bash
-    # Example: Use a custom directory
+    # Temporary (current session only)
     export FGVM_HOME=/custom/path
     fgvm list  # Will use /custom/path/fgvm/ instead
+
+    # Persistent (add to ~/.bashrc, ~/.zshrc, or ~/.profile)
+    echo 'export FGVM_HOME=/custom/path' >> ~/.bashrc
     ```
-  
+
   Windows:
     ```powershell
-    # Example: Use a custom directory
+    # Temporary (current session only)
     $env:FGVM_HOME = "C:\custom\path"
     fgvm list  # Will use C:\custom\path\fgvm\ instead
+
+    # Persistent (for current user)
+    [System.Environment]::SetEnvironmentVariable('FGVM_HOME', 'C:\custom\path', 'User')
     ```
-  
 
   This is particularly useful for testing, CI/CD environments, or keeping your Godot installations on a separate storage device for backup purposes.
 
@@ -302,7 +304,7 @@ What this means for you:
 - If you are using a package manager (the recommend way to install), you will have to remove the `gdvm` package and install `fgvm`
   - Homebrew users: `brew update && brew uninstall gdvm && brew install fgvm`
   - Scoop users: `scoop update && scoop uninstall gdvm && scoop install fgvm`
-- If you want to keep your current installations, you can simply rename the existing `gdvm`, which will preserve everything as-is:
-  - Windows users: `mv C:\Users\USERNAME\gdvm C:\Users\USERNAME\fgvm`
-  - macOS & Linux users: `mv ~/gdvm ~/fgvm`
-  - `gdvmup` is now called `fgvmup`. If you were using the old `gdvmup` installer, run `gdvmup uninstall` first, which removes everything, then follow the [installation instructions](#installation) above.
+- If you want to keep your current installations, you can copy the existing `gdvm` directory to `fgvm`, which will preserve everything. Here are some one-liners that copy them over and delete the gdvm folder:
+  - macOS & Linux users: `mkdir -p ~/fgvm && cp -r ~/gdvm/* ~/fgvm/ && rm -rf ~/gdvm`
+  - Windows users: `mkdir -Force $env:USERPROFILE\fgvm ; cp -r $env:USERPROFILE\gdvm\* $env:USERPROFILE\fgvm\ ; rm -r -Force $env:USERPROFILE\gdvm`
+  - `gdvmup` is now called `fgvmup`. If you were using the old `gdvmup` installer, run `gdvmup uninstall` first, which removes everything, then follow the [installation instructions](#installation) above. Be sure to copy over your existing installations using the above commands if you want to keep them.

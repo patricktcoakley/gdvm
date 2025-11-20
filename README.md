@@ -2,6 +2,10 @@
 
 **fgvm**, a ***friendly*** **Godot version manager**.
 
+> [!IMPORTANT]
+> This project was previously known as `gdvm`, but as of 2.0 has now been renamed to `fgvm`. Most users won't be significantly impacted,
+> but some changes were breaking and will require users to switch over to `fgvm`; please see [this section](#migrating-from-gdvm) for information on how to migrate.
+
 ## Introduction
 
 fgvm is a friendly Godot version manager that lets users install and manage multiple versions of Godot with ease. It uses a hybrid CLI/TUI design, meaning that in certain places where it makes sense
@@ -108,38 +112,38 @@ but here is a detailed summary of the available commands:
 > **Note:** Many commands support short-form aliases for faster usage (e.g., `fgvm i` for `fgvm install`, `fgvm g` for `fgvm godot`).
 
 - `fgvm list` or `fgvm l` [`--json`] will list locally installed Godot versions. Use `--json` to output in JSON format.
-- `fgvm install` or `fgvm i` `[<...strings>]` will prompt the user to install a version if no arguments are supplied, or will
+- `fgvm install` or `fgvm i` `[<...strings>]` [`--default|-D|--set-default`] will prompt the user to install a version if no arguments are supplied, or will
   try to find the closest matching version based on the query, defaulting to "stable" if no other release type is supplied.
-  It will automatically set the installed version as the default if it's the first installation.
+  It will automatically set the installed version as the default if it's the first installation. Use `--default` (or `-D`) to explicitly set the installed version as the default regardless of whether other versions are already installed.
     - Queries:
         - `latest` or `latest standard` will install the latest stable, and `latest mono` will install the latest .NET stable.
         - `4 mono` will grab the latest stable 4.x .NET release, `3.3 rc` will grab the latest rc of 3.3 standard, `1` would take the last stable version `1`, and so on.
-- `fgvm install default` or `fgvm i default` `[<...strings>]` same as `install`, but explicitly sets the installed version as the default regardless of whether other versions are already installed.
+    - Examples:
+        - `fgvm install 4.3` - Install 4.3 stable
+        - `fgvm install 4.3 mono` - Install the latest 4.6 dev mono
+        - `fgvm i latest --default` - Install latest stable standard and set as default
 - `fgvm godot` or `fgvm g` runs the appropriate Godot version, or with the `--interactive` or `-i` flag, will prompt the user to launch an installed version. When run in a project directory with a `.fgvm-version`
   file, it will use that project-specific version. If no `.fgvm-version` file exists, it will use the global default version. The command will automatically detect and launch the project if a
   `project.godot` file is found.
     - Once a version is installed, it will launch the editor with the project directly from the terminal This feature will only work on projects using `config_version=5` in `project.godot`, which is *
       *Godot 4.0 and later**.
-    - Optionally, pass in arguments to the Godot executable directly using the `--args` parameter, such as `fgvm godot --args --headless` or `fgvm godot --args --version`. Multiple arguments should be
-      passed as a double-quoted string, such as --args "--headless -v".
+    - Optionally, pass in arguments to the Godot executable directly using the `--args` parameter, such as `fgvm godot --args="--headless"` or `fgvm godot --args="--version"`. Multiple arguments should be
+      passed as a quoted string, such as `--args="--headless -v"`.
     - Use the `--attached` or `-a` flag to force Godot connected to the terminal for output; by default, Godot runs in detached mode and will launch in a separate instance. Using an argument detection
       system, certain arguments (like `--version`, `--help`, `--headless`) automatically trigger this mode since they would otherwise be useless without printing to standard out.
     - The command will only read existing `.fgvm-version` files for version selection, and does not create or modify version files. Use `fgvm local` to manage `.fgvm-version` files.
-- `fgvm set [--interactive|-i] [<...strings>]` prompts the user to set an installed version of Godot if no arguments are supplied, or will
-  try to find the closest matching version based on the query, including release type (`stable`) and version (`4`, `4.4`), or an exact match (`4.4.1-stable-mono`). Use `-i|--interactive` to select
-  from already installed versions.
-- `fgvm local [--interactive|-i] [<...strings>]` sets the Godot version for the current project by creating or updating a `.fgvm-version` file in the current directory. If no `.fgvm-version` file
-  exists, it will automatically detect the project version from `project.godot` and install the most recent compatible version if not already installed. If a `.fgvm-version` file already exists, it
-  will use that version.
+- `fgvm set [<...strings>]` prompts the user to set an installed version of Godot if no arguments are supplied, or will
+  try to find the closest matching version based on the query, including release type (`stable`) and version (`4`, `4.4`), or an exact match (`4.4.1-stable-mono`).
+- `fgvm local [<...strings>]` sets the Godot version for the current project by creating or updating a `.fgvm-version` file in the current directory. If no `.fgvm-version` file
+  exists and no arguments are provided, it will automatically detect the project version from `project.godot` and install the most recent compatible version if not already installed.
     - If a list of arguments are provided, it will find the best matching version based on the query (including runtime preferences like `mono` or `standard`) and install it if necessary.
-    - Use `-i|--interactive` to force interactive selection from already installed versions instead of auto-installing.
 - `fgvm which` [`--json`] displays the location that the current Godot symlink points to. Use `--json` to output in JSON format.
 - `fgvm remove` or `fgvm r` `[<...strings>]` prompts the user to select multiple installations to delete, or optionally takes a query to filter down to specific versions to delete. If there is only one match, it
   will delete it directly. If there are multiple matches, it will prompt the user to select which ones to delete.
     - For example, if you wanted to list all of the `4.y.z` versions to remove, you could just do `fgvm r 4` to list all of the 4 major releases. However, if remove a specific version, like
       `4.4.1-stable-mono`, it will just delete that version directly. Deleting the currently set version will unset it and you will need to set a new one.
-- `fgvm logs` [`--level|-l <string>, --message|-m <string>] [`--json`] displays all the of the logs, or optionally takes a level or message filter. Use `--json` to output in JSON format.
-- `fgvm search` or `fgvm s` `[<...strings>] [--json]` takes an optional query to search all available remote versions of Godot. Use `--json` to output in JSON format.
+- `fgvm logs` [`--level|-l <string>`] [`--message|-m <string>`] [`--json`] displays all the of the logs, or optionally takes a level or message filter. Use `--json` to output in JSON format.
+- `fgvm search` or `fgvm s` `[<...strings>]` [`--json|-j`] takes an optional query to search all available remote versions of Godot. Use `--json` or `-j` to output in JSON format.
     - Queries:
         - `4` would filter all 4.x releases, including "stable", "dev", etc.
         - `4.2-rc` would only list the `4.2` `rc` releases, but `4.2 rc` would list all `4.2.x` releases with the `rc` release type, including `4.2.2.-rc3`
@@ -200,6 +204,16 @@ which allows you to use `fgvm` without
 the [60 requests per hour restriction](https://docs.github.com/en/rest/using-the-rest-api/rate-limits-for-the-rest-api?apiVersion=2022-11-28#primary-rate-limit-for-unauthenticated-users). There may be
 other use cases in the future, but otherwise all functionality exists inside the CLI itself.
 
+#### Environment Variables
+
+- **`FGVM_HOME`**: Customize the installation directory for fgvm. By default, fgvm uses `~/fgvm/` (macOS/Linux) or `C:\Users\USERNAME\fgvm\` (Windows). Setting this variable allows you to use a different location:
+  ```bash
+  # Example: Use a custom directory
+  export FGVM_HOME=/custom/path
+  fgvm list  # Will use /custom/path/fgvm/ instead
+  ```
+  This is particularly useful for testing, CI/CD environments, or managing multiple fgvm installations.
+
 ## Notes
 
 ### Windows
@@ -207,14 +221,6 @@ other use cases in the future, but otherwise all functionality exists inside the
 In order to use the symlink feature for Windows, you first need to enable [Developer Mode](https://learn.microsoft.com/en-us/windows/apps/get-started/enable-your-device-for-development).
 Without it, you can still install, remove, etc, but you won't have the added benefit of having a symlink pointing to your desired version, which is what the `fgvm godot` command uses to launch Godot
 directly from the terminal.
-
-### PATH
-
-> ***NOTE:*** If you use [fgvmup](#fgvmup-currently-windows-only), [Scoop](#scoop-windows), or [Homebrew](#homebrew-macoslinux), this is not an issue and only relates to using the zipped binaries.
-
-There currently isn't a built-in way to add the binaries to your `PATH` right, but it's very straightforward to do if you aren't familiar. If you're on Windows, you can generally
-just follow [this](https://learn.microsoft.com/en-us/previous-versions/office/developer/sharepoint-2010/ee537574(v=office.14)). Otherwise, for macOS and Linux, if you're using zsh or bash you should
-be able to just open your `~/.profile` and add `export PATH="$PATH:$HOME/fgvm/bin"` and then `source ~/.profile`.
 
 ## Development
 
@@ -262,3 +268,19 @@ See: https://github.com/patricktcoakley/fgvm
 - Possibly consider adding multi-select and multi-query to installations so that you could bulk-install multiple versions.
 - I currently have [fgvmup](#fgvmup-currently-windows-only) for Windows, and it would make sense to port that script to bash for macOS and Linux support, allowing users to more easily install fgvm
   without having to rely on a package manager, but at the cost of extra maintenance and overhead.
+
+## Migrating from gdvm
+
+If you were using this project in the past then you'll know it used to be called `gdvm`. Prior to this project's creation and after, there have been several other projects with similar goals using the same name. 
+
+In an effort to differentiate this project I decided to change the name to stand out, and am also using it as an opportunity to implement some breaking changes due to some recent updates in the libraries I am using to write this tool.
+
+What this means for you:
+- `gdvm` and `fgvm` are mostly the same workflow but there were minor changes to the commands that are breaking, so consult the updated documentation if you get stuck
+- If you are using a package manager (the recommend way to install), you will have to remove the `gdvm` package and install `fgvm`
+  - Homebrew users: `brew update && brew uninstall gdvm && brew install fgvm`
+  - Scoop users: `scoop update && scoop uninstall gdvm && scoop install fgvm`
+- If you want to keep your current installations, you can simply rename the existing `gdvm`, which will preserve everything as-is:
+  - Windows users: `mv C:\Users\USERNAME\gdvm C:\Users\USERNAME\fgvm`
+  - macOS & Linux users: `mv ~/gdvm ~/fgvm`
+  - `gdvmup` is now called `fgvmup`. If you were using the old `gdvmup` installer, run `gdvmup uninstall` first, which removes everything, then follow the [installation instructions](#installation) above.

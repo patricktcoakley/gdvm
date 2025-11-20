@@ -2,8 +2,6 @@
 
 **fgvm**, a ***friendly*** **Godot version manager**.
 
-![sizzler](./assets/gdvm.gif)
-
 ## Introduction
 
 fgvm is a friendly Godot version manager that lets users install and manage multiple versions of Godot with ease. It uses a hybrid CLI/TUI design, meaning that in certain places where it makes sense
@@ -99,8 +97,6 @@ may be added later, but it hasn't come up as a requested feature yet.
 
 ### Commands
 
-![install](./assets/gdvm-install.jpg)
-
 All of this is also available in the `--help` section of the app:
 
 ```shell
@@ -109,15 +105,17 @@ fgvm --help
 
 but here is a detailed summary of the available commands:
 
-- `fgvm list` [`--json`] will list locally installed Godot versions. Use `--json` to output in JSON format.
-- `fgvm install [<...strings>]` will prompt the user to install a version if no arguments are supplied, or will
+> **Note:** Many commands support short-form aliases for faster usage (e.g., `fgvm i` for `fgvm install`, `fgvm g` for `fgvm godot`).
+
+- `fgvm list` or `fgvm l` [`--json`] will list locally installed Godot versions. Use `--json` to output in JSON format.
+- `fgvm install` or `fgvm i` `[<...strings>]` will prompt the user to install a version if no arguments are supplied, or will
   try to find the closest matching version based on the query, defaulting to "stable" if no other release type is supplied.
   It will automatically set the installed version as the default if it's the first installation.
     - Queries:
         - `latest` or `latest standard` will install the latest stable, and `latest mono` will install the latest .NET stable.
         - `4 mono` will grab the latest stable 4.x .NET release, `3.3 rc` will grab the latest rc of 3.3 standard, `1` would take the last stable version `1`, and so on.
-- `fgvm install default [<...strings>]` same as `install`, but explicitly sets the installed version as the default regardless of whether other versions are already installed.
-- `fgvm godot` runs the appropriate Godot version, or with the `--interactive` or `-i` flag, will prompt the user to launch an installed version. When run in a project directory with a `.fgvm-version`
+- `fgvm install default` or `fgvm i default` `[<...strings>]` same as `install`, but explicitly sets the installed version as the default regardless of whether other versions are already installed.
+- `fgvm godot` or `fgvm g` runs the appropriate Godot version, or with the `--interactive` or `-i` flag, will prompt the user to launch an installed version. When run in a project directory with a `.fgvm-version`
   file, it will use that project-specific version. If no `.fgvm-version` file exists, it will use the global default version. The command will automatically detect and launch the project if a
   `project.godot` file is found.
     - Once a version is installed, it will launch the editor with the project directly from the terminal This feature will only work on projects using `config_version=5` in `project.godot`, which is *
@@ -136,12 +134,12 @@ but here is a detailed summary of the available commands:
     - If a list of arguments are provided, it will find the best matching version based on the query (including runtime preferences like `mono` or `standard`) and install it if necessary.
     - Use `-i|--interactive` to force interactive selection from already installed versions instead of auto-installing.
 - `fgvm which` [`--json`] displays the location that the current Godot symlink points to. Use `--json` to output in JSON format.
-- `fgvm remove [<...strings>]` prompts the user to select multiple installations to delete, or optionally takes a query to filter down to specific versions to delete. If there is only one match, it
+- `fgvm remove` or `fgvm r` `[<...strings>]` prompts the user to select multiple installations to delete, or optionally takes a query to filter down to specific versions to delete. If there is only one match, it
   will delete it directly. If there are multiple matches, it will prompt the user to select which ones to delete.
-    - For example, if you wanted to list all of the `4.y.z` versions to remove, you could just do `fgvm remove 4` to list all of the 4 major releases. However, if remove a specific version, like
+    - For example, if you wanted to list all of the `4.y.z` versions to remove, you could just do `fgvm r 4` to list all of the 4 major releases. However, if remove a specific version, like
       `4.4.1-stable-mono`, it will just delete that version directly. Deleting the currently set version will unset it and you will need to set a new one.
-- `fgvm logs [--level|-l <string>, --message|-m <string>] [--json]` displays all the of the logs, or optionally takes a level or message filter. Use `--json` to output in JSON format.
-- `fgvm search [<...strings>] [--json]` takes an optional query to search all available remote versions of Godot. Use `--json` to output in JSON format.
+- `fgvm logs` [`--level|-l <string>, --message|-m <string>] [`--json`] displays all the of the logs, or optionally takes a level or message filter. Use `--json` to output in JSON format.
+- `fgvm search` or `fgvm s` `[<...strings>] [--json]` takes an optional query to search all available remote versions of Godot. Use `--json` to output in JSON format.
     - Queries:
         - `4` would filter all 4.x releases, including "stable", "dev", etc.
         - `4.2-rc` would only list the `4.2` `rc` releases, but `4.2 rc` would list all `4.2.x` releases with the `rc` release type, including `4.2.2.-rc3`
@@ -168,18 +166,21 @@ fgvm local 4.3 mono          # Creates .fgvm-version with 4.3-stable-mono
 ```bash
 # In a project directory with .fgvm-version file
 fgvm godot                    # Uses version from .fgvm-version
+# Or use short form
+fgvm g                        # Same as above
 
 # In a project directory without .fgvm-version file
 fgvm godot                    # Uses global default version
 
 # In any directory
 fgvm godot -i                 # Interactive selection from installed versions
+fgvm g -i                     # Same as above
 ```
 
 #### Workflow:
 
 1. **`fgvm local`** - Creates/updates `.fgvm-version` file for project-specific version management
-2. **`fgvm godot`** - Respects `.fgvm-version` file if present, otherwise uses global default
+2. **`fgvm godot`** (or `fgvm g`) - Respects `.fgvm-version` file if present, otherwise uses global default
 3. **`fgvm set`** - Sets the global default version used when no `.fgvm-version` exists
 
 ### Configuration

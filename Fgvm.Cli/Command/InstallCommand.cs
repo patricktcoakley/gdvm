@@ -119,16 +119,33 @@ public sealed class InstallCommand(
 
             switch (installationResult)
             {
-                case Result<InstallationOutcome, InstallationError>.Success(InstallationOutcome.NewInstallation(var release)):
-                    console.MarkupLine(GetInstallationSuccessMessage(release, setAsDefault, wasAutoSetAsDefault));
+                case Result<InstallationOutcome, InstallationError>.Success(InstallationOutcome.NewInstallation(var release, var checksumStatus)):
+                    var successMessage = GetInstallationSuccessMessage(release, setAsDefault, wasAutoSetAsDefault);
+                    console.MarkupLine(successMessage);
+
+                    // Add checksum warning if verification failed
+                    if (checksumStatus is ChecksumVerification.Failed(var networkError))
+                    {
+                        console.MarkupLine(Messages.ChecksumVerificationFailed(release, networkError));
+                    }
                     break;
+
                 case Result<InstallationOutcome, InstallationError>.Success(InstallationOutcome.AlreadyInstalled(var release)):
                     console.MarkupLine(Messages.AlreadyInstalled(release));
                     break;
+
                 case Result<InstallationOutcome, InstallationError>.Failure(InstallationError.NotFound notFound):
                     throw new InvalidOperationException(Messages.InstallationNotFound(notFound.Version, hostSystem));
+
+                case Result<InstallationOutcome, InstallationError>.Failure(InstallationError.ChecksumMismatch mismatch):
+                    throw new SecurityException(Messages.ChecksumMismatch(mismatch.FileName, mismatch.Expected, mismatch.Actual));
+
+                case Result<InstallationOutcome, InstallationError>.Failure(InstallationError.ChecksumParseError parseError):
+                    throw new CryptographicException(Messages.ChecksumParseError(parseError.Content));
+
                 case Result<InstallationOutcome, InstallationError>.Failure(InstallationError.Failed failed):
                     throw new InvalidOperationException(Messages.InstallationFailed(failed.Reason));
+
                 default:
                     throw new Exception(Messages.UnknownInstallationResultType);
             }

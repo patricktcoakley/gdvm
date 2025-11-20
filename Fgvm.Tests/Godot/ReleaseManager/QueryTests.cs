@@ -14,7 +14,7 @@ public class QueryTests
         var releaseManager = new ReleaseManagerBuilder().Build();
         var result = await releaseManager.SearchRemoteReleases(query, CancellationToken.None);
         Assert.IsType<Result<IEnumerable<string>, NetworkError>.Success>(result);
-        var success = (Result<IEnumerable<string>, NetworkError>.Success)result;
+        var success = Assert.IsType<Result<IEnumerable<string>, NetworkError>.Success>(result);
         Assert.Equal(expected, success.Value);
     }
 
@@ -119,7 +119,7 @@ public class QueryTests
 
         var result = await releaseManager.SearchRemoteReleases(["stable"], CancellationToken.None);
         Assert.IsType<Result<IEnumerable<string>, NetworkError>.Success>(result);
-        var success = (Result<IEnumerable<string>, NetworkError>.Success)result;
+        var success = Assert.IsType<Result<IEnumerable<string>, NetworkError>.Success>(result);
         Assert.Empty(success.Value);
     }
 
@@ -219,8 +219,7 @@ public class QueryTests
 
         // Test chronological ordering (for search/display)
         var chronologicalResult = await releaseManager.SearchRemoteReleases(["4"], CancellationToken.None);
-        Assert.IsType<Result<IEnumerable<string>, NetworkError>.Success>(chronologicalResult);
-        var success = (Result<IEnumerable<string>, NetworkError>.Success)chronologicalResult;
+        var success = Assert.IsType<Result<IEnumerable<string>, NetworkError>.Success>(chronologicalResult);
         var chronologicalArray = success.Value.ToArray();
 
         // Should be ordered: major > minor > stability > patch

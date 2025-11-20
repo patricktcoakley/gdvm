@@ -326,7 +326,7 @@ public class VersionManagementService(
             {
                 var releaseNameWithRuntime = installSuccess.Value switch
                 {
-                    InstallationOutcome.NewInstallation(var name) => name,
+                    InstallationOutcome.NewInstallation(var name, _) => name,
                     InstallationOutcome.AlreadyInstalled(var name) => name,
                     _ => throw new InvalidOperationException(Messages.UnknownInstallationOutcome)
                 };
@@ -588,7 +588,7 @@ public class VersionManagementService(
 
         var releaseNameWithRuntime = installSuccess.Value switch
         {
-            InstallationOutcome.NewInstallation(var name) => name,
+            InstallationOutcome.NewInstallation(var name, _) => name,
             InstallationOutcome.AlreadyInstalled(var name) => name,
             _ => throw new InvalidOperationException(Messages.UnknownInstallationOutcome)
         };
@@ -640,7 +640,7 @@ public class VersionManagementService(
 
         var releaseNameWithRuntime = installSuccess.Value switch
         {
-            InstallationOutcome.NewInstallation(var name) => name,
+            InstallationOutcome.NewInstallation(var name, _) => name,
             InstallationOutcome.AlreadyInstalled(var name) => name,
             _ => throw new InvalidOperationException(Messages.UnknownInstallationOutcome)
         };

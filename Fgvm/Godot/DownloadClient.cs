@@ -8,7 +8,7 @@ namespace Fgvm.Godot;
 public interface IDownloadClient
 {
     Task<Result<IEnumerable<string>, NetworkError>> ListReleases(CancellationToken cancellationToken);
-    Task<string> GetSha512(Release godotRelease, CancellationToken cancellationToken);
+    Task<Result<string, NetworkError>> GetSha512(Release godotRelease, CancellationToken cancellationToken);
     Task<HttpResponseMessage> GetZipFile(string filename, Release godotRelease, CancellationToken cancellationToken);
 }
 
@@ -33,42 +33,46 @@ public class DownloadClient(IGitHubClient gitHubClient, ITuxFamilyClient tuxFami
             }
             catch (Exception cacheEx)
             {
-                logger.LogWarning(cacheEx, "Failed to write releases cache, continuing anyway");
+                logger.LogWarning("Failed to write releases cache, continuing anyway: {Message}", cacheEx.Message);
             }
         }
 
         return result;
     }
 
-    // TODO: Replace with Task<Result<string, NetworkError>> GetSha512(Release godotRelease, CancellationToken cancellationToken)
-    public async Task<string> GetSha512(Release godotRelease, CancellationToken cancellationToken)
+    public async Task<Result<string, NetworkError>> GetSha512(Release godotRelease, CancellationToken cancellationToken)
     {
+        var errors = new List<NetworkError>();
+
         // Try GitHub first
-        try
+        var gitHubResult = await gitHubClient.GetSha512Async(godotRelease, cancellationToken);
+        if (gitHubResult is Result<string, NetworkError>.Success gitHubSuccess)
         {
-            var sha512 = await gitHubClient.GetSha512Async(godotRelease, cancellationToken);
             logger.LogInformation("Found SHA512 for {Version} at GitHub", godotRelease.Version);
-            return sha512;
+            return gitHubSuccess;
         }
-        catch (Exception ex)
+        else if (gitHubResult is Result<string, NetworkError>.Failure gitHubFailure)
         {
-            logger.LogError(ex, "GitHub SHA512 failed for {Version}", godotRelease.Version);
+            logger.LogError("GitHub SHA512 failed for {Version}", godotRelease.Version);
+            errors.Add(gitHubFailure.Error);
         }
 
         // Fallback to TuxFamily
-        try
+        var tuxFamilyResult = await tuxFamilyClient.GetSha512Async(godotRelease, cancellationToken);
+        if (tuxFamilyResult is Result<string, NetworkError>.Success tuxFamilySuccess)
         {
-            var sha512 = await tuxFamilyClient.GetSha512Async(godotRelease, cancellationToken);
             logger.LogInformation("Found SHA512 for {Version} at TuxFamily", godotRelease.Version);
-            return sha512;
+            return tuxFamilySuccess;
         }
-        catch (Exception ex)
+        else if (tuxFamilyResult is Result<string, NetworkError>.Failure tuxFamilyFailure)
         {
-            logger.LogError(ex, "TuxFamily SHA512 failed for {Version}", godotRelease.Version);
+            logger.LogError("TuxFamily SHA512 failed for {Version}", godotRelease.Version);
+            errors.Add(tuxFamilyFailure.Error);
         }
 
-        logger.LogError("SHA512-SUMS.txt was missing from all sources for {Version}", godotRelease.Version);
-        throw new HttpRequestException("Wasn't able to download SHA512-SUMS.txt from any sources.");
+        logger.LogError("SHA512-SUMS.txt unavailable from all sources for {Version}", godotRelease.Version);
+        return new Result<string, NetworkError>.Failure(
+            new NetworkError.AllSourcesFailed("SHA512-SUMS.txt", errors));
     }
 
     // TODO: Replace with Task<Result<HttpResponseMessage, NetworkError>> GetZipFile(string filename, Release godotRelease, CancellationToken cancellationToken)
@@ -83,7 +87,7 @@ public class DownloadClient(IGitHubClient gitHubClient, ITuxFamilyClient tuxFami
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "GitHub zip file failed for {ReleaseNameWithRuntime}", godotRelease.ReleaseNameWithRuntime);
+            logger.LogError("GitHub zip file failed for {ReleaseNameWithRuntime}: {Message}", godotRelease.ReleaseNameWithRuntime, ex.Message);
         }
 
         // Fallback to TuxFamily
@@ -95,7 +99,7 @@ public class DownloadClient(IGitHubClient gitHubClient, ITuxFamilyClient tuxFami
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "TuxFamily zip file failed for {ReleaseNameWithRuntime}", godotRelease.ReleaseNameWithRuntime);
+            logger.LogError("TuxFamily zip file failed for {ReleaseNameWithRuntime}: {Message}", godotRelease.ReleaseNameWithRuntime, ex.Message);
         }
 
         logger.LogError("{Filename} was missing from all sources for {ReleaseNameWithRuntime}", filename, godotRelease.ReleaseNameWithRuntime);

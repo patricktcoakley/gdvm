@@ -53,5 +53,5 @@ public sealed class PathService : IPathService
     public string BinPath => Path.Combine(RootPath, "bin");
     public string SymlinkPath => Path.Combine(BinPath, "godot");
     public string MacAppSymlinkPath => Path.Combine(BinPath, "Godot.app");
-    public string LogPath => Path.Combine(RootPath, ".log");
+    public string LogPath => Path.Combine(RootPath, "fgvm.log");
 }

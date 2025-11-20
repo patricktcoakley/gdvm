@@ -31,14 +31,15 @@ public sealed class InstallCommand(
     /// <summary>
     ///     Install a Godot version.
     /// </summary>
-    /// <param name="setDefault">-D|--default, Set as the default version after installing</param>
+    /// <param name="default">-D, Set as the default version after installing</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <param name="query">Version query arguments</param>
     /// <exception cref="ArgumentException"></exception>
     /// <exception cref="CryptographicException"></exception>
     /// <exception cref="SecurityException"></exception>
-    [ConsoleAppFramework.Command("install|i")]
-    public async Task Install(bool setDefault = false, CancellationToken cancellationToken = default, [Argument] params string[] query) => await InstallCore(query, setDefault, cancellationToken);
+    [Command("install|i")]
+    public async Task Install(bool @default = false, CancellationToken cancellationToken = default, [Argument] params string[] query) =>
+        await InstallCore(query, @default, cancellationToken);
 
     /// <summary>
     ///     Core installation logic.

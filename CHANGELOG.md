@@ -1,5 +1,22 @@
 # Changelog
 
+<a name="2.0.0"></a>
+## [2.0.0](https://github.com/patricktcoakley/fgvm/releases/tag/v2.0.0) (2025-11-20)
+
+### ✨ Features
+
+* Support short form commands; update ConsoleAppFramework to unblock hacks around args with params. ([d7e9fb0](https://github.com/patricktcoakley/fgvm/commit/d7e9fb02e9d78d0bca2d52e5355e9e9fbdb44676))
+* **install:** Handle checksum verification failure gracefully; introduce more Results; update tests to cover the HTTP clients. ([2023cc0](https://github.com/patricktcoakley/fgvm/commit/2023cc0216f0cd8e9d1d563c637275648960bd6a))
+* **logging:** Overhaul logging to use NDJSON; fix removal logic and update removal tests to cover more behavior. ([d7211ca](https://github.com/patricktcoakley/fgvm/commit/d7211ca13bc094fad44feba53941599ad853047b))
+
+### 🐛 Bug Fixes
+
+* **logs:** Update the log file path to avoid colliding with the old logs and ensure the new format is consistent; update default flag; update README to cover remaining topics for migration. ([5fb06e3](https://github.com/patricktcoakley/fgvm/commit/5fb06e3bb92093bb002a6edcef15e4d8a836219c))
+
+### Breaking Changes
+
+* rename the project. ([9743ccf](https://github.com/patricktcoakley/fgvm/commit/9743ccfbb168625b1a24f2bbf56dacf0f555ecca))
+
 <a name="1.4.0"></a>
 ## [1.4.0](https://github.com/patricktcoakley/gdvm/releases/tag/v1.4.0) (2025-11-13)
 

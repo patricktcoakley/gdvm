@@ -27,8 +27,8 @@ terminal, or, the preferred method of installation, using a [package manager](#p
 
 ## Installation
 
-> [!IMPORTANT]
-> In order to use the symlink feature for *Windows*, you first need to enable [Developer Mode](https://learn.microsoft.com/en-us/windows/apps/get-started/enable-your-device-for-development).
+> [!NOTE]
+> In order to use the symlink feature for **Windows**, you first need to enable [Developer Mode](https://learn.microsoft.com/en-us/windows/apps/get-started/enable-your-device-for-development).
 > Without it, you can still install, remove, etc, but you won't have the added benefit of having a symlink pointing to your desired version, which is what the `fgvm godot` command uses to launch Godot
 > directly from the terminal and you would simply have to navigate to the Godot installation directory to launch it (i.e., `C:\Users\USERNAME\fgvm\4.5.1-stable-standard\Godot_v4.5.1-stable_win64.exe`).
 >

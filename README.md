@@ -44,6 +44,19 @@ Note that you may periodically need to run `brew update` if any changes are appl
 
 #### Scoop (Windows)
 
+> [!IMPORTANT]
+> In order to use the symlink feature for Windows, you first need to enable [Developer Mode](https://learn.microsoft.com/en-us/windows/apps/get-started/enable-your-device-for-development).
+> Without it, you can still install, remove, etc, but you won't have the added benefit of having a symlink pointing to your desired version, which is what the `fgvm godot` command uses to launch Godot
+> directly from the terminal and you would simply have to navigate to the Godot installation directory to launch it (i.e., `C:\Users\USERNAME\fgvm\4.5.1-stable-standard\Godot_v4.5.1-stable_win64.exe`).
+> 
+> In addition, Powershell, the default shell for Windows, doesn't support the emojis out of the box. To fix this, you simply need to update the `$PROFILE`/profile.ps1:
+> ```powershell 
+> '[console]::InputEncoding = [console]::OutputEncoding = [System.Text.UTF8Encoding]::new()' | Add-Content -Path $PROFILE
+> ```
+> 
+> Also, if you are using `cmd`, you can also try the beta unicode support by going to Region in the control panel, going to Administrative, clicking Change system locale, and checking the Beta: 
+> Use Unicode UTF-8 for worldwide language support checkbox. You will have to restart your computer, but it should enable emoji support there as well.
+
 If you're on Windows, you can install fgvm using [Scoop](https://scoop.sh) by running the following commands:
 
 ```powershell
@@ -226,25 +239,6 @@ other use cases in the future, but otherwise all functionality exists inside the
     ```
 
   This is particularly useful for testing, CI/CD environments, or keeping your Godot installations on a separate storage device for backup purposes.
-
-## Notes
-
-### Windows
-
-#### Symlink
-
-In order to use the symlink feature for Windows, you first need to enable [Developer Mode](https://learn.microsoft.com/en-us/windows/apps/get-started/enable-your-device-for-development).
-Without it, you can still install, remove, etc, but you won't have the added benefit of having a symlink pointing to your desired version, which is what the `fgvm godot` command uses to launch Godot
-directly from the terminal.
-
-#### Emoji Support
-
-Powershell, the default shell for Windows, doesn't seem to support the emojis out of the box. To fix this, you simply need to update the `$PROFILE`/profile.ps1:
-```powershell 
-'[console]::InputEncoding = [console]::OutputEncoding = [System.Text.UTF8Encoding]::new()' | Add-Content -Path $PROFILE
-```
-
-If you are using `cmd`, you can also try the beta unicode support by going to Region in the control panel, going to Administrative, clicking Change system locale, and checking the Beta: Use Unicode UTF-8 for worldwide language support checkbox. You will have to restart your computer, but it should enable emoji support there as well.
 
 ## Development
 

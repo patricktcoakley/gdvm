@@ -1,0 +1,60 @@
+[tools]
+dotnet = "10"
+
+[tasks.test]
+description = "Run the unit and end-to-end suites."
+dir = "."
+run = [
+    "dotnet test --nologo --configuration Release Fgvm.Tests/Fgvm.Tests.csproj",
+    "dotnet test --nologo --configuration Release Fgvm.Tests.EndToEnd/Fgvm.Tests.EndToEnd.csproj"
+]
+
+[tasks."test:unit"]
+description = "Run the faster unit tests only."
+dir = "."
+run = "dotnet test --nologo --configuration Release Fgvm.Tests/Fgvm.Tests.csproj"
+
+[tasks."test:e2e"]
+description = "Run only the end-to-end tests."
+dir = "."
+run = "dotnet test --nologo --configuration Release Fgvm.Tests.EndToEnd/Fgvm.Tests.EndToEnd.csproj"
+
+[tasks.format]
+description = "Format all projects in-place."
+dir = "."
+run = "dotnet format"
+
+[tasks."format:check"]
+description = "Verify formatting without making changes."
+dir = "."
+run = "dotnet format --verify-no-changes"
+
+[tasks.build]
+description = "Build the release configuration of the CLI."
+dir = "."
+run = "dotnet build --nologo --configuration Release Fgvm.Cli/Fgvm.Cli.csproj"
+
+[tasks.restore]
+description = "Restore all NuGet packages."
+dir = "."
+run = "dotnet restore"
+
+[tasks.clean]
+description = "Clean all build artifacts."
+dir = "."
+run = "dotnet clean"
+
+[tasks.publish]
+description = "Publish the CLI (Release configuration, default RID)."
+dir = "."
+run = "dotnet publish Fgvm.Cli/Fgvm.Cli.csproj -c Release"
+
+[tasks.versionize]
+description = "Update versions and changelog using Versionize."
+dir = "."
+run = "dotnet tool run versionize"
+
+[tasks."versionize:dry-run"]
+description = "Preview the changes Versionize would make."
+dir = "."
+run = "dotnet tool run versionize --dry-run"

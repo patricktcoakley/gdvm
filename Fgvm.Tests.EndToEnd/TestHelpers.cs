@@ -14,7 +14,7 @@ public static class TestHelpers
     extension(TestContainerFixture fixture)
     {
         public async Task<ExecResult> ExecuteCommand(string[] args) =>
-            await fixture.Container.ExecAsync([fixture.FgvmPath, ..args]);
+            await fixture.Container.ExecAsync([fixture.FgvmPath, .. args]);
 
         public async Task EnsureVersionInstalled(string version)
         {
@@ -45,7 +45,7 @@ public static class TestHelpers
         }
 
         public async Task<ExecResult> ExecuteShellCommand(string command, string[] args) =>
-            await fixture.Container.ExecAsync([command, ..args]);
+            await fixture.Container.ExecAsync([command, .. args]);
 
         public async Task<bool> DirectoryExists(string path)
         {
